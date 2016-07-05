@@ -2,7 +2,9 @@
 #include "include/DpaHandler.h"
 
 DpaHandler::DpaHandler(DpaInterface* dpa_interface) {
-  //TODO: Dopsat kontrolu argumentu
+  if (dpa_interface == nullptr) {
+	throw std::invalid_argument("dpa_interface argument can not be nullptr.");
+  }
   dpa_interface_ = dpa_interface;
 
   dpa_interface_->RegisterResponseHandler(

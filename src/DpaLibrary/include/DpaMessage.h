@@ -5,12 +5,14 @@
 #include <memory>
 #include <cstdint>
 
-
+///< Size of buffer for message.
 #define MAX_DPA_BUFFER    64
 
 class DpaMessage {
  public:
+  /** Size of the maximum DPA message. */
   const int kMaxDpaMessageSize = MAX_DPA_BUFFER;
+  /** Defines an alias representing the union. */
   typedef union {
 	uint8_t Buffer[MAX_DPA_BUFFER];
 	struct {
@@ -29,32 +31,122 @@ class DpaMessage {
 	  uint16_t HWPID;
 	  TDpaMessage DpaMessage;
 	} DpaRequestPacket_t;
-
   } DpaPacket_t;
 
+  /** Values that represent message types. */
   enum MessageType {
+	///< Request message
 	kRequest,
+    ///< Confirmation message
 	kConfirmation,
+    ///< Notification message
 	kNotification,
+    ///< Response message
 	kResponse
   };
 
+  /** Default constructor. */
   DpaMessage();
+
+  /**
+   Copy constructor.
+  
+   @param	other	The original message.
+   */
   DpaMessage(const DpaMessage& other);
+
+  /** Destructor. */
   virtual ~DpaMessage();
 
+  /**
+   Assignment operator.
+  
+   @param	other	The original message.
+  
+   @return	A shallow copy of this object.
+   */
   DpaMessage& operator=(const DpaMessage& other);
 
+  /**
+   Gets message type.
+  
+   @return	A MessageType.
+   */
   MessageType MessageDirection() const;
+
+  /**
+   Fills message with data from IQRF network.
+
+   @exception   std::invalid_argument   Thrown when data length is 0.
+   @exception	std::invalid_argument	Thrown when data is nullptr.
+   @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+
+   @param [in,out]	data	Pointer to data.
+   @param	length			The number of bytes to be added.
+   */
   void FillFromResponse(unsigned char* data, uint32_t length);
+
+  /**
+   Adds data to message buffer.
+
+   @exception   std::invalid_argument   Thrown when data length is 0.
+   @exception	std::invalid_argument	Thrown when data is nullptr.
+   @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+
+   @param [in,out]	data	Pointer to data.
+   @param	length			The number of bytes to be added.
+   */
   void AddDataToBuffer(unsigned char* data, uint32_t length);
+
+  /**
+   Gets length of data stored in message.
+  
+   @return	Number of bytes in message.
+   */
   int Length() const { return length_; }
+
+  /**
+   Gets destination or source address of sender/receiver.
+  
+   @return	An address.
+   */
   uint16_t NodeAddress() const { return dpa_packet_->DpaRequestPacket_t.NADR; }
+
+    /**
+   Gets peripheral type.
+  
+   @return	A peripheral type.
+   */
   TDpaPeripheralType PeripheralType() const { return TDpaPeripheralType(dpa_packet_->DpaRequestPacket_t.PNUM); }
+
+  /**
+   Gets command code.
+  
+   @return	A command code.
+   */
   uint8_t CommandCode() const { return dpa_packet_->DpaResponsePacket_t.PCMD; }
+
+  /**
+   Gets response code from received message.
+
+   @exception	unexpected_packet_type	Thrown when message is not a receive type.
+
+   @return	A response code.
+   */
   TErrorCodes ResponseCode() const;
+
+  /**
+   Gets DPA packet behind the message.
+  
+   @return	A reference to a const DpaPacket_t.
+   */
   const DpaPacket_t& DpaPacket() const { return *dpa_packet_; }
 
+  /**
+   Gets pointer to data stored in message.
+  
+   @return	Pointer to data stored in message.
+   */
   unsigned char* DpaPacketData();
 
  private:

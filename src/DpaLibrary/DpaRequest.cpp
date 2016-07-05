@@ -5,139 +5,136 @@
 #include "unexpected_command.h"
 
 DpaRequest::DpaRequest()
-		: status_(kCreated), sent_message_(nullptr), response_message_(nullptr), expected_duration_ms_(0),
-		  timeout_ms_(kDefaultTimeout) {
+    : status_(kCreated), sent_message_(nullptr), response_message_(nullptr), expected_duration_ms_(0),
+      timeout_ms_(kDefaultTimeout) {
 }
 
 DpaRequest::~DpaRequest() {
-	delete sent_message_;
-	delete response_message_;
+  delete sent_message_;
+  delete response_message_;
 }
 
 void DpaRequest::ProcessSentMessage(const DpaMessage& sent_message) {
-	if (status_ != kCreated) {
-		throw std::logic_error("Sent message already set.");
-	}
+  if (status_ != kCreated) {
+    throw std::logic_error("Sent message already set.");
+  }
 
-	SetStatus(kSent);
-	delete sent_message_;
-	sent_message_ = new DpaMessage(sent_message);
+  SetStatus(kSent);
+  delete sent_message_;
+  sent_message_ = new DpaMessage(sent_message);
   SetTimeoutForCurrentRequest(timeout_ms_);
 }
 
 void DpaRequest::ProcessConfirmationMessage(const DpaMessage& confirmation_packet) {
-	status_ = kConfirmation;
+  status_ = kConfirmation;
   SetTimeoutForCurrentRequest(timeout_ms_ + EstimatedTimeout(confirmation_packet));
 }
 
 void DpaRequest::ProcessResponseMessage(const DpaMessage& response_message) {
-	status_ = kProcessed;
-	delete response_message_;
-	response_message_ = new DpaMessage(response_message);
+  status_ = kProcessed;
+  delete response_message_;
+  response_message_ = new DpaMessage(response_message);
 }
 
-void DpaRequest::ProcessReceivedMessage(const DpaMessage &received_message) {
-	if (received_message.MessageDirection() != DpaMessage::kResponse
-		&& received_message.MessageDirection() != DpaMessage::kConfirmation)
-		throw unexpected_packet_type("Response is expected.");
+void DpaRequest::ProcessReceivedMessage(const DpaMessage& received_message) {
+  if (received_message.MessageDirection() != DpaMessage::kResponse
+      && received_message.MessageDirection() != DpaMessage::kConfirmation)
+    throw unexpected_packet_type("Response is expected.");
 
-	status_mutex_.lock();
+  status_mutex_.lock();
 
-	if (!IsInProgressStatus(status_)) {
-		status_mutex_.unlock();
-		throw unexpected_packet_type("Request has not been sent, yet.");    //TODO neni dobry typ vyjimky
-	}
+  if (!IsInProgressStatus(status_)) {
+    status_mutex_.unlock();
+    throw unexpected_packet_type("Request has not been sent, yet.");
+  }
 
-	if (received_message.PeripheralType() != sent_message_->PeripheralType()) {
-		status_mutex_.unlock();
-		throw unexpected_peripheral("Different peripheral type than in sent message.");
-	}
+  if (received_message.PeripheralType() != sent_message_->PeripheralType()) {
+    status_mutex_.unlock();
+    throw unexpected_peripheral("Different peripheral type than in sent message.");
+  }
 
-	if ((received_message.CommandCode() & ~0x80) != sent_message_->CommandCode()) {
-		status_mutex_.unlock();
-		throw unexpected_command("Different command code than in sent message.");
-	}
+  if ((received_message.CommandCode() & ~0x80) != sent_message_->CommandCode()) {
+    status_mutex_.unlock();
+    throw unexpected_command("Different command code than in sent message.");
+  }
 
-	auto message_direction = received_message.MessageDirection();
-	if (message_direction == DpaMessage::kConfirmation)
-	  ProcessConfirmationMessage(received_message);
-	else
-	  ProcessResponseMessage(received_message);
+  auto message_direction = received_message.MessageDirection();
+  if (message_direction == DpaMessage::kConfirmation)
+    ProcessConfirmationMessage(received_message);
+  else
+    ProcessResponseMessage(received_message);
 
-	status_mutex_.unlock();
+  status_mutex_.unlock();
 }
 
 void DpaRequest::CheckTimeout() {
-	if (status_ == kProcessed
-		|| status_ == kCreated) {
-		return;
-	}
+  if (status_ == kProcessed
+      || status_ == kCreated) {
+    return;
+  }
 
-	if (IsTimeout()) {
-		SetStatus(kTimeout);
-	}
+  if (IsTimeout()) {
+    SetStatus(kTimeout);
+  }
 }
 
 DpaRequest::DpaRequestStatus DpaRequest::Status() {
-	CheckTimeout();
-	return status_;
+  CheckTimeout();
+  return status_;
 }
 
 bool DpaRequest::IsInProgress() {
-	return IsInProgressStatus(Status());
+  return IsInProgressStatus(Status());
 }
 
 int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet) {
   int32_t estimated_timeout_ms;
   int32_t response_time_slot_length_ms;
 
-	if (confirmation_packet.MessageDirection() != DpaMessage::kConfirmation)
-		throw std::invalid_argument("Parameter is not a confirmation packet.");
+  if (confirmation_packet.MessageDirection() != DpaMessage::kConfirmation)
+    throw std::invalid_argument("Parameter is not a confirmation packet.");
 
   auto iFace = confirmation_packet.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
 
-	estimated_timeout_ms = (iFace.Hops + 1) * iFace.TimeSlotLength * 10;
-	if (iFace.TimeSlotLength == 20) {
-		response_time_slot_length_ms = 200;
-	}
-	else {
-		if (iFace.TimeSlotLength > 6)
-			response_time_slot_length_ms = 100;
-		else
-			response_time_slot_length_ms = 50;
-	}
-	estimated_timeout_ms += (iFace.HopsResponse + 1) * response_time_slot_length_ms + 40;
-	return estimated_timeout_ms;
+  estimated_timeout_ms = (iFace.Hops + 1) * iFace.TimeSlotLength * 10;
+  if (iFace.TimeSlotLength == 20) {
+    response_time_slot_length_ms = 200;
+  }
+  else {
+    if (iFace.TimeSlotLength > 6)
+      response_time_slot_length_ms = 100;
+    else
+      response_time_slot_length_ms = 50;
+  }
+  estimated_timeout_ms += (iFace.HopsResponse + 1) * response_time_slot_length_ms + 40;
+  return estimated_timeout_ms;
 }
 
 void DpaRequest::SetTimeoutForCurrentRequest(int32_t time_in_ms) {
-	start_time_ = std::chrono::system_clock::now();
-	expected_duration_ms_ = time_in_ms;
+  start_time_ = std::chrono::system_clock::now();
+  expected_duration_ms_ = time_in_ms;
 }
 
 bool DpaRequest::IsTimeout() const {
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::system_clock::now() - start_time_);
-	if (duration.count() > expected_duration_ms_) {
-		return true;
-	}
-	return false;
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now() - start_time_);
+  return duration.count() > expected_duration_ms_;
 }
 
 void DpaRequest::SetStatus(DpaRequest::DpaRequestStatus status) {
-	status_mutex_.lock();
-	status_ = status;
-	status_mutex_.unlock();
+  status_mutex_.lock();
+  status_ = status;
+  status_mutex_.unlock();
 }
 
 bool DpaRequest::IsInProgressStatus(DpaRequestStatus status) {
-	switch (status) {
-		case kSent:
-		case kConfirmation:
-			return true;
-		default:
-			return false;
-	}
+  switch (status) {
+    case kSent:
+    case kConfirmation:
+      return true;
+    default:
+      return false;
+  }
 }
 
 

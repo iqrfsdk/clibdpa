@@ -88,9 +88,14 @@ DpaLibraryDemo::~DpaLibraryDemo() {
 }
 
 void DpaLibraryDemo::Start() {
-  dpa_handler_ = new DpaHandler(dpaInterface_);
+  try {
+	dpa_handler_ = new DpaHandler(dpaInterface_);
+  }
+  catch (std::invalid_argument& ae) {
+	std::cout << "There was an error during DPA handler creation.\n";
+  }
 
-  int16_t i = 1000;
+  int16_t i = 100;
 
   while (i--) {
 	PulseLed(0x00, kLedRed);
