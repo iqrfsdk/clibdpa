@@ -5,29 +5,33 @@
 #include <stdint.h>
 
 class DpaLibraryDemo {
-public:
+ public:
 
-    enum LedColor {
-        kLedRed,
-        kLedGreen
-    };
+  enum LedColor {
+	kLedRed,
+	kLedGreen
+  };
 
 
-    DpaLibraryDemo(DpaInterface *communication_interface);
+  DpaLibraryDemo(DpaInterface* communication_interface);
 
-    virtual ~DpaLibraryDemo();
+  virtual ~DpaLibraryDemo();
 
   void Start();
 
-    void ListenerWrapper(unsigned char *data, unsigned int length);
+  void ListenerWrapper(unsigned char* data, unsigned int length);
 
-private:
-    DpaInterface *dpaInterface_;
-    DpaHandler *dpa_handler_;
+ private:
+  DpaInterface* dpaInterface_;
+  DpaHandler* dpa_handler_;
 
-    void PulseLed(uint16_t address, LedColor color);
+  void PulseLed(uint16_t address, LedColor color);
 
-    void ExecuteCommand(DpaMessage &message);
+  void ExecuteCommand(DpaMessage& message);
+
+  void UnexpectedMessage(const DpaMessage& message);
+
+  void ReadTemperature(uint16_t address);
 };
 
 

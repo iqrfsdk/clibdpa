@@ -98,14 +98,18 @@ void DpaLibraryDemo::Start() {
 	std::cout << "There was an error during DPA handler creation.\n";
   }
 
+  dpa_handler_->Timeout(10);    // Default timeout is infinite
+
   int16_t i = 100;
+  //wait for a while, there could be some unread message in CDC
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   while (i--) {
-	PulseLed(0x03, kLedRed);
-	PulseLed(0x00, kLedGreen);
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-//	PulseLed(0x01, kLedRed);
-//	PulseLed(0x01, kLedGreen);
+	PulseLed(0x00, kLedRed);    // Pulse with red led on coordinator
+	PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
+	PulseLed(0x03, kLedRed);    // Pulse with red led on node with address 3
+	PulseLed(0x03, kLedGreen);    // Pulse with green led on node with address 3
+	ReadTemperature(0x03);        // Get temperature from node with address 3
   }
 }
 
@@ -138,6 +142,7 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
 	dpa_handler_->SendDpaMessage(message);
   }
   catch (std::logic_error& le) {
+	std::cout << "Send error occured.\n";
 	return;
   }
 
@@ -160,4 +165,25 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
 }
 void DpaLibraryDemo::UnexpectedMessage(const DpaMessage& message) {
   std::cout << "Unexpected message received.\n";
+}
+
+void DpaLibraryDemo::ReadTemperature(uint16_t address) {
+  DpaMessage::DpaPacket_t packet;
+  packet.DpaRequestPacket_t.NADR = address;
+  packet.DpaRequestPacket_t.PNUM = PNUM_THERMOMETER;
+
+  packet.DpaRequestPacket_t.PCMD = CMD_THERMOMETER_READ;
+  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+  DpaMessage message;
+  message.AddDataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+
+  ExecuteCommand(message);
+
+  if (dpa_handler_->Status() == DpaRequest::DpaRequestStatus::kProcessed) {
+	int16_t temperature =
+		dpa_handler_->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
+	std::cout << "Temperature: "
+		<< std::dec << temperature << " °C\n";
+  }
 }
