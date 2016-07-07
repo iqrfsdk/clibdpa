@@ -94,7 +94,7 @@ class DpaRequest {
 
    @param	timeout_ms	Timeout in milliseconds.
    */
-  void SetDefaultTimeout(int32_t timeout_ms) {
+  void DefaultTimeout(int32_t timeout_ms) {
     this->timeout_ms_ = timeout_ms;
   }
 
@@ -116,15 +116,13 @@ class DpaRequest {
   int32_t expected_duration_ms_;
   int32_t timeout_ms_;
 
-  void SetTimeoutForCurrentRequest(int32_t time_in_ms);
+  void SetTimeoutForCurrentRequest(int32_t extra_time_in_ms = 0);
   bool IsTimeout() const;
   void ProcessConfirmationMessage(const DpaMessage& confirmation_message);
   void ProcessResponseMessage(const DpaMessage& response_message);
   void SetStatus(DpaRequestStatus status);
   void CheckTimeout();
   static bool IsInProgressStatus(DpaRequestStatus status);
-
-  const int32_t kDefaultTimeout = 200;
 };
 
 #endif // !__DPA_REQUEST

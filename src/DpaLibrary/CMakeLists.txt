@@ -23,3 +23,5 @@ add_library(dpa_library
 include_directories(include)
 
 install(TARGETS dpa_library DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")

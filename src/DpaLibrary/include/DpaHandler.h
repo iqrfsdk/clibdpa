@@ -60,6 +60,27 @@ class DpaHandler {
   /** Unregister function for unexpected messages. */
   void UnregisterAsyncMessageHandler();
 
+  /**
+   Returns reference to currently processed request.
+
+   @return Current request.
+   */
+  const DpaRequest& CurrentRequest() const;
+
+  /**
+   Sets timeout for all new requests.
+
+   @param Timeout in ms.
+   */
+  void Timeout(int32_t timeout_ms);
+
+  /*
+   Gets value of timeout in ms.
+
+   @return Timeout in ms;
+   */
+  int32_t Timeout() const;
+
  private:
   /** The current request. */
   DpaRequest* current_request_;
@@ -85,6 +106,12 @@ class DpaHandler {
    @param [in,out]	message	The message.
    */
   void ProcessUnexpectedMessage(DpaMessage& message);
+
+  /** Holds timeout in ms. */
+  int32_t default_timeout_ms_;
+
+  /** Default value of timeout in ms.*/
+  const int32_t kDefaultTimeout = -1;
 };
 
 #endif // !__DPA_HANDLER

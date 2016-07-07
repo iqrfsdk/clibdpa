@@ -5,6 +5,8 @@ DpaHandler::DpaHandler(DpaInterface* dpa_interface) {
   if (dpa_interface == nullptr) {
 	throw std::invalid_argument("dpa_interface argument can not be nullptr.");
   }
+  default_timeout_ms_ = kDefaultTimeout;
+
   dpa_interface_ = dpa_interface;
 
   dpa_interface_->RegisterResponseHandler(
@@ -47,6 +49,7 @@ void DpaHandler::SendDpaMessage(DpaMessage& message) {
 
   delete current_request_;
   current_request_ = new DpaRequest();
+  current_request_->DefaultTimeout(default_timeout_ms_);
   current_request_->ProcessSentMessage(message);
 }
 
@@ -87,4 +90,15 @@ void DpaHandler::ProcessUnexpectedMessage(DpaMessage& message) {
 	async_message_handler_(message);
   }
   async_message_mutex_.unlock();
+}
+const DpaRequest& DpaHandler::CurrentRequest() const {
+  return *current_request_;
+}
+
+void DpaHandler::Timeout(int32_t timeout_ms) {
+  default_timeout_ms_ = timeout_ms;
+}
+
+int32_t DpaHandler::Timeout() const {
+  return default_timeout_ms_;
 }
