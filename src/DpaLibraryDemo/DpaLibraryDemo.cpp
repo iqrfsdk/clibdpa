@@ -90,6 +90,9 @@ DpaLibraryDemo::~DpaLibraryDemo() {
 void DpaLibraryDemo::Start() {
   try {
 	dpa_handler_ = new DpaHandler(dpaInterface_);
+	dpa_handler_->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::UnexpectedMessage,
+														this,
+														std::placeholders::_1));
   }
   catch (std::invalid_argument& ae) {
 	std::cout << "There was an error during DPA handler creation.\n";
@@ -98,8 +101,9 @@ void DpaLibraryDemo::Start() {
   int16_t i = 100;
 
   while (i--) {
-	PulseLed(0x00, kLedRed);
+	PulseLed(0x03, kLedRed);
 	PulseLed(0x00, kLedGreen);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
 //	PulseLed(0x01, kLedRed);
 //	PulseLed(0x01, kLedGreen);
   }
@@ -153,4 +157,7 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
 		<< '\n';
   }
 
+}
+void DpaLibraryDemo::UnexpectedMessage(const DpaMessage& message) {
+  std::cout << "Unexpected message received.\n";
 }
