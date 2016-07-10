@@ -8,6 +8,7 @@
 
 DpaLibraryDemo* demo_;
 CDCImpl* cdc_parser_;
+CdcDpaInterface* communication_interface_;
 
 void asyncMsgListener(unsigned char* data, unsigned int length);
 
@@ -37,9 +38,9 @@ int main(void) {
 	return 1;
   }
 
-  CdcDpaInterface* communication_interface = new CdcDpaInterface();
-  communication_interface->Init(cdc_parser_);
-  demo_ = new DpaLibraryDemo(communication_interface);
+  communication_interface_ = new CdcDpaInterface();
+  communication_interface_->Init(cdc_parser_);
+  demo_ = new DpaLibraryDemo(communication_interface_);
 
   ShowModuleInfo();
 
@@ -49,7 +50,7 @@ int main(void) {
 
   std::cout << "That's all for today...";
 
-  delete communication_interface;
+  delete communication_interface_;
   delete demo_;
   return 0;
 }
@@ -114,7 +115,7 @@ void DpaLibraryDemo::Start() {
 }
 
 void DpaLibraryDemo::ListenerWrapper(unsigned char* data, unsigned int length) {
-  dpa_handler_->ResponseHandler(data, length);
+  communication_interface_->ReceiveData(data, length);
 }
 
 
