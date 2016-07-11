@@ -20,4 +20,81 @@ src
 	DpaLibraryDemo 			Example of DPA library implementation
 ```
 
+## How to use DPA Library
+To be able to use DPA Library you will need some communication interface based on abstract class defined in DpaInterface.h file. For demo purposes we prepared implementation of CDC driver. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system.
+The first step is to instantiate CDC parser from CDC library. Constructor parameter `"/dev/ttyACM0"` is communication port identifier on Linux, `"COM1"` and on Windows machines.  Do not forget to set right privileges on Linux for port. 
+```c
+CDCImpl* cdc_parser_;
+try {
+	cdc_parser_ = new CDCImpl("/dev/ttyACM0");
+	bool test = cdc_parser_->test();
+
+	if (test) {
+		std::cout << "Test OK\n";
+	}
+	else {
+		std::cout << "Test FAILED\n";
+		delete cdc_parser_;
+		return 2;
+	}
+}
+catch (CDCImplException& e) {
+	std::cout << e.getDescr() << "\n";
+	if (cdc_parser_ != NULL) {
+		delete cdc_parser_;
+	}
+	return 1;
+}
+```
+Instance of the parser is used in communication interface. Create an instance of CdcDpaInterface class and initialize it with CDC parser.
+```c
+CdcDpaInterface* communication_interface = new CdcDpaInterface();
+communication_interface->Init(cdc_parser_);
+```
+Now, you are ready to use DPA Library. In fact, you need only `DpaMessage` and `DpaHandler` classes. DpaMessage holds information about DPA packet used in IQRF DPA environment. All settings and packet types are described in DPA Framework Technical guide.  DpaHandler takes care about your requests, timeouts and other communication related stuffs. 
+Create an instance of DpaHandler with communication interface and use it. The example bellow pulses with green LED on the coordinator module.
+```c
+DpaMessage message;
+auto dpa_handler_ = DpaHandler(communication_interface);
+DpaMessage::DpaPacket_t packet;
+
+packet.DpaRequestPacket_t.NADR = 0x00;
+packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
+packet.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+message.AddDataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+dpa_handler_.SendDpaMessage(message);
+while (dpa_handler_->IsDpaMessageInProgress()) {
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+```
+One last thing at the end. CDC parser calls function with two parameters when it receives  packet. Use method like below to forward this event to CDC communication interface.
+```c
+void asyncMsgListener(unsigned char* data, unsigned int length) {
+	communication_interface->ReceiveData(data, length);
+}
+```
+## The main library functions
+### DPA Handler
+|Function|Comments|
+|---|---|
+|`IsDpaMessageInProgress()`|Queries if DPA message is in progress. Returns true if is in progress, false if not.|
+|`SendDpaMessage(DpaMessage& message)`|Sends DPA message to the network, sets DPA handler to process received messages.|
+|`DpaRequest& CurrentRequest()`|Gets current request. The request holds information about delivery status and response.|
+|`Timeout(int32_t timeout_ms)`|Sets default timeout for DPA message processing.|
+
+### DPA Request
+|Function|Comments|
+|---|---|
+|`DpaMessage& ResponseMessage()`|Response for sent command|.
+
+## Quick command line compilation on the target
+```
+git clone https://github.com/iqrfsdk/clibdpa.git
+cd clibdpa
+mkdir -p .build; cd .build; cmake ..; make -j4
+```
+>To be able to compile demo, copy appropriate CDC library into lib folder.
+
+
 See [wiki](https://github.com/MICRORISC/iqrfsdk/wiki) for more information.
