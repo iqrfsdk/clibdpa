@@ -3,6 +3,8 @@
 #include <string.h>
 #include <iomanip>
 #include <thread>
+#include <SpiDpaInterface.h>
+#include <sysfs_gpio.h>
 #include "DpaLibraryDemo.h"
 #include "CdcDpaInterface.h"
 
@@ -13,10 +15,17 @@ CdcDpaInterface* communication_interface_;
 void asyncMsgListener(unsigned char* data, unsigned int length);
 
 void ShowModuleInfo();
+int CdcDemoMain();
+int SpiDpaDemoMain();
 
 int main(void) {
   std::cout << "Start demo\n";
+  //CdcDemoMain();
+  SpiDpaDemoMain();
+  return 0;
+}
 
+int CdcDemoMain() {
   cdc_parser_ = nullptr;
 
   try {
@@ -52,7 +61,45 @@ int main(void) {
 
   delete communication_interface_;
   delete demo_;
-  return 0;
+}
+
+/** Reset GPIO. */
+#define RESET_GPIO (23)
+/** SPI CE GPIO. */
+#define RPIIO_PIN_CE0 (8)
+
+int SpiDpaDemoMain() {
+  SpiDpaInterface dpaInterface;
+
+  //We prepared demo for Rasperry Pi3
+  //enable CE0 for TR communication
+  auto initResult = gpio_setup(RPIIO_PIN_CE0, GPIO_DIRECTION_OUT, 0);
+  if (initResult < 0) {
+	return -1;
+  }
+
+  // enable PWR for TR communication
+  initResult = gpio_setup(RESET_GPIO, GPIO_DIRECTION_OUT, 1);
+  if (initResult < 0) {
+	gpio_cleanup(RPIIO_PIN_CE0);
+	return -1;
+  }
+
+  try {
+	dpaInterface.Open("/dev/spidev0.0");
+	demo_ = new DpaLibraryDemo(&dpaInterface);
+	demo_->Start();
+  } catch (...) {
+	// clean the mess in all cases
+  }
+
+  dpaInterface.Close();
+  delete demo_;
+
+  // destroy used rpi_io library
+  gpio_cleanup(RESET_GPIO);
+  gpio_cleanup(RPIIO_PIN_CE0);
+
 }
 
 void asyncMsgListener(unsigned char* data, unsigned int length) {
@@ -67,17 +114,16 @@ void ShowModuleInfo() {
   std::cout << "Serial Number: ";
   for (int i = 0; i < ModuleInfo::SN_SIZE; ++i) {
 	std::cout << std::hex
-		<< std::uppercase
-		<< std::setw(2)
-		<< std::setfill('0')
-		<< (int) moduleInfo->serialNumber[i] << ' ';
+			  << std::uppercase
+			  << std::setw(2)
+			  << std::setfill('0')
+			  << (int) moduleInfo->serialNumber[i] << ' ';
   }
   std::cout << '\n';
   std::cout << "OS version: " << std::hex << moduleInfo->osVersion << '\n';
 
   delete (moduleInfo);
 }
-
 
 DpaLibraryDemo::DpaLibraryDemo(DpaInterface* communication_interface)
 	: dpa_handler_(nullptr) {
@@ -110,6 +156,8 @@ void DpaLibraryDemo::Start() {
 	PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
 	PulseLed(0x03, kLedRed);    // Pulse with red led on node with address 3
 	PulseLed(0x03, kLedGreen);    // Pulse with green led on node with address 3
+	PulseLed(0xFF, kLedRed);    // Pulse with red led on node with address 3
+	PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
 	ReadTemperature(0x03);        // Get temperature from node with address 3
   }
 }
@@ -117,7 +165,6 @@ void DpaLibraryDemo::Start() {
 void DpaLibraryDemo::ListenerWrapper(unsigned char* data, unsigned int length) {
   communication_interface_->ReceiveData(data, length);
 }
-
 
 void DpaLibraryDemo::PulseLed(uint16_t address, LedColor color) {
   DpaMessage::DpaPacket_t packet;
@@ -156,11 +203,11 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
   if (dpa_handler_->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
 	++timeouts;
 	std::cout << message.NodeAddress()
-		<< " - Timeout ..."
-		<< sent_messages
-		<< ':'
-		<< timeouts
-		<< '\n';
+			  << " - Timeout ..."
+			  << sent_messages
+			  << ':'
+			  << timeouts
+			  << '\n';
   }
 
 }
@@ -185,6 +232,6 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
 	int16_t temperature =
 		dpa_handler_->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
 	std::cout << "Temperature: "
-		<< std::dec << temperature << " °C\n";
+			  << std::dec << temperature << " °C\n";
   }
 }

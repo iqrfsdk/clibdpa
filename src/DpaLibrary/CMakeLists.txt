@@ -17,7 +17,7 @@ set(DPALIBRARY_SOURCE_FILES
         unexpected_peripheral.cpp)
 
 add_library(dpa_library
-        SHARED
+        STATIC
         ${DPALIBRARY_SOURCE_FILES})
 
 include_directories(include)

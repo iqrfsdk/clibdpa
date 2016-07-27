@@ -21,7 +21,10 @@ src
 ```
 
 ## How to use DPA Library
-To be able to use DPA Library you will need some communication interface based on abstract class defined in DpaInterface.h file. For demo purposes we prepared implementation of CDC driver. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system.
+To be able to use DPA Library you will need some communication interface based on abstract class defined in DpaInterface.h file.
+ 
+### CDC Dpa Interface
+For demo purposes we prepared implementation of CDC driver. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system.
 The first step is to instantiate CDC parser from CDC library. Constructor parameter `"/dev/ttyACM0"` is communication port identifier on Linux, `"COM1"` and on Windows machines.  Do not forget to set right privileges on Linux for port. 
 ```c
 CDCImpl* cdc_parser_;
@@ -51,6 +54,32 @@ Instance of the parser is used in communication interface. Create an instance of
 CdcDpaInterface* communication_interface = new CdcDpaInterface();
 communication_interface->Init(cdc_parser_);
 ```
+
+### Raspberry Pi SPI Interface
+The other interface prepared for demo is communication interface for Raspberry Pi via SPI. Demo is very similar, but you have to create an instance of `SpiDpaInterface`, open the SPI port and use it. 
+
+```c
+SpiDpaInterface communication_interface;
+try {
+	communication_interface.Open("/dev/spidev0.0");
+} 
+catch (...) {
+	// clean and return, something wrong was happened
+}
+```
+
+If you are using Raspberry Pi with KON-RASP-01, you have to enable power for module and enable `CE0`. At the end, of course, disable and clean these GPIO. 
+```c
+gpio_setup(RPIIO_PIN_CE0, GPIO_DIRECTION_OUT, 0);
+gpio_setup(RESET_GPIO, GPIO_DIRECTION_OUT, 1);
+
+// Enable SPI and run demo
+
+gpio_cleanup(RESET_GPIO);
+gpio_cleanup(RPIIO_PIN_CE0);
+
+```
+
 Now, you are ready to use DPA Library. In fact, you need only `DpaMessage` and `DpaHandler` classes. DpaMessage holds information about DPA packet used in IQRF DPA environment. All settings and packet types are described in DPA Framework Technical guide.  DpaHandler takes care about your requests, timeouts and other communication related stuffs. 
 Create an instance of DpaHandler with communication interface and use it. The example bellow pulses with green LED on the coordinator module.
 ```c
