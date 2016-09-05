@@ -1,5 +1,6 @@
 set(PROJECT_NAME spi_dpa_interface)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")
 #link_libraries(${LIB_SYS_DIRECTORY}/libspi_iqrf.a)
 
 set(SPIDPAINTERFACE_SOURCE_FILES
@@ -22,4 +23,3 @@ target_link_libraries(${PROJECT_NAME}
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")

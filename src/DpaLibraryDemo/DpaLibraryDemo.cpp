@@ -3,65 +3,87 @@
 #include <string.h>
 #include <iomanip>
 #include <thread>
-#include <SpiDpaInterface.h>
-#include <sysfs_gpio.h>
 #include "DpaLibraryDemo.h"
-#include "CdcDpaInterface.h"
+
+/********************************************************************************
+ * Select type of demo.
+********************************************************************************/
+//#define SPI_DEMO
+#define CDC_DEMO
+
 
 DpaLibraryDemo* demo_;
-CDCImpl* cdc_parser_;
-CdcDpaInterface* communication_interface_;
+//CDCImpl* cdc_parser_;
+//CdcDpaInterface* communication_interface_;
 
-void asyncMsgListener(unsigned char* data, unsigned int length);
+#ifdef CDC_DEMO
 
-void ShowModuleInfo();
+#include "CdcDpaInterface.h"
+
 int CdcDemoMain();
+
+#define DemoMain()    CdcDemoMain()
+
+#endif /* CDC_DEMO */
+
+#ifdef SPI_DEMO
+
+#include <SpiDpaInterface.h>
+#include <sysfs_gpio.h>
+
 int SpiDpaDemoMain();
 
-int main(void) {
+#define DemoMain()	SpiDpaDemoMain()
+
+#endif /* SPI_DEMO */
+
+int main() {
   std::cout << "Start demo\n";
-  //CdcDemoMain();
-  SpiDpaDemoMain();
+  DemoMain();
   return 0;
 }
 
+/*****************************************************************************
+ * CDC DEMO
+*****************************************************************************/
+#ifdef CDC_DEMO
+CdcDpaInterface* cdcDpaInterface;
+
+void CdcListenerWrapper(unsigned char* data, uint32_t length) {
+  cdcDpaInterface->CdcListenerWrapper(data, length);
+}
+
 int CdcDemoMain() {
-  cdc_parser_ = nullptr;
+
+  cdcDpaInterface = new CdcDpaInterface();
 
   try {
-	cdc_parser_ = new CDCImpl("/dev/ttyACM0");
-	bool test = cdc_parser_->test();
-
-	if (test) {
-	  std::cout << "Test OK\n";
-	} else {
-	  std::cout << "Test FAILED\n";
-	  delete cdc_parser_;
-	  return 2;
-	}
-  } catch (CDCImplException& e) {
-	std::cout << e.getDescr() << "\n";
-	if (cdc_parser_ != NULL) {
-	  delete cdc_parser_;
-	}
-	return 1;
+	cdcDpaInterface->Open("/dev/ttyACM1");
+  }
+  catch (...) {
+	goto Error_End;
   }
 
-  communication_interface_ = new CdcDpaInterface();
-  communication_interface_->Init(cdc_parser_);
-  demo_ = new DpaLibraryDemo(communication_interface_);
+  cdcDpaInterface->RegisterCdcListenerWrapper(CdcListenerWrapper);
 
-  ShowModuleInfo();
-
-  cdc_parser_->registerAsyncMsgListener(&asyncMsgListener);
+  demo_ = new DpaLibraryDemo(cdcDpaInterface);
 
   demo_->Start();
 
   std::cout << "That's all for today...";
 
-  delete communication_interface_;
+  Error_End:
+  delete cdcDpaInterface;
   delete demo_;
 }
+
+#endif
+
+
+/*****************************************************************************
+ * SPI DEMO
+*****************************************************************************/
+#ifdef SPI_DEMO
 
 /** Reset GPIO. */
 #define RESET_GPIO (23)
@@ -101,29 +123,7 @@ int SpiDpaDemoMain() {
   gpio_cleanup(RPIIO_PIN_CE0);
 
 }
-
-void asyncMsgListener(unsigned char* data, unsigned int length) {
-  demo_->ListenerWrapper(data, length);
-}
-
-void ShowModuleInfo() {
-  ModuleInfo* moduleInfo = nullptr;
-  moduleInfo = cdc_parser_->getTRModuleInfo();
-
-  std::cout << "Module Info:\n";
-  std::cout << "Serial Number: ";
-  for (int i = 0; i < ModuleInfo::SN_SIZE; ++i) {
-	std::cout << std::hex
-			  << std::uppercase
-			  << std::setw(2)
-			  << std::setfill('0')
-			  << (int) moduleInfo->serialNumber[i] << ' ';
-  }
-  std::cout << '\n';
-  std::cout << "OS version: " << std::hex << moduleInfo->osVersion << '\n';
-
-  delete (moduleInfo);
-}
+#endif
 
 DpaLibraryDemo::DpaLibraryDemo(DpaInterface* communication_interface)
 	: dpa_handler_(nullptr) {
@@ -162,10 +162,6 @@ void DpaLibraryDemo::Start() {
   }
 }
 
-void DpaLibraryDemo::ListenerWrapper(unsigned char* data, unsigned int length) {
-  communication_interface_->ReceiveData(data, length);
-}
-
 void DpaLibraryDemo::PulseLed(uint16_t address, LedColor color) {
   DpaMessage::DpaPacket_t packet;
   packet.DpaRequestPacket_t.NADR = address;
@@ -190,7 +186,7 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
 	dpa_handler_->SendDpaMessage(message);
   }
   catch (std::logic_error& le) {
-	std::cout << "Send error occured.\n";
+	std::cout << "Send error occured: " << le.what() << "\n";
 	return;
   }
 

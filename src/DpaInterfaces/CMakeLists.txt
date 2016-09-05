@@ -1,1 +1,2 @@
+add_subdirectory(CdcDpaInterface)
 add_subdirectory(SpiDpaInterface)
