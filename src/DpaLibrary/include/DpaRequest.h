@@ -15,6 +15,7 @@ class DpaRequest {
         kSent,
     ///< An enum constant representing the confirmation was received.
         kConfirmation,
+    kConfirmationBroadcast,
     ///< An enum constant representing the timeout expired.
         kTimeout,
     ///< An enum constant representing the whole request was processed.

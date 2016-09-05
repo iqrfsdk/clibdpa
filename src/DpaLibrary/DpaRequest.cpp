@@ -26,7 +26,11 @@ void DpaRequest::ProcessSentMessage(const DpaMessage& sent_message) {
 }
 
 void DpaRequest::ProcessConfirmationMessage(const DpaMessage& confirmation_packet) {
-  status_ = kConfirmation;
+  if (confirmation_packet.NodeAddress() == DpaMessage::kBroadCastAddress) {
+	status_ = kConfirmationBroadcast;
+  } else {
+	status_ = kConfirmation;
+  }
   SetTimeoutForCurrentRequest(EstimatedTimeout(confirmation_packet));
 }
 
@@ -74,7 +78,10 @@ void DpaRequest::CheckTimeout() {
   }
 
   if (IsTimeout()) {
-	SetStatus(kTimeout);
+	if (status_ == kConfirmationBroadcast)
+	  SetStatus(kProcessed);
+	else
+	  SetStatus(kTimeout);
   }
 }
 
@@ -99,8 +106,7 @@ int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet) {
   estimated_timeout_ms = (iFace.Hops + 1) * iFace.TimeSlotLength * 10;
   if (iFace.TimeSlotLength == 20) {
 	response_time_slot_length_ms = 200;
-  }
-  else {
+  } else {
 	if (iFace.TimeSlotLength > 6)
 	  response_time_slot_length_ms = 100;
 	else
@@ -111,7 +117,7 @@ int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet) {
 }
 
 void DpaRequest::SetTimeoutForCurrentRequest(int32_t extra_time_in_ms) {
-  if (timeout_ms_ == -1) {
+  if (status_ != kConfirmationBroadcast && timeout_ms_ == -1) {
 	expected_duration_ms_ = timeout_ms_;
 	return;        //Infinite time
   }
@@ -136,10 +142,8 @@ void DpaRequest::SetStatus(DpaRequest::DpaRequestStatus status) {
 bool DpaRequest::IsInProgressStatus(DpaRequestStatus status) {
   switch (status) {
 	case kSent:
-	case kConfirmation:
-	  return true;
-	default:
-	  return false;
+	case kConfirmation: return true;
+	default: return false;
   }
 }
 

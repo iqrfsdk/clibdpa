@@ -11,7 +11,9 @@
 class DpaMessage {
  public:
   /** Size of the maximum DPA message. */
-  const int kMaxDpaMessageSize = MAX_DPA_BUFFER;
+  static const int kMaxDpaMessageSize = MAX_DPA_BUFFER;
+  /** Address for broadcast messages */
+  static const uint16_t kBroadCastAddress = BROADCAST_ADDRESS;
   /** Defines an alias representing the union. */
   typedef union {
 	uint8_t Buffer[MAX_DPA_BUFFER];
