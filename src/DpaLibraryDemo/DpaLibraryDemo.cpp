@@ -62,6 +62,8 @@ int CdcDemoMain() {
 
   std::cout << "That's all for today...";
 
+  delete demo_;
+
   return 0;
 }
 
