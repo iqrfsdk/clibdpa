@@ -26,11 +26,4 @@ int CdcDpaInterface::RegisterResponseHandler(std::function<void(unsigned char*, 
   return cdcDpaInterfaceImpl_->RegisterResponseHandler(function);
 }
 
-void CdcDpaInterface::RegisterCdcListenerWrapper(void (* fptr)(unsigned char*, uint32_t)) {
-  cdcDpaInterfaceImpl_->RegisterCdcListenerWrapper(fptr);
-}
-
-void CdcDpaInterface::CdcListenerWrapper(unsigned char* data, uint32_t length) {
-  cdcDpaInterfaceImpl_->CdcListenerWrapper(data, length);
-}
 

@@ -36,26 +36,11 @@ class CdcDpaInterface
   virtual int RegisterResponseHandler(std::function<void(unsigned char*, uint32_t)> function);
 
   /**
-   * Registers CDC listener from CDC library.
-   *
-   * @param [in,out]	fptr	Pointer to function called when CDC receives message.
-   */
-	void RegisterCdcListenerWrapper(void(* fptr)(unsigned char*, uint32_t));
-
-	/**
-	 * Wrapper, that transfers message from CDC to response handler.
-	 *
-	 * @param [in,out]	data  	Pointer to data from message.
-	 * @param 		  	length	The number of bytes.
-	 */
-	void CdcListenerWrapper(unsigned char* data, uint32_t length);
-
-  /**
    * Opens communication with apwcified device address.
    *
    * @param	device	The device address.
    */
-	void Open(std::string device);
+  void Open(std::string device);
 
   /** Closes communication interface. */
   void Close();

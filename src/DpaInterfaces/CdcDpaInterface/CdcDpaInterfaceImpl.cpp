@@ -2,6 +2,8 @@
 #include <mutex>
 #include "CdcDpaInterfaceImpl.h"
 
+CdcDpaInterfaceImpl* CdcDpaInterfaceImpl::instance_;
+
 CdcDpaInterfaceImpl::CdcDpaInterfaceImpl()
 	: is_initialized_(false) {
 
@@ -32,6 +34,9 @@ void CdcDpaInterfaceImpl::InitCdcParser(std::string device) {
   if (!test_result) {
 	throw std::logic_error("Interface has not been opened.");
   }
+
+  cdc_parser_->registerAsyncMsgListener(CdcListenerWrapper);
+  CdcDpaInterfaceImpl::instance_ = this;
 }
 
 
@@ -52,6 +57,10 @@ int CdcDpaInterfaceImpl::RegisterResponseHandler(std::function<void(unsigned cha
 }
 
 void CdcDpaInterfaceImpl::CdcListenerWrapper(unsigned char* data, uint32_t length) {
+  CdcDpaInterfaceImpl::instance_->CdcListener(data, length);
+}
+
+void CdcDpaInterfaceImpl::CdcListener(unsigned char* data, uint32_t length) {
   std::lock_guard<std::mutex> lock(callbackFunctionMutex_);        //TODO:asi se da vyresit jinak
   auto callback = response_callback_;
   if (callback) {
@@ -59,12 +68,5 @@ void CdcDpaInterfaceImpl::CdcListenerWrapper(unsigned char* data, uint32_t lengt
   }
 }
 
-void CdcDpaInterfaceImpl::RegisterCdcListenerWrapper(AsyncMsgListener listener) {
-  if (!is_initialized_) {
-	throw std::logic_error("Communication is not opened, listener can not be assigned.");
-  }
-
-  cdc_parser_->registerAsyncMsgListener(listener);
-}
 
 

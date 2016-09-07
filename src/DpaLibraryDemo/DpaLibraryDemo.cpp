@@ -47,24 +47,16 @@ int main() {
  * CDC DEMO
 *****************************************************************************/
 #ifdef CDC_DEMO
-CdcDpaInterface* cdcDpaInterface;
-
-void CdcListenerWrapper(unsigned char* data, uint32_t length) {
-  cdcDpaInterface->CdcListenerWrapper(data, length);
-}
 
 int CdcDemoMain() {
-
-  cdcDpaInterface = new CdcDpaInterface();
+  CdcDpaInterface* cdcDpaInterface = new CdcDpaInterface();
 
   try {
-	cdcDpaInterface->Open("/dev/ttyACM1");
+	cdcDpaInterface->Open("/dev/ttyACM0");
   }
   catch (...) {
 	goto Error_End;
   }
-
-  cdcDpaInterface->RegisterCdcListenerWrapper(CdcListenerWrapper);
 
   demo_ = new DpaLibraryDemo(cdcDpaInterface);
 
