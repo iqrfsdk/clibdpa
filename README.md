@@ -24,39 +24,20 @@ src
 To be able to use DPA Library you will need some communication interface based on abstract class defined in DpaInterface.h file.
  
 ### CDC Dpa Interface
-For demo purposes we prepared implementation of CDC driver. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system.
-The first step is to instantiate CDC parser from CDC library. Constructor parameter `"/dev/ttyACM0"` is communication port identifier on Linux, `"COM1"` and on Windows machines.  Do not forget to set right privileges on Linux for port. 
+For demo purposes we prepared implementation of CDC DPA interface. This interface is used by DPA Library. Source codes are in directory `src/DpaInterfaces/CdcDpaInterface`. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system. Function open has one parameter, the device name. This parameter is communication port identifier. On Linux based OS is in format `"/dev/ttyACM0"` and `"COM1"` on Windows machines.  Do not forget to set right privileges on Linux for port. 
 ```c
-CDCImpl* cdc_parser_;
-try {
-	cdc_parser_ = new CDCImpl("/dev/ttyACM0");
-	bool test = cdc_parser_->test();
+CdcDpaInterface cdcDpaInterface;
 
-	if (test) {
-		std::cout << "Test OK\n";
-	}
-	else {
-		std::cout << "Test FAILED\n";
-		delete cdc_parser_;
-		return 2;
-	}
+try {
+cdcDpaInterface.Open("/dev/ttyACM0");
 }
-catch (CDCImplException& e) {
-	std::cout << e.getDescr() << "\n";
-	if (cdc_parser_ != NULL) {
-		delete cdc_parser_;
-	}
-	return 1;
+catch (...) {
+return -1;
 }
-```
-Instance of the parser is used in communication interface. Create an instance of CdcDpaInterface class and initialize it with CDC parser.
-```c
-CdcDpaInterface* communication_interface = new CdcDpaInterface();
-communication_interface->Init(cdc_parser_);
 ```
 
 ### Raspberry Pi SPI Interface
-The other interface prepared for demo is communication interface for Raspberry Pi via SPI. Demo is very similar, but you have to create an instance of `SpiDpaInterface`, open the SPI port and use it. 
+The other interface prepared for demo is communication interface for Raspberry Pi via SPI. Demo is very similar, but you have to create an instance of `SpiDpaInterface`, open the SPI port and use it. Source code of SpiDpaInterface is available in subdirectory src/DpaInterfaces/SpiDpaInterface. Library uses clibspi-linux static library from [this repository](https://github.com/iqrfsdk/clibspi-linux). Compiled library store into lib/windows or lib/linux folder.
 
 ```c
 SpiDpaInterface communication_interface;
