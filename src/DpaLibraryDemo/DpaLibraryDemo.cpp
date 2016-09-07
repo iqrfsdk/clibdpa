@@ -13,8 +13,6 @@
 
 
 DpaLibraryDemo* demo_;
-//CDCImpl* cdc_parser_;
-//CdcDpaInterface* communication_interface_;
 
 #ifdef CDC_DEMO
 
@@ -49,24 +47,22 @@ int main() {
 #ifdef CDC_DEMO
 
 int CdcDemoMain() {
-  CdcDpaInterface* cdcDpaInterface = new CdcDpaInterface();
+  CdcDpaInterface cdcDpaInterface;
 
   try {
-	cdcDpaInterface->Open("/dev/ttyACM0");
+	cdcDpaInterface.Open("/dev/ttyACM0");
   }
   catch (...) {
-	goto Error_End;
+	return -1;
   }
 
-  demo_ = new DpaLibraryDemo(cdcDpaInterface);
+  demo_ = new DpaLibraryDemo(&cdcDpaInterface);
 
   demo_->Start();
 
   std::cout << "That's all for today...";
 
-  Error_End:
-  delete cdcDpaInterface;
-  delete demo_;
+  return 0;
 }
 
 #endif
