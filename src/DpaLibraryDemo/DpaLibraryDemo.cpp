@@ -278,6 +278,7 @@ void DpaLibraryDemo::UnexpectedMessage(const DpaMessage& message) {
 }
 
 void DpaLibraryDemo::ReadTemperature(uint16_t address) {
+  static int num(0);
   DpaMessage::DpaPacket_t packet;
   packet.DpaRequestPacket_t.NADR = address;
   packet.DpaRequestPacket_t.PNUM = PNUM_THERMOMETER;
@@ -293,7 +294,7 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
   if (dpa_handler_->Status() == DpaRequest::DpaRequestStatus::kProcessed) {
     int16_t temperature =
       dpa_handler_->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
-    std::cout << "Temperature: "
+    std::cout << num++ << " Temperature: "
 //      << std::dec << temperature << " °C\n";
     << std::dec << temperature << " oC" << std::endl;
   }
