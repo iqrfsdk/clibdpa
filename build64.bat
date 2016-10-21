@@ -8,7 +8,7 @@ set builddir=.\\%buildexp%
 
 mkdir %builddir%
 
-rem //get path to clicdc libs
+rem //get path to clibcdc libs
 set clibcdc=..\\clibcdc\\%buildexp%
 pushd %clibcdc%
 set clibcdc=%cd%
