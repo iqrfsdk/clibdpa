@@ -42,7 +42,7 @@ void DpaHandler::SendDpaMessage(DpaMessage& message) {
   if (IsDpaMessageInProgress())
     throw std::logic_error("Other Dpa Message is in progress.");
 
-  auto response = dpa_interface_->SendRequest(message.DpaPacketData(),message.Length());
+  auto response = dpa_interface_->SendRequest(message.DpaPacketData(), message.Length());
   if (response < 0)
     throw std::logic_error("Message was not send.");
 
