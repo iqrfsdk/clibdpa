@@ -22,7 +22,7 @@ popd
 
 #launch cmake to generate build environment
 pushd ${builddir}
-cmake -G "Eclipse CDT4 - Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibcdc_DIR:PATH=${clibspi} ${currentdir}
+cmake -G "Eclipse CDT4 - Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} ${currentdir}
 popd
 
 #build from generated build environment

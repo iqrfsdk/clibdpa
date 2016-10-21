@@ -149,7 +149,7 @@ void SpiDpaInterface::listen()
     }
   }
   catch (SpiChannelException& e) {
-    TRC_WAR("listening thread error", SpiChannelException, e);
+    TRC_WAR("listening thread error: " << e.what());
     m_runListenThread = false;
   }
   TRC_WAR("thread stopped");
