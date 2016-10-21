@@ -222,6 +222,9 @@ void DpaLibraryDemo::Start() {
     //PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
     //ReadTemperature(0x03);        // Get temperature from node with address 3
     ReadTemperature(0x00);        // Get temperature from coordinator
+
+    //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
   }
 }
 
