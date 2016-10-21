@@ -1,15 +1,14 @@
 #ifndef DPALIBRARY_CDCDPAINTERFACE_H
 #define DPALIBRARY_CDCDPAINTERFACE_H
 
-#include <memory>
 #include "DpaInterface.h"
+#include "CDCImpl.h"
 
-class CdcDpaInterfaceImpl;
 class CdcDpaInterface
 	: public DpaInterface {
  public:
   /** Default constructor. */
-  CdcDpaInterface();
+   CdcDpaInterface(const std::string& portIqrf);
 
   /** Destructor. */
   virtual ~CdcDpaInterface();
@@ -33,20 +32,12 @@ class CdcDpaInterface
 
   @return	0 - pointer is stored, bellow 0 some error occurred.
   */
-  virtual int RegisterResponseHandler(std::function<void(unsigned char*, uint32_t)> function);
-
-  /**
-   * Opens communication with apwcified device address.
-   *
-   * @param	device	The device address.
-   */
-  void Open(std::string device);
-
-  /** Closes communication interface. */
-  void Close();
+  virtual void RegisterResponseHandler(std::function<void(unsigned char*, uint32_t)> function);
 
  private:
-  std::unique_ptr<CdcDpaInterfaceImpl> cdcDpaInterfaceImpl_;
+   CdcDpaInterface();
+   CDCImpl m_cdc;
+   std::function<void(unsigned char*, uint32_t)> responseHandlerFunc_;
 };
 
 #endif //DPALIBRARY_CDCDPAINTERFACE_H

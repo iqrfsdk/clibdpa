@@ -4,9 +4,65 @@
 #include <iomanip>
 #include <thread>
 #include "DpaLibraryDemo.h"
+#include "unexpected_peripheral.h"
 
+#include "CdcDpaInterface.h"
+#include "SpiDpaInterface.h"
+
+int main(int argc, char** argv)
+{
+  std::string port_name;
+
+  if (argc < 2) {
+    std::cerr << "Usage" << std::endl;
+    std::cerr << "  dpa_demo <port-name>" << std::endl << std::endl;
+    std::cerr << "Example" << std::endl;
+    std::cerr << "  dpa_demo COM5" << std::endl;
+    std::cerr << "  dpa_demo /dev/ttyACM0" << std::endl;
+    std::cerr << "  dpa_demo /dev/spidev0.0" << std::endl;
+    return (-1);
+  }
+  else {
+    port_name = argv[1];
+  }
+  std::cout << "Start demo\n";
+
+  DpaInterface* dpaInterface(nullptr);
+  size_t found = port_name.find("spi");
+  if (found != std::string::npos) {
+    try {
+      dpaInterface = new SpiDpaInterface(port_name);
+    }
+    catch (SpiChannelException& e) {
+      std::cout << e.what() << std::endl;
+      return (-1);
+    }
+  }
+  else {
+    try {
+      //make a default val here if necessary "/dev/ttyACM0";
+      dpaInterface = new CdcDpaInterface(port_name);
+    }
+    catch (unexpected_peripheral& e) {
+      std::cout << e.what() << std::endl;
+      return (-1);
+    }
+  }
+
+  DpaLibraryDemo* demo_ = new DpaLibraryDemo(dpaInterface);
+
+  demo_->Start();
+
+  std::cout << "That's all for today...";
+
+  delete demo_;
+
+  return 0;
+}
+
+#if 0
 /********************************************************************************
- * Select type of demo.
+* Select type of demo.
 ********************************************************************************/
 //#define SPI_DEMO
 #define CDC_DEMO
@@ -18,9 +74,9 @@ DpaLibraryDemo* demo_;
 
 #include "CdcDpaInterface.h"
 
-int CdcDemoMain();
+int CdcDemoMain(const std::string& port_name);
 
-#define DemoMain()    CdcDemoMain()
+#define DemoMain CdcDemoMain
 
 #endif /* CDC_DEMO */
 
@@ -31,13 +87,27 @@ int CdcDemoMain();
 
 int SpiDpaDemoMain();
 
-#define DemoMain()	SpiDpaDemoMain()
+#define DemoMain SpiDpaDemoMain
 
 #endif /* SPI_DEMO */
 
-int main() {
+int main(int argc, char** argv)
+{
+  std::string port_name;
+
+  if (argc < 2) {
+    std::cerr << "Usage" << std::endl;
+    std::cerr << "  dpa_demo <port-name>" << std::endl << std::endl;
+    std::cerr << "Example" << std::endl;
+    std::cerr << "  cdc_example COM5" << std::endl;
+    std::cerr << "  cdc_example /dev/ttyACM0" << std::endl;
+    return (-1);
+  }
+  else {
+    port_name = argv[1];
+  }
   std::cout << "Start demo\n";
-  DemoMain();
+  DemoMain(port_name);
   return 0;
 }
 
@@ -46,17 +116,18 @@ int main() {
 *****************************************************************************/
 #ifdef CDC_DEMO
 
-int CdcDemoMain() {
-  CdcDpaInterface cdcDpaInterface;
-
+int CdcDemoMain(const std::string& port_name) {
+  CdcDpaInterface* cdcDpaInterface(nullptr);
   try {
-	cdcDpaInterface.Open("/dev/ttyACM0");
+    //make a default val here if necessary "/dev/ttyACM0";
+    cdcDpaInterface = new CdcDpaInterface(port_name);
   }
-  catch (...) {
-	return -1;
+  catch (unexpected_peripheral& e) {
+    std::cout << e.what() << std::endl;
   }
+  //std::cout << cdcDpaInterface->ShowModuleInfo() << std::endl;
 
-  demo_ = new DpaLibraryDemo(&cdcDpaInterface);
+  demo_ = new DpaLibraryDemo(cdcDpaInterface);
 
   demo_->Start();
 
@@ -66,12 +137,11 @@ int CdcDemoMain() {
 
   return 0;
 }
-
 #endif
 
 
 /*****************************************************************************
- * SPI DEMO
+* SPI DEMO
 *****************************************************************************/
 #ifdef SPI_DEMO
 
@@ -87,22 +157,23 @@ int SpiDpaDemoMain() {
   //enable CE0 for TR communication
   auto initResult = gpio_setup(RPIIO_PIN_CE0, GPIO_DIRECTION_OUT, 0);
   if (initResult < 0) {
-	return -1;
+    return -1;
   }
 
   // enable PWR for TR communication
   initResult = gpio_setup(RESET_GPIO, GPIO_DIRECTION_OUT, 1);
   if (initResult < 0) {
-	gpio_cleanup(RPIIO_PIN_CE0);
-	return -1;
+    gpio_cleanup(RPIIO_PIN_CE0);
+    return -1;
   }
 
   try {
-	dpaInterface.Open("/dev/spidev0.0");
-	demo_ = new DpaLibraryDemo(&dpaInterface);
-	demo_->Start();
-  } catch (...) {
-	// clean the mess in all cases
+    dpaInterface.Open("/dev/spidev0.0");
+    demo_ = new DpaLibraryDemo(&dpaInterface);
+    demo_->Start();
+  }
+  catch (...) {
+    // clean the mess in all cases
   }
 
   dpaInterface.Close();
@@ -114,9 +185,10 @@ int SpiDpaDemoMain() {
 
 }
 #endif
+#endif //#if 0
 
 DpaLibraryDemo::DpaLibraryDemo(DpaInterface* communication_interface)
-	: dpa_handler_(nullptr) {
+  : dpa_handler_(nullptr) {
   dpaInterface_ = communication_interface;
 }
 
@@ -126,13 +198,13 @@ DpaLibraryDemo::~DpaLibraryDemo() {
 
 void DpaLibraryDemo::Start() {
   try {
-	dpa_handler_ = new DpaHandler(dpaInterface_);
-	dpa_handler_->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::UnexpectedMessage,
-														this,
-														std::placeholders::_1));
+    dpa_handler_ = new DpaHandler(dpaInterface_);
+    dpa_handler_->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::UnexpectedMessage,
+      this,
+      std::placeholders::_1));
   }
   catch (std::invalid_argument& ae) {
-	std::cout << "There was an error during DPA handler creation.\n";
+    std::cout << "There was an error during DPA handler creation: " << ae.what() << std::endl;
   }
 
   dpa_handler_->Timeout(10);    // Default timeout is infinite
@@ -142,13 +214,14 @@ void DpaLibraryDemo::Start() {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   while (i--) {
-	PulseLed(0x00, kLedRed);    // Pulse with red led on coordinator
-	PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
-	PulseLed(0x03, kLedRed);    // Pulse with red led on node with address 3
-	PulseLed(0x03, kLedGreen);    // Pulse with green led on node with address 3
-	PulseLed(0xFF, kLedRed);    // Pulse with red led on node with address 3
-	PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
-	ReadTemperature(0x03);        // Get temperature from node with address 3
+    PulseLed(0x00, kLedRed);    // Pulse with red led on coordinator
+    PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
+    //PulseLed(0x03, kLedRed);    // Pulse with red led on node with address 3
+    //PulseLed(0x03, kLedGreen);    // Pulse with green led on node with address 3
+    //PulseLed(0xFF, kLedRed);    // Pulse with red led on node with address 3
+    //PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
+    //ReadTemperature(0x03);        // Get temperature from node with address 3
+    ReadTemperature(0x00);        // Get temperature from coordinator
   }
 }
 
@@ -156,9 +229,9 @@ void DpaLibraryDemo::PulseLed(uint16_t address, LedColor color) {
   DpaMessage::DpaPacket_t packet;
   packet.DpaRequestPacket_t.NADR = address;
   if (color == kLedRed)
-	packet.DpaRequestPacket_t.PNUM = PNUM_LEDR;
+    packet.DpaRequestPacket_t.PNUM = PNUM_LEDR;
   else
-	packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
+    packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
 
   packet.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
@@ -173,27 +246,27 @@ void DpaLibraryDemo::ExecuteCommand(DpaMessage& message) {
   static uint16_t sent_messages = 0;
   static uint16_t timeouts = 0;
   try {
-	dpa_handler_->SendDpaMessage(message);
+    dpa_handler_->SendDpaMessage(message);
   }
   catch (std::logic_error& le) {
-	std::cout << "Send error occured: " << le.what() << "\n";
-	return;
+    std::cout << "Send error occured: " << le.what() << std:: endl;
+    return;
   }
 
   ++sent_messages;
 
   while (dpa_handler_->IsDpaMessageInProgress()) {
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   if (dpa_handler_->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
-	++timeouts;
-	std::cout << message.NodeAddress()
-			  << " - Timeout ..."
-			  << sent_messages
-			  << ':'
-			  << timeouts
-			  << '\n';
+    ++timeouts;
+    std::cout << message.NodeAddress()
+      << " - Timeout ..."
+      << sent_messages
+      << ':'
+      << timeouts
+      << '\n';
   }
 
 }
@@ -215,9 +288,10 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
   ExecuteCommand(message);
 
   if (dpa_handler_->Status() == DpaRequest::DpaRequestStatus::kProcessed) {
-	int16_t temperature =
-		dpa_handler_->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
-	std::cout << "Temperature: "
-			  << std::dec << temperature << " °C\n";
+    int16_t temperature =
+      dpa_handler_->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
+    std::cout << "Temperature: "
+//      << std::dec << temperature << " °C\n";
+    << std::dec << temperature << " oC" << std::endl;
   }
 }

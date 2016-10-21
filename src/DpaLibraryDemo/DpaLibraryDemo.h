@@ -2,14 +2,13 @@
 #define DPALIBRARY_DPALIBRARYDEMO_H
 
 #include "DpaInterface.h"
-#include <stdint.h>
 
 class DpaLibraryDemo {
- public:
+public:
 
   enum LedColor {
-	kLedRed,
-	kLedGreen
+    kLedRed,
+    kLedGreen
   };
 
 
@@ -21,7 +20,7 @@ class DpaLibraryDemo {
 
   void ListenerWrapper(unsigned char* data, unsigned int length);
 
- private:
+private:
   DpaInterface* dpaInterface_;
   DpaHandler* dpa_handler_;
 

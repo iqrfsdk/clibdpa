@@ -34,7 +34,7 @@ class DpaInterface {
   
    @return	0 - pointer is stored, bellow 0 some error occurred.
    */
-  virtual int32_t RegisterResponseHandler(std::function<void(unsigned char*, uint32_t)> function) = 0;
+  virtual void RegisterResponseHandler(std::function<void(unsigned char*, uint32_t)> function) = 0;
 };
 
 #endif
