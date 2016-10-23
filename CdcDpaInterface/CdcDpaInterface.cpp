@@ -13,7 +13,7 @@ CdcDpaInterface::~CdcDpaInterface() {
 
 }
 
-int32_t CdcDpaInterface::SendRequest(unsigned char* data, uint32_t length) {
+int32_t CdcDpaInterface::SendRequest(const unsigned char* data, uint32_t length) {
   DSResponse dsResponse = m_cdc.sendData(data, length);
   if (dsResponse != DSResponse::OK)
     return -1;

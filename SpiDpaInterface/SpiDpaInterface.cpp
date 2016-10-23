@@ -155,7 +155,7 @@ void SpiDpaInterface::listen()
   TRC_WAR("thread stopped");
 }
 
-int32_t SpiDpaInterface::SendRequest(unsigned char* data, uint32_t length)
+int32_t SpiDpaInterface::SendRequest(const unsigned char* data, uint32_t length)
 {
   static int counter = 0;
   int attempt = 0;

@@ -48,7 +48,7 @@ class DpaHandler {
   
    @param [in,out]	DPA message to be send.
    */
-  void SendDpaMessage(DpaMessage& message);
+  void SendDpaMessage(const DpaMessage& message);
 
   /**
    Registers the function called when unexpected message is received.

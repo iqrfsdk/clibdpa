@@ -22,7 +22,7 @@ class CdcDpaInterface
   @return	Result of the data send operation. 0 - Data was sent successfully, negative value means
   some error occurred.
   */
-  virtual int32_t SendRequest(unsigned char* data, uint32_t length);
+  virtual int32_t SendRequest(const unsigned char* data, uint32_t length);
 
   /**
   Registers the response handler, a pointer to function that is called when whole packet is

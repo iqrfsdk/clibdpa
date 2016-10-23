@@ -149,7 +149,8 @@ class DpaMessage {
   
    @return	Pointer to data stored in message.
    */
-  unsigned char* DpaPacketData();
+  unsigned char* DpaPacketData() { return dpa_packet_->Buffer; }
+  const unsigned char* DpaPacketData() const { return dpa_packet_->Buffer; }
 
  private:
   DpaPacket_t* dpa_packet_;

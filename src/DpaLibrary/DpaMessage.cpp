@@ -75,7 +75,3 @@ bool DpaMessage::IsConfirmationMessage() const {
     return true;
   return false;
 }
-
-unsigned char* DpaMessage::DpaPacketData() {
-  return dpa_packet_->Buffer;
-}

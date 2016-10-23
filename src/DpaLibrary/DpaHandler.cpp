@@ -38,7 +38,7 @@ void DpaHandler::ResponseHandler(unsigned char* data, uint32_t length) {
   }
 }
 
-void DpaHandler::SendDpaMessage(DpaMessage& message) {
+void DpaHandler::SendDpaMessage(const DpaMessage& message) {
   if (IsDpaMessageInProgress())
     throw std::logic_error("Other Dpa Message is in progress.");
 
