@@ -38,7 +38,7 @@ void DpaHandler::ResponseHandler(unsigned char* data, uint32_t length) {
   }
 }
 
-void DpaHandler::SendDpaMessage(const DpaMessage& message) {
+void DpaHandler::SendDpaMessage(const DpaMessage& message, IDpaResponseHandler* responseHndl) {
   if (IsDpaMessageInProgress())
     throw std::logic_error("Other Dpa Message is in progress.");
 
@@ -47,7 +47,10 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message) {
     throw std::logic_error("Message was not send.");
 
   delete current_request_;
-  current_request_ = new DpaRequest();
+  if (!responseHndl)
+    current_request_ = new DpaRequest();
+  else
+    current_request_ = new DpaRequest(responseHndl);
   current_request_->DefaultTimeout(default_timeout_ms_);
   current_request_->ProcessSentMessage(message);
 }

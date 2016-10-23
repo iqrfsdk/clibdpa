@@ -1,12 +1,13 @@
 ﻿#ifndef __DPA_HANDLER
 #define __DPA_HANDLER
 
-#include <memory>
 #include "DpaMessage.h"
-#include <queue>
-#include <functional>
 #include "DpaRequest.h"
 #include "DpaInterface.h"
+#include "IDpaResponseHandler.h"
+#include <memory>
+#include <queue>
+#include <functional>
 #include <cstdint>
 
 class DpaHandler {
@@ -48,7 +49,7 @@ class DpaHandler {
   
    @param [in,out]	DPA message to be send.
    */
-  void SendDpaMessage(const DpaMessage& message);
+  void SendDpaMessage(const DpaMessage& message, IDpaResponseHandler* responseHndl = nullptr);
 
   /**
    Registers the function called when unexpected message is received.

@@ -5,6 +5,8 @@
 #include <chrono>
 #include <mutex>
 
+class IDpaResponseHandler;
+
 class DpaRequest {
  public:
   /** Values that represent DPA request status. */
@@ -24,6 +26,9 @@ class DpaRequest {
 
   /** Default constructor. */
   DpaRequest();
+  
+  /** Ctor with external response handler. */
+  DpaRequest(IDpaResponseHandler* responseHndl);
 
   /** Destructor. */
   ~DpaRequest();
@@ -124,6 +129,7 @@ class DpaRequest {
   void SetStatus(DpaRequestStatus status);
   void CheckTimeout();
   static bool IsInProgressStatus(DpaRequestStatus status);
+  IDpaResponseHandler* responseHandler_;
 };
 
 #endif // !__DPA_REQUEST

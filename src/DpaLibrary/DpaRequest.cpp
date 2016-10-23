@@ -1,12 +1,19 @@
-﻿#include <iostream>
+﻿#include "IDpaResponseHandler.h"
 #include "unexpected_peripheral.h"
 #include "DpaRequest.h"
 #include "unexpected_packet_type.h"
 #include "unexpected_command.h"
 
 DpaRequest::DpaRequest()
-  : status_(kCreated), sent_message_(nullptr), response_message_(nullptr), expected_duration_ms_(0),
-  timeout_ms_(-1) {
+  : status_(kCreated), sent_message_(nullptr), response_message_(nullptr),
+  expected_duration_ms_(0), timeout_ms_(-1), responseHandler_(nullptr)
+{
+}
+
+DpaRequest::DpaRequest(IDpaResponseHandler* responseHndl)
+  : status_(kCreated), sent_message_(nullptr), response_message_(nullptr),
+  expected_duration_ms_(0), timeout_ms_(-1), responseHandler_(responseHndl)
+{
 }
 
 DpaRequest::~DpaRequest() {
@@ -64,10 +71,18 @@ void DpaRequest::ProcessReceivedMessage(const DpaMessage& received_message) {
   }
 
   auto message_direction = received_message.MessageDirection();
-  if (message_direction == DpaMessage::kConfirmation)
+  if (message_direction == DpaMessage::kConfirmation) {
+    if (responseHandler_) {
+      responseHandler_->ProcessConfirmationMessage(received_message);
+    }
     ProcessConfirmationMessage(received_message);
-  else
+  }
+  else {
+    if (responseHandler_) {
+      responseHandler_->ProcessResponseMessage(received_message);
+    }
     ProcessResponseMessage(received_message);
+  }
 
   status_mutex_.unlock();
 }

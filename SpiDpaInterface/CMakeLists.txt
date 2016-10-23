@@ -5,7 +5,7 @@ set(SpiDpaInterface_SRC_FILES
 )
 
 set(SpiDpaInterface_INC_FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/SpiDpaInterface.h
+	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/SpiDpaInterface.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/src/DpaLibrary/include)

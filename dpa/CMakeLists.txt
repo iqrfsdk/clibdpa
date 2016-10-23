@@ -18,6 +18,7 @@ set(dpa_INC_FILES
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/DpaInterface.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/DpaMessage.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/DpaRequest.h
+	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/IDpaResponseHandler.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/unexpected_command.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/unexpected_packet_type.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/unexpected_peripheral.h

@@ -5,7 +5,7 @@ set(CdcDpaInterface_SRC_FILES
 )
 
 set(CdcDpaInterface_INC_FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/CdcDpaInterface.h
+	${CMAKE_SOURCE_DIR}/src/DpaLibrary/include/CdcDpaInterface.h
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/src/DpaLibrary/include)
