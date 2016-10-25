@@ -47,7 +47,7 @@ void DpaMessage::FillFromResponse(unsigned char* data, uint32_t length) {
   AddDataToBuffer(data, length);
 }
 
-void DpaMessage::AddDataToBuffer(unsigned char* data, uint32_t length) {
+void DpaMessage::AddDataToBuffer(const unsigned char* data, uint32_t length) {
   if (length == 0)
     return;
 

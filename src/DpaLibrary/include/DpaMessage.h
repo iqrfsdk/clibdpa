@@ -98,7 +98,7 @@ class DpaMessage {
    @param [in,out]	data	Pointer to data.
    @param	length			The number of bytes to be added.
    */
-  void AddDataToBuffer(unsigned char* data, uint32_t length);
+  void AddDataToBuffer(const unsigned char* data, uint32_t length);
 
   /**
    Gets length of data stored in message.
