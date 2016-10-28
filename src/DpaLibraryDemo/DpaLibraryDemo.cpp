@@ -1,13 +1,17 @@
 #include <DpaHandler.h>
+#include "DpaTask.h"
+#include "DpaLibraryDemo.h"
+#include "unexpected_peripheral.h"
+#include "IqrfCdcChannel.h"
+#include "IqrfSpiChannel.h"
+#include "IqrfLogging.h"
+
 #include <iostream>
 #include <string.h>
 #include <iomanip>
 #include <thread>
-#include "DpaLibraryDemo.h"
-#include "unexpected_peripheral.h"
 
-#include "CdcDpaInterface.h"
-#include "SpiDpaInterface.h"
+TRC_INIT("");
 
 int main(int argc, char** argv)
 {
@@ -27,11 +31,11 @@ int main(int argc, char** argv)
   }
   std::cout << "Start demo\n";
 
-  DpaInterface* dpaInterface(nullptr);
+  IChannel* dpaInterface(nullptr);
   size_t found = port_name.find("spi");
   if (found != std::string::npos) {
     try {
-      dpaInterface = new SpiDpaInterface(port_name);
+      dpaInterface = new IqrfSpiChannel(port_name);
     }
     catch (SpiChannelException& e) {
       std::cout << e.what() << std::endl;
@@ -41,7 +45,7 @@ int main(int argc, char** argv)
   else {
     try {
       //make a default val here if necessary "/dev/ttyACM0";
-      dpaInterface = new CdcDpaInterface(port_name);
+      dpaInterface = new IqrfCdcChannel(port_name);
     }
     catch (unexpected_peripheral& e) {
       std::cout << e.what() << std::endl;
@@ -187,7 +191,7 @@ int SpiDpaDemoMain() {
 #endif
 #endif //#if 0
 
-DpaLibraryDemo::DpaLibraryDemo(DpaInterface* communication_interface)
+DpaLibraryDemo::DpaLibraryDemo(IChannel* communication_interface)
   : dpa_handler_(nullptr) {
   dpaInterface_ = communication_interface;
 }
@@ -207,21 +211,22 @@ void DpaLibraryDemo::Start() {
     std::cout << "There was an error during DPA handler creation: " << ae.what() << std::endl;
   }
 
-  dpa_handler_->Timeout(10);    // Default timeout is infinite
+  dpa_handler_->Timeout(100);    // Default timeout is infinite
 
   int16_t i = 100;
   //wait for a while, there could be some unread message in CDC
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   while (i--) {
-    PulseLed(0x00, kLedRed);    // Pulse with red led on coordinator
-    PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
+    //PulseLed(0x00, kLedRed);    // Pulse with red led on coordinator
+    //PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
     //PulseLed(0x03, kLedRed);    // Pulse with red led on node with address 3
     //PulseLed(0x03, kLedGreen);    // Pulse with green led on node with address 3
     //PulseLed(0xFF, kLedRed);    // Pulse with red led on node with address 3
     //PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
     //ReadTemperature(0x03);        // Get temperature from node with address 3
-    ReadTemperature(0x00);        // Get temperature from coordinator
+    //ReadTemperature(0x00);        // Get temperature from coordinator
+    ReadTemperatureDpaTransaction(0x01); // Get temperature from node1
 
     //std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -298,4 +303,47 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
 //      << std::dec << temperature << " °C\n";
     << std::dec << temperature << " oC" << std::endl;
   }
+}
+
+void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
+{
+  DpaThermometer thermometer(address);
+  DpaTransactionDemo transaction(thermometer);
+  dpa_handler_->ExecuteDpaTransaction(transaction);
+  if (transaction.isSuccess())
+    std::cout << NAME_PAR(Temperature, thermometer.getTemperature()) << std::endl;
+  else
+    std::cout << "Failed to read Temperature at: " << NAME_PAR(addres, thermometer.getAddress()) << std::endl;
+}
+
+//////////////////////////////
+// class DpaTransactionDemo
+//////////////////////////////
+
+DpaTransactionDemo::DpaTransactionDemo(DpaTask& dpaTask)
+  :m_dpaTask(dpaTask)
+  ,m_success(false)
+{
+}
+
+DpaTransactionDemo::~DpaTransactionDemo()
+{
+}
+
+void DpaTransactionDemo::processConfirmationMessage(const DpaMessage& confirmation)
+{
+  TRC_DBG("Received confirmation from IQRF: " << std::endl <<
+    FORM_HEX(confirmation.DpaPacketData(), confirmation.Length()));
+}
+
+void DpaTransactionDemo::processResponseMessage(const DpaMessage& response)
+{
+  TRC_DBG("Received response from IQRF: " << std::endl <<
+    FORM_HEX(response.DpaPacketData(), response.Length()));
+  m_dpaTask.parseResponse(response);
+}
+
+void DpaTransactionDemo::processFinished(bool success)
+{
+  m_success = success;
 }

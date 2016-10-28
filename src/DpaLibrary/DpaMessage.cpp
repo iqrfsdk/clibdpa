@@ -10,7 +10,8 @@ DpaMessage::DpaMessage()
 DpaMessage::DpaMessage(const DpaMessage& other)
   : length_(other.length_) {
   dpa_packet_ = new DpaPacket_t();
-  std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
+  //std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
+  memcpy(dpa_packet_->Buffer, other.dpa_packet_->Buffer, other.length_);
 }
 
 DpaMessage::~DpaMessage() {
@@ -22,7 +23,8 @@ DpaMessage& DpaMessage::operator=(const DpaMessage& other) {
     return *this;
   delete dpa_packet_;
   dpa_packet_ = new DpaPacket_t();
-  std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + length_, this->dpa_packet_->Buffer);
+  //std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + length_, this->dpa_packet_->Buffer);
+  memcpy(dpa_packet_->Buffer, other.dpa_packet_->Buffer, other.length_);
   length_ = other.length_;
   return *this;
 }
@@ -40,7 +42,7 @@ DpaMessage::MessageType DpaMessage::MessageDirection() const {
   return kRequest;
 }
 
-void DpaMessage::FillFromResponse(unsigned char* data, uint32_t length) {
+void DpaMessage::FillFromResponse(const unsigned char* data, uint32_t length) {
   if (length == 0)
     throw std::invalid_argument("Invalid length.");
 

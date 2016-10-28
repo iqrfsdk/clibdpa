@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 2.8)
 
 FIND_PACKAGE(clibcdc REQUIRED)
 FIND_PACKAGE(clibspi REQUIRED)
+FIND_PACKAGE(cutils REQUIRED)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -41,11 +42,11 @@ message(STATUS "CMAKE_C_FLAGS_DEBUG:     ${CMAKE_C_FLAGS_DEBUG}")
 
 include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
+include_directories(${cutils_INCLUDE_DIRS})
 
 #library build
-add_subdirectory(CdcDpaInterface)
-add_subdirectory(SpiDpaInterface)
 add_subdirectory(dpa)
+add_subdirectory(DpaExtension)
 
 #example build
 add_subdirectory(dpa_demo)

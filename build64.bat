@@ -20,9 +20,15 @@ pushd %clibspi%
 set clibspi=%cd%
 popd
 
+rem //get path to cutils libs
+set cutils=..\\cutils\\%buildexp%
+pushd %cutils%
+set cutils=%cd%
+popd
+
 rem //launch cmake to generate build environment
 pushd %builddir%
-cmake -G "Visual Studio 12 2013 Win64" -Dclibcdc_DIR:PATH=%clibcdc% -Dclibspi_DIR:PATH=%clibspi% %currentdir%
+cmake -G "Visual Studio 12 2013 Win64" -Dclibcdc_DIR:PATH=%clibcdc% -Dclibspi_DIR:PATH=%clibspi% -Dcutils_DIR:PATH=%cutils% %currentdir%
 popd
 
 rem //build from generated build environment

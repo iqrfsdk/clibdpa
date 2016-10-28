@@ -3,12 +3,14 @@
 
 #include "DpaMessage.h"
 #include "DpaRequest.h"
-#include "DpaInterface.h"
-#include "IDpaResponseHandler.h"
+#include "IChannel.h"
+#include "DpaTransaction.h"
 #include <memory>
 #include <queue>
 #include <functional>
 #include <cstdint>
+#include <mutex>
+#include <condition_variable>
 
 class DpaHandler {
  public:
@@ -17,7 +19,7 @@ class DpaHandler {
   
    @param [in,out]	dpa_interface	Pointer to instance of DPA interface.
    */
-  DpaHandler(DpaInterface* dpa_interface);
+  DpaHandler(IChannel* dpa_interface);
 
   /** Destructor. */
   ~DpaHandler();
@@ -28,6 +30,14 @@ class DpaHandler {
    @return	true if DPA message is in progress, false if not.
    */
   bool IsDpaMessageInProgress() const;
+
+  /**
+  Query if DPA Transaction is in progress.
+
+  @param [in,out]	expected_duration	Expected time to finish DPA transaction.
+  @return	true if DPA message is in progress, false if not.
+  */
+  bool IsDpaTransactionInProgress(int32_t& expected_duration) const;
 
   /**
    Gets the status.
@@ -42,14 +52,22 @@ class DpaHandler {
    @param [in,out]	data	Pointer to received data.
    @param	length			Length of received bytes.
    */
-  void ResponseHandler(unsigned char* data, uint32_t length);
+  void ResponseHandler(const std::basic_string<unsigned char>& message);
 
   /**
    Sends a DPA message.
   
    @param [in,out]	DPA message to be send.
    */
-  void SendDpaMessage(const DpaMessage& message, IDpaResponseHandler* responseHndl = nullptr);
+  void SendDpaMessage(const DpaMessage& message, DpaTransaction* responseHndl = nullptr);
+  
+  /**
+  Executes a DPA transaction.
+  The method blocks until received response or timeout
+
+  @param [in,out]	DPA transaction to be executed.
+  */
+  void ExecuteDpaTransaction(DpaTransaction& dpaTransaction);
 
   /**
    Registers the function called when unexpected message is received.
@@ -86,11 +104,16 @@ class DpaHandler {
   /** The current request. */
   DpaRequest* current_request_;
   /** The DPA communication interface. */
-  DpaInterface* dpa_interface_;
+  IChannel* dpa_interface_;
   /** Holds the pointer to function called when unexpected message is received. */
   std::function<void(const DpaMessage&)> async_message_handler_;
   /** Lock used for safety using of async_message_handler. */
   std::mutex async_message_mutex_;
+
+  /** Lock used in transaction handling */
+  std::mutex condition_variable_mutex_;
+  /** Condition to wait in transaction handling */
+  std::condition_variable condition_variable_;
 
   /**
    Process received message.

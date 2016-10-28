@@ -1,7 +1,5 @@
 project(dpa_demo)
 
-find_package(clibcdc REQUIRED)
-
 set(dpa_demo_SRC_FILES
 	${CMAKE_SOURCE_DIR}/src/DpaLibraryDemo/DpaLibraryDemo.h
 	${CMAKE_SOURCE_DIR}/src/DpaLibraryDemo/DpaLibraryDemo.cpp
@@ -9,15 +7,17 @@ set(dpa_demo_SRC_FILES
 
 include_directories(${CMAKE_SOURCE_DIR}/src/DpaLibraryDemo)
 include_directories(${CMAKE_SOURCE_DIR}/src/DpaLibrary/include)
+include_directories(${CMAKE_SOURCE_DIR}/DpaExtension)
 include_directories(${CMAKE_SOURCE_DIR}/CdcDpaInterface)
 include_directories(${CMAKE_SOURCE_DIR}/SpiDpaInterface)
 
 include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
+include_directories(${cutils_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} ${dpa_demo_SRC_FILES})
 
-target_link_libraries(${PROJECT_NAME} SpiDpaInterface CdcDpaInterface dpa spi_iqrf sysfs_gpio cdc)
+target_link_libraries(${PROJECT_NAME} DpaExtension IqrfCdcChannel IqrfSpiChannel dpa spi_iqrf sysfs_gpio cdc)
 
 if (NOT WIN32) 
 	target_link_libraries(${PROJECT_NAME} pthread)
