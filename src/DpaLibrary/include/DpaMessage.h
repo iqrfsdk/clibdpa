@@ -98,7 +98,20 @@ class DpaMessage {
    @param [in,out]	data	Pointer to data.
    @param	length			The number of bytes to be added.
    */
+  //TODO error here?
   void AddDataToBuffer(const unsigned char* data, uint32_t length);
+
+  /**
+  Stores data to message buffer.
+
+  @exception   std::invalid_argument   Thrown when data length is 0.
+  @exception	std::invalid_argument	Thrown when data is nullptr.
+  @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+
+  @param [in,out]	data	Pointer to data.
+  @param	length			The number of bytes to be stored.
+  */
+  void DataToBuffer(const unsigned char* data, uint32_t length);
 
   /**
    Gets length of data stored in message.

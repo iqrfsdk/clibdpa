@@ -15,7 +15,7 @@ DpaThermometer::DpaThermometer(unsigned short address)
   packet.DpaRequestPacket_t.PCMD = CMD_THERMOMETER_READ;
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
-  m_request.AddDataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+  m_request.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
 }
 
 DpaThermometer::~DpaThermometer()

@@ -245,7 +245,7 @@ void DpaLibraryDemo::PulseLed(uint16_t address, LedColor color) {
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
   DpaMessage message;
-  message.AddDataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+  message.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
 
   ExecuteCommand(message);
 }
@@ -292,7 +292,7 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
   DpaMessage message;
-  message.AddDataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+  message.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
 
   ExecuteCommand(message);
 

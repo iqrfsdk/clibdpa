@@ -10,8 +10,7 @@ DpaMessage::DpaMessage()
 DpaMessage::DpaMessage(const DpaMessage& other)
   : length_(other.length_) {
   dpa_packet_ = new DpaPacket_t();
-  //std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
-  memcpy(dpa_packet_->Buffer, other.dpa_packet_->Buffer, other.length_);
+  std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
 }
 
 DpaMessage::~DpaMessage() {
@@ -23,8 +22,7 @@ DpaMessage& DpaMessage::operator=(const DpaMessage& other) {
     return *this;
   delete dpa_packet_;
   dpa_packet_ = new DpaPacket_t();
-  //std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + length_, this->dpa_packet_->Buffer);
-  memcpy(dpa_packet_->Buffer, other.dpa_packet_->Buffer, other.length_);
+  std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
   length_ = other.length_;
   return *this;
 }
@@ -46,7 +44,7 @@ void DpaMessage::FillFromResponse(const unsigned char* data, uint32_t length) {
   if (length == 0)
     throw std::invalid_argument("Invalid length.");
 
-  AddDataToBuffer(data, length);
+  DataToBuffer(data, length);
 }
 
 void DpaMessage::AddDataToBuffer(const unsigned char* data, uint32_t length) {
@@ -59,8 +57,24 @@ void DpaMessage::AddDataToBuffer(const unsigned char* data, uint32_t length) {
   if (length_ + length > kMaxDpaMessageSize)
     throw std::length_error("Not enough space for this data.");
 
+  //TODO error here - doesn't add, but copies from beginning, however increase length
+  //does it make sense at all to copy raw data over structured buffer?
   std::copy(data, data + length, dpa_packet_->Buffer);
   length_ += length;
+}
+
+void DpaMessage::DataToBuffer(const unsigned char* data, uint32_t length) {
+  if (length == 0)
+    return;
+
+  if (data == nullptr)
+    throw std::invalid_argument("Data argument can not be null.");
+
+  if (length > kMaxDpaMessageSize)
+    throw std::length_error("Not enough space for this data.");
+
+  std::copy(data, data + length, dpa_packet_->Buffer);
+  length_ = length;
 }
 
 TErrorCodes DpaMessage::ResponseCode() const {
