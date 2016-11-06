@@ -2,22 +2,15 @@
 #define DPALIBRARY_DPALIBRARYDEMO_H
 
 #include "IChannel.h"
-#include "DpaTransaction.h"
+#include "DpaTransactionTask.h"
 
-class DpaTransactionDemo : public DpaTransaction
+class DpaTransactionDemo : public DpaTransactionTask
 {
 public:
   DpaTransactionDemo(DpaTask& dpaTask);
   virtual ~DpaTransactionDemo();
-  virtual const DpaMessage& getMessage() const { return m_dpaTask.getRequest(); }
   virtual void processConfirmationMessage(const DpaMessage& confirmation);
   virtual void processResponseMessage(const DpaMessage& response);
-  virtual void processFinished(bool success);
-  
-  bool isSuccess() { return m_success; }
-private:
-  DpaTask& m_dpaTask;
-  bool m_success;
 };
 
 class DpaLibraryDemo {

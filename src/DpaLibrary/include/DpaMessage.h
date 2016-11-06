@@ -3,6 +3,7 @@
 
 #include "DpaWrapper.h"
 #include <memory>
+#include <string>
 #include <cstdint>
 
 ///< Size of buffer for message.
@@ -50,6 +51,12 @@ class DpaMessage {
   /** Default constructor. */
   DpaMessage();
 
+  /** Constructor from data */
+  DpaMessage(const unsigned char* data, uint32_t length);
+
+  /** Constructor from string */
+  DpaMessage(const std::basic_string<unsigned char>& message);
+
   /**
    Copy constructor.
   
@@ -68,6 +75,15 @@ class DpaMessage {
    @return	A shallow copy of this object.
    */
   DpaMessage& operator=(const DpaMessage& other);
+
+  /**
+  Assignment operator.
+
+  @param	message string to be assigned to buffer
+
+  @return	this with assigned data
+  */
+  DpaMessage& operator=(const std::basic_string<unsigned char>& message);
 
   /**
    Gets message type.

@@ -69,7 +69,7 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   const DpaMessage& message = dpaTransaction.getMessage();
 
   int32_t remains(0);
-  bool success(false);
+  DpaRequest::DpaRequestStatus status(DpaRequest::kCreated);
 
   try {
     SendDpaMessage(message, &dpaTransaction);
@@ -80,16 +80,13 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
         condition_variable_.wait_for(lck, std::chrono::milliseconds(remains));
       }
     }
-    
-    DpaRequest::DpaRequestStatus status = Status();
-    if (status == DpaRequest::kProcessed)
-      success = true;
+    status = Status();
   }
   catch (std::exception& e) {
     TRC_WAR("Send error occured: " << e.what());
   }
 
-  dpaTransaction.processFinished(success);
+  dpaTransaction.processFinish(status);
 }
 
 bool DpaHandler::ProcessMessage(const DpaMessage& message) {

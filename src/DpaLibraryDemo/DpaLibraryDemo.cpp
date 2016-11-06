@@ -321,8 +321,7 @@ void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
 //////////////////////////////
 
 DpaTransactionDemo::DpaTransactionDemo(DpaTask& dpaTask)
-  :m_dpaTask(dpaTask)
-  ,m_success(false)
+  :DpaTransactionTask(dpaTask)
 {
 }
 
@@ -340,10 +339,5 @@ void DpaTransactionDemo::processResponseMessage(const DpaMessage& response)
 {
   TRC_DBG("Received response from IQRF: " << std::endl <<
     FORM_HEX(response.DpaPacketData(), response.Length()));
-  m_dpaTask.parseResponse(response);
-}
-
-void DpaTransactionDemo::processFinished(bool success)
-{
-  m_success = success;
+  DpaTransactionTask::processResponseMessage(response);
 }

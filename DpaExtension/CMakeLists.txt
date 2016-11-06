@@ -2,10 +2,12 @@ project(DpaExtension)
 
 set(DpaExtension_SRC_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTask.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/DpaTransactionTask.cpp
 )
 
 set(DpaExtension_INC_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTask.h
+	${CMAKE_CURRENT_SOURCE_DIR}/DpaTransactionTask.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

@@ -7,6 +7,17 @@ DpaMessage::DpaMessage()
   dpa_packet_ = new DpaPacket_t();
 }
 
+DpaMessage::DpaMessage(const unsigned char* data, uint32_t length) {
+  dpa_packet_ = new DpaPacket_t();
+  DataToBuffer(data, length);
+}
+
+DpaMessage::DpaMessage(const std::basic_string<unsigned char>& message)
+{
+  dpa_packet_ = new DpaPacket_t();
+  DataToBuffer(message.data(), message.length());
+}
+
 DpaMessage::DpaMessage(const DpaMessage& other)
   : length_(other.length_) {
   dpa_packet_ = new DpaPacket_t();
@@ -24,6 +35,11 @@ DpaMessage& DpaMessage::operator=(const DpaMessage& other) {
   dpa_packet_ = new DpaPacket_t();
   std::copy(other.dpa_packet_->Buffer, other.dpa_packet_->Buffer + other.length_, this->dpa_packet_->Buffer);
   length_ = other.length_;
+  return *this;
+}
+
+DpaMessage& DpaMessage::operator=(const std::basic_string<unsigned char>& message) {
+  DataToBuffer(message.data(), message.length());
   return *this;
 }
 
