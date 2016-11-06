@@ -5,25 +5,30 @@
 #include <chrono>
 #include <mutex>
 
+class DpaTransaction;
+
 class DpaRequest {
- public:
+public:
   /** Values that represent DPA request status. */
   enum DpaRequestStatus {
     ///< An enum constant representing the request is created.
-        kCreated,
+    kCreated,
     ///< An enum constant representing the first message was sent.
-        kSent,
+    kSent,
     ///< An enum constant representing the confirmation was received.
-        kConfirmation,
+    kConfirmation,
     kConfirmationBroadcast,
     ///< An enum constant representing the timeout expired.
-        kTimeout,
+    kTimeout,
     ///< An enum constant representing the whole request was processed.
-        kProcessed
+    kProcessed
   };
 
   /** Default constructor. */
   DpaRequest();
+
+  /** Ctor with external response handler. */
+  DpaRequest(DpaTransaction* dpaTransaction);
 
   /** Destructor. */
   ~DpaRequest();
@@ -50,7 +55,7 @@ class DpaRequest {
   void ProcessReceivedMessage(const DpaMessage& received_message);
 
   /**
-   Gets a sent message. 
+   Gets a sent message.
 
    @return	A reference to the sent message. Otherwise returns nullptr if no sent message was processed.
    */
@@ -82,6 +87,14 @@ class DpaRequest {
   bool IsInProgress();
 
   /**
+  Query if request is in progress state.
+
+  @param [in,out]	expected_duration	Expected time to finish DPA transaction.
+  @return	true if is in progress, false if not.
+  */
+  bool IsInProgress(int32_t& expected_duration);
+
+  /**
    Gets timeout in ms.
 
    @return	Timeout in ms.
@@ -108,7 +121,7 @@ class DpaRequest {
    */
   static int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
 
- private:
+private:
   DpaRequestStatus status_;
   DpaMessage* sent_message_;
   DpaMessage* response_message_;
@@ -118,12 +131,13 @@ class DpaRequest {
   int32_t timeout_ms_;
 
   void SetTimeoutForCurrentRequest(int32_t extra_time_in_ms = 0);
-  bool IsTimeout() const;
+  //bool IsTimeout() const;
   void ProcessConfirmationMessage(const DpaMessage& confirmation_message);
   void ProcessResponseMessage(const DpaMessage& response_message);
   void SetStatus(DpaRequestStatus status);
-  void CheckTimeout();
+  int32_t CheckTimeout();
   static bool IsInProgressStatus(DpaRequestStatus status);
+  DpaTransaction* dpaTransaction_;
 };
 
 #endif // !__DPA_REQUEST

@@ -1,16 +1,19 @@
 ﻿#include "include/DpaMessage.h"
 #include "include/DpaHandler.h"
+#include "IqrfLogging.h"
 
-DpaHandler::DpaHandler(DpaInterface* dpa_interface) {
+DpaHandler::DpaHandler(IChannel* dpa_interface) {
   if (dpa_interface == nullptr) {
-	throw std::invalid_argument("dpa_interface argument can not be nullptr.");
+    throw std::invalid_argument("dpa_interface argument can not be nullptr.");
   }
   default_timeout_ms_ = kDefaultTimeout;
 
   dpa_interface_ = dpa_interface;
 
-  dpa_interface_->RegisterResponseHandler(
-	  std::bind(&DpaHandler::ResponseHandler, this, std::placeholders::_1, std::placeholders::_2));
+  dpa_interface_->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
+    ResponseHandler(msg);
+    return 0;
+  });
 
   current_request_ = new DpaRequest();
 }
@@ -19,52 +22,92 @@ DpaHandler::~DpaHandler() {
   delete current_request_;
 }
 
-void DpaHandler::ResponseHandler(unsigned char* data, uint32_t length) {
-  if (data == nullptr)
-	return;
-
-  if (length == 0)
-	return;
+void DpaHandler::ResponseHandler(const std::basic_string<unsigned char>& message) {
+  if (message.length() == 0)
+    return;
 
   DpaMessage received_message;
   try {
-	received_message.FillFromResponse(data, length);
+    received_message.FillFromResponse(message.data(), message.length());
   }
-  catch (...) {
-	return;
+  catch (std::exception& e) {
+    CATCH_EX("in processing msg", std::exception, e);
+    return;
   }
   if (!ProcessMessage(received_message)) {
-	ProcessUnexpectedMessage(received_message);
+    ProcessUnexpectedMessage(received_message);
+  }
+  {
+    std::unique_lock<std::mutex> lck(condition_variable_mutex_);
+    condition_variable_.notify_one();
   }
 }
 
-void DpaHandler::SendDpaMessage(DpaMessage& message) {
-  if (IsDpaMessageInProgress())
-	throw std::logic_error("Other Dpa Message is in progress.");
+void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* responseHndl) {
+  if (IsDpaMessageInProgress()) {
+    throw std::logic_error("Other Dpa Message is in progress.");
+  }
 
-  auto response = dpa_interface_->SendRequest(message.DpaPacketData(),
-											  message.Length());
-  if (response < 0)
-	throw std::logic_error("Message was not send.");
+  try {
+    dpa_interface_->sendTo(std::basic_string<unsigned char>(message.DpaPacketData(), message.Length()));
+  }
+  catch (std::exception& e) {
+    throw std::logic_error("Message was not send.");
+  }
 
   delete current_request_;
-  current_request_ = new DpaRequest();
+  if (!responseHndl)
+    current_request_ = new DpaRequest();
+  else
+    current_request_ = new DpaRequest(responseHndl);
   current_request_->DefaultTimeout(default_timeout_ms_);
   current_request_->ProcessSentMessage(message);
 }
 
+void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
+{
+  const DpaMessage& message = dpaTransaction.getMessage();
+
+  int32_t remains(0);
+  bool success(false);
+
+  try {
+    SendDpaMessage(message, &dpaTransaction);
+
+    while (IsDpaTransactionInProgress(remains)) {
+      { //wait for remaining time
+        std::unique_lock<std::mutex> lck(condition_variable_mutex_);
+        condition_variable_.wait_for(lck, std::chrono::milliseconds(remains));
+      }
+    }
+    
+    DpaRequest::DpaRequestStatus status = Status();
+    if (status == DpaRequest::kProcessed)
+      success = true;
+  }
+  catch (std::exception& e) {
+    TRC_WAR("Send error occured: " << e.what());
+  }
+
+  dpaTransaction.processFinished(success);
+}
+
 bool DpaHandler::ProcessMessage(const DpaMessage& message) {
   try {
-	current_request_->ProcessReceivedMessage(message);
+    current_request_->ProcessReceivedMessage(message);
   }
   catch (std::logic_error& le) {
-	return false;
+    return false;
   }
   return true;
 }
 
 bool DpaHandler::IsDpaMessageInProgress() const {
   return current_request_->IsInProgress();
+}
+
+bool DpaHandler::IsDpaTransactionInProgress(int32_t& expected_duration) const {
+  return current_request_->IsInProgress(expected_duration);
 }
 
 DpaRequest::DpaRequestStatus DpaHandler::Status() const {
@@ -87,7 +130,7 @@ void DpaHandler::RegisterAsyncMessageHandler(std::function<void(const DpaMessage
 void DpaHandler::ProcessUnexpectedMessage(DpaMessage& message) {
   async_message_mutex_.lock();
   if (async_message_handler_) {
-	async_message_handler_(message);
+    async_message_handler_(message);
   }
   async_message_mutex_.unlock();
 }

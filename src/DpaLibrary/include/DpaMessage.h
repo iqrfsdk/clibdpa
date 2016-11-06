@@ -86,7 +86,7 @@ class DpaMessage {
    @param [in,out]	data	Pointer to data.
    @param	length			The number of bytes to be added.
    */
-  void FillFromResponse(unsigned char* data, uint32_t length);
+  void FillFromResponse(const unsigned char* data, uint32_t length);
 
   /**
    Adds data to message buffer.
@@ -98,7 +98,20 @@ class DpaMessage {
    @param [in,out]	data	Pointer to data.
    @param	length			The number of bytes to be added.
    */
-  void AddDataToBuffer(unsigned char* data, uint32_t length);
+  //TODO error here?
+  void AddDataToBuffer(const unsigned char* data, uint32_t length);
+
+  /**
+  Stores data to message buffer.
+
+  @exception   std::invalid_argument   Thrown when data length is 0.
+  @exception	std::invalid_argument	Thrown when data is nullptr.
+  @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+
+  @param [in,out]	data	Pointer to data.
+  @param	length			The number of bytes to be stored.
+  */
+  void DataToBuffer(const unsigned char* data, uint32_t length);
 
   /**
    Gets length of data stored in message.
@@ -149,7 +162,8 @@ class DpaMessage {
   
    @return	Pointer to data stored in message.
    */
-  unsigned char* DpaPacketData();
+  unsigned char* DpaPacketData() { return dpa_packet_->Buffer; }
+  const unsigned char* DpaPacketData() const { return dpa_packet_->Buffer; }
 
  private:
   DpaPacket_t* dpa_packet_;
