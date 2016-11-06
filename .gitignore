@@ -1,3 +1,9 @@
+# Build directory
+[Bb]uild*/
+
+# backup files
+*~
+
 # Compiled Object files
 *.slo
 *.lo
