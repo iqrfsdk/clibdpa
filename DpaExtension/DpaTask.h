@@ -42,3 +42,18 @@ private:
   unsigned short m_temperature;
 };
 
+class DpaPulseLed : public DpaTask
+{
+public:
+  enum LedColor {
+    kLedRed,
+    kLedGreen
+  };
+
+  DpaPulseLed(unsigned short address, LedColor led);
+  virtual ~DpaPulseLed();
+  virtual void parseResponse(const DpaMessage& response);
+  LedColor getColor() { return m_color; }
+private:
+  LedColor m_color;
+};

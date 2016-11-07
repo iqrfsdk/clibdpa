@@ -1,6 +1,26 @@
 #include "DpaTask.h"
 
 //////////////////////////////
+// class DpaRawTask
+//////////////////////////////
+
+DpaRawTask::DpaRawTask(const DpaMessage& request)
+  :DpaTask()
+{
+  m_address = request.DpaPacket().DpaRequestPacket_t.NADR;
+  m_request = request;
+}
+
+DpaRawTask::~DpaRawTask()
+{
+}
+
+void DpaRawTask::parseResponse(const DpaMessage& response)
+{
+  m_response = response;
+}
+
+//////////////////////////////
 // class DpaThermometer
 //////////////////////////////
 
@@ -29,21 +49,30 @@ void DpaThermometer::parseResponse(const DpaMessage& response)
 }
 
 //////////////////////////////
-// class DpaRawTask
+// class DpaPulseLed
 //////////////////////////////
 
-DpaRawTask::DpaRawTask(const DpaMessage& request)
-  :DpaTask()
+DpaPulseLed::DpaPulseLed(unsigned short address, LedColor color)
+  :m_color(color)
+  ,DpaTask(address)
 {
-  m_address = request.DpaPacket().DpaRequestPacket_t.NADR;
-  m_request = request;
+  DpaMessage::DpaPacket_t packet;
+  packet.DpaRequestPacket_t.NADR = address;
+  if (color == kLedRed)
+    packet.DpaRequestPacket_t.PNUM = PNUM_LEDR;
+  else
+    packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
+
+  packet.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+  m_request.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
 }
 
-DpaRawTask::~DpaRawTask()
+DpaPulseLed::~DpaPulseLed()
 {
 }
 
-void DpaRawTask::parseResponse(const DpaMessage& response)
+void DpaPulseLed::parseResponse(const DpaMessage& response)
 {
-  m_response = response;
 }
