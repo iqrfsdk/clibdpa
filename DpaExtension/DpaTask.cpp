@@ -1,18 +1,20 @@
 #include "DpaTask.h"
+#include "IqrfLogging.h"
 
 //////////////////////////////
 // class DpaRawTask
 //////////////////////////////
 
 DpaRawTask::DpaRawTask(const DpaMessage& request)
-  :DpaTask()
+  :DpaTask(0, NAME_RawTask)
 {
   m_address = request.DpaPacket().DpaRequestPacket_t.NADR;
   m_request = request;
 }
 
-DpaRawTask::~DpaRawTask()
+void DpaRawTask::parseConfirmation(const DpaMessage& confirmation)
 {
+  m_confirmation = confirmation;
 }
 
 void DpaRawTask::parseResponse(const DpaMessage& response)
@@ -20,59 +22,80 @@ void DpaRawTask::parseResponse(const DpaMessage& response)
   m_response = response;
 }
 
+void DpaRawTask::toStream(std::ostream& os) const
+{
+  os << NAME_RawTask << "[" << getAddress() << "] " << FORM_HEX(m_request.DpaPacket().Buffer, m_request.Length());
+}
+
 //////////////////////////////
 // class DpaThermometer
 //////////////////////////////
 
 DpaThermometer::DpaThermometer(unsigned short address)
-  :DpaTask(address)
-  , m_temperature(0)
+  :DpaTask(address, NAME_Thermometer)
+  ,m_temperature(0)
 {
-  DpaMessage::DpaPacket_t packet;
+  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+
   packet.DpaRequestPacket_t.NADR = address;
   packet.DpaRequestPacket_t.PNUM = PNUM_THERMOMETER;
 
   packet.DpaRequestPacket_t.PCMD = CMD_THERMOMETER_READ;
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
-  m_request.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
-}
-
-DpaThermometer::~DpaThermometer()
-{
+  m_request.SetLength(sizeof(TDpaIFaceHeader));
 }
 
 void DpaThermometer::parseResponse(const DpaMessage& response)
 {
-  //TODO some checks
   m_temperature = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
 }
 
-//////////////////////////////
-// class DpaPulseLed
-//////////////////////////////
-
-DpaPulseLed::DpaPulseLed(unsigned short address, LedColor color)
-  :m_color(color)
-  ,DpaTask(address)
+void DpaThermometer::toStream(std::ostream& os) const
 {
-  DpaMessage::DpaPacket_t packet;
-  packet.DpaRequestPacket_t.NADR = address;
-  if (color == kLedRed)
-    packet.DpaRequestPacket_t.PNUM = PNUM_LEDR;
-  else
-    packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
+  os << NAME_Thermometer << "[" << getAddress() << "] " << getTemperature();
+}
 
+//////////////////////////////
+// class DpaPulseLedG
+//////////////////////////////
+
+DpaPulseLedG::DpaPulseLedG(unsigned short address)
+  :DpaTask(address, NAME_PulseLedG)
+{
+  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+
+  packet.DpaRequestPacket_t.NADR = address;
+  packet.DpaRequestPacket_t.PNUM = PNUM_LEDG;
   packet.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
   packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
-  m_request.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+  m_request.SetLength(sizeof(TDpaIFaceHeader));
 }
 
-DpaPulseLed::~DpaPulseLed()
+void DpaPulseLedG::toStream(std::ostream& os) const
 {
+  os << NAME_PulseLedG << "[" << getAddress() << "] ";
 }
 
-void DpaPulseLed::parseResponse(const DpaMessage& response)
+//////////////////////////////
+// class DpaPulseLedR
+//////////////////////////////
+
+DpaPulseLedR::DpaPulseLedR(unsigned short address)
+  :DpaTask(address, NAME_PulseLedR)
 {
+  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+
+  packet.DpaRequestPacket_t.NADR = address;
+  packet.DpaRequestPacket_t.PNUM = PNUM_LEDR;
+  packet.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+  m_request.SetLength(sizeof(TDpaIFaceHeader));
+}
+
+void DpaPulseLedR::toStream(std::ostream& os) const
+{
+  os << NAME_PulseLedR << "[" << getAddress() << "] ";
 }

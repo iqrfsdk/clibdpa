@@ -4,15 +4,6 @@
 #include "IChannel.h"
 #include "DpaTransactionTask.h"
 
-class DpaTransactionDemo : public DpaTransactionTask
-{
-public:
-  DpaTransactionDemo(DpaTask& dpaTask);
-  virtual ~DpaTransactionDemo();
-  virtual void processConfirmationMessage(const DpaMessage& confirmation);
-  virtual void processResponseMessage(const DpaMessage& response);
-};
-
 class DpaLibraryDemo {
 public:
 

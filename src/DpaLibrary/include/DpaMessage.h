@@ -10,42 +10,42 @@
 #define MAX_DPA_BUFFER    64
 
 class DpaMessage {
- public:
+public:
   /** Size of the maximum DPA message. */
   static const int kMaxDpaMessageSize = MAX_DPA_BUFFER;
   /** Address for broadcast messages */
   static const uint16_t kBroadCastAddress = BROADCAST_ADDRESS;
   /** Defines an alias representing the union. */
   typedef union {
-	uint8_t Buffer[MAX_DPA_BUFFER];
-	struct {
-	  uint16_t NADR;
-	  uint8_t PNUM;
-	  uint8_t PCMD;
-	  uint16_t HWPID;
-	  uint8_t ResponseCode;
-	  uint8_t DpaValue;
-	  TDpaMessage DpaMessage;
-	} DpaResponsePacket_t;
-	struct {
-	  uint16_t NADR;
-	  uint8_t PNUM;
-	  uint8_t PCMD;
-	  uint16_t HWPID;
-	  TDpaMessage DpaMessage;
-	} DpaRequestPacket_t;
+    uint8_t Buffer[MAX_DPA_BUFFER];
+    struct {
+      uint16_t NADR;
+      uint8_t PNUM;
+      uint8_t PCMD;
+      uint16_t HWPID;
+      uint8_t ResponseCode;
+      uint8_t DpaValue;
+      TDpaMessage DpaMessage;
+    } DpaResponsePacket_t;
+    struct {
+      uint16_t NADR;
+      uint8_t PNUM;
+      uint8_t PCMD;
+      uint16_t HWPID;
+      TDpaMessage DpaMessage;
+    } DpaRequestPacket_t;
   } DpaPacket_t;
 
   /** Values that represent message types. */
   enum MessageType {
-	///< Request message
-	kRequest,
+    ///< Request message
+    kRequest,
     ///< Confirmation message
-	kConfirmation,
+    kConfirmation,
     ///< Notification message
-	kNotification,
+    kNotification,
     ///< Response message
-	kResponse
+    kResponse
   };
 
   /** Default constructor. */
@@ -59,7 +59,7 @@ class DpaMessage {
 
   /**
    Copy constructor.
-  
+
    @param	other	The original message.
    */
   DpaMessage(const DpaMessage& other);
@@ -69,9 +69,9 @@ class DpaMessage {
 
   /**
    Assignment operator.
-  
+
    @param	other	The original message.
-  
+
    @return	A shallow copy of this object.
    */
   DpaMessage& operator=(const DpaMessage& other);
@@ -87,7 +87,7 @@ class DpaMessage {
 
   /**
    Gets message type.
-  
+
    @return	A MessageType.
    */
   MessageType MessageDirection() const;
@@ -131,28 +131,35 @@ class DpaMessage {
 
   /**
    Gets length of data stored in message.
-  
+
    @return	Number of bytes in message.
    */
   int Length() const { return length_; }
 
   /**
+  Gets length of data stored in message.
+
+  @param	length The number of bytes to be set.
+  */
+  void SetLength(int length);
+
+  /**
    Gets destination or source address of sender/receiver.
-  
+
    @return	An address.
    */
   uint16_t NodeAddress() const { return dpa_packet_->DpaRequestPacket_t.NADR; }
 
-    /**
-   Gets peripheral type.
-  
-   @return	A peripheral type.
-   */
+  /**
+ Gets peripheral type.
+
+ @return	A peripheral type.
+ */
   TDpaPeripheralType PeripheralType() const { return TDpaPeripheralType(dpa_packet_->DpaRequestPacket_t.PNUM); }
 
   /**
    Gets command code.
-  
+
    @return	A command code.
    */
   uint8_t CommandCode() const { return dpa_packet_->DpaResponsePacket_t.PCMD; }
@@ -168,20 +175,21 @@ class DpaMessage {
 
   /**
    Gets DPA packet behind the message.
-  
+
    @return	A reference to a const DpaPacket_t.
    */
   const DpaPacket_t& DpaPacket() const { return *dpa_packet_; }
+  DpaPacket_t& DpaPacket() { return *dpa_packet_; }
 
   /**
    Gets pointer to data stored in message.
-  
+
    @return	Pointer to data stored in message.
    */
   unsigned char* DpaPacketData() { return dpa_packet_->Buffer; }
   const unsigned char* DpaPacketData() const { return dpa_packet_->Buffer; }
 
- private:
+private:
   DpaPacket_t* dpa_packet_;
   const int kCommandIndex = 0x03;
   const int kStatusCodeIndex = 0x06;

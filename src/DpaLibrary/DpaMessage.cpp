@@ -93,6 +93,12 @@ void DpaMessage::DataToBuffer(const unsigned char* data, uint32_t length) {
   length_ = length;
 }
 
+void DpaMessage::SetLength(int length) {
+  if (length > kMaxDpaMessageSize || length <= 0) 
+    throw std::length_error("Invalid length value.");
+  length_ = length;
+}
+
 TErrorCodes DpaMessage::ResponseCode() const {
   if (MessageDirection() != kResponse)
     throw unexpected_packet_type("Only response packet has response error defined.");

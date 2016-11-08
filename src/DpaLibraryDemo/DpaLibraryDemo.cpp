@@ -51,6 +51,10 @@ int main(int argc, char** argv)
       std::cout << e.what() << std::endl;
       return (-1);
     }
+    catch (std::exception& e) {
+      std::cout << e.what() << std::endl;
+      return (-1);
+    }
   }
 
   DpaLibraryDemo* demo_ = new DpaLibraryDemo(dpaInterface);
@@ -227,6 +231,7 @@ void DpaLibraryDemo::Start() {
     //ReadTemperature(0x03);        // Get temperature from node with address 3
     //ReadTemperature(0x00);        // Get temperature from coordinator
     ReadTemperatureDpaTransaction(0x01); // Get temperature from node1
+    //ReadTemperatureDpaTransaction(0x06); // Get temperature from node6
 
     //std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -308,36 +313,11 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
 void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
 {
   DpaThermometer thermometer(address);
-  DpaTransactionDemo transaction(thermometer);
+  DpaTransactionTask transaction(thermometer);
   dpa_handler_->ExecuteDpaTransaction(transaction);
-  if (transaction.isSuccess())
+  bool success = transaction.waitFinish();
+  if (success)
     std::cout << NAME_PAR(Temperature, thermometer.getTemperature()) << std::endl;
   else
     std::cout << "Failed to read Temperature at: " << NAME_PAR(addres, thermometer.getAddress()) << std::endl;
-}
-
-//////////////////////////////
-// class DpaTransactionDemo
-//////////////////////////////
-
-DpaTransactionDemo::DpaTransactionDemo(DpaTask& dpaTask)
-  :DpaTransactionTask(dpaTask)
-{
-}
-
-DpaTransactionDemo::~DpaTransactionDemo()
-{
-}
-
-void DpaTransactionDemo::processConfirmationMessage(const DpaMessage& confirmation)
-{
-  TRC_DBG("Received confirmation from IQRF: " << std::endl <<
-    FORM_HEX(confirmation.DpaPacketData(), confirmation.Length()));
-}
-
-void DpaTransactionDemo::processResponseMessage(const DpaMessage& response)
-{
-  TRC_DBG("Received response from IQRF: " << std::endl <<
-    FORM_HEX(response.DpaPacketData(), response.Length()));
-  DpaTransactionTask::processResponseMessage(response);
 }
