@@ -35,6 +35,8 @@ private:
 
   void ReadTemperatureDpaTransaction(uint16_t address);
 
+  void PulseLedRDpaTransaction(uint16_t address);
+
 };
 
 
