@@ -25,6 +25,7 @@
 #ifndef _DPA_HEADER_
 #define _DPA_HEADER_
 
+#pragma pack( push, 1 )
 //############################################################################################
 
 // DPA version
@@ -1086,6 +1087,8 @@ bit IsDpaLongTimeslot				  @_DpaParams.3;
 #pragma origin __APPLICATION_ADDRESS
 
 #endif
+
+#pragma pack( pop, 1 )
 
 #endif
 //############################################################################################

@@ -1,5 +1,7 @@
 #include <DpaHandler.h>
 #include "DpaTask.h"
+#include "PrfThermometer.h"
+#include "PrfLeds.h"
 #include "DpaLibraryDemo.h"
 #include "unexpected_peripheral.h"
 #include "IqrfCdcChannel.h"
@@ -230,6 +232,7 @@ void DpaLibraryDemo::Start() {
     //PulseLed(0xFF, kLedGreen);    // Pulse with green led on node with address 3
     //ReadTemperature(0x03);        // Get temperature from node with address 3
     //ReadTemperature(0x00);        // Get temperature from coordinator
+    ReadTemperatureDpaTransaction(0x00); // Get temperature from node0
     //ReadTemperatureDpaTransaction(0x01); // Get temperature from node1
     //ReadTemperatureDpaTransaction(0x06); // Get temperature from node6
     PulseLedRDpaTransaction(0);
@@ -313,19 +316,19 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
 
 void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
 {
-  DpaThermometer thermometer(address);
+  PrfThermometer thermometer(address, PrfThermometer::READ);
   DpaTransactionTask transaction(thermometer);
   dpa_handler_->ExecuteDpaTransaction(transaction);
   int errorCode = transaction.waitFinish();
   if (errorCode == 0)
-    std::cout << NAME_PAR(Temperature, thermometer.getTemperature()) << std::endl;
+    std::cout << NAME_PAR(Temperature, thermometer.getIntTemperature()) << std::endl;
   else
     std::cout << "Failed to read Temperature at: " << NAME_PAR(addres, thermometer.getAddress()) << PAR(errorCode) << std::endl;
 }
 
 void DpaLibraryDemo::PulseLedRDpaTransaction(uint16_t address)
 {
-  DpaPulseLedR pulse(address);
+  PrfLedR pulse(address, PrfLed::PULSE);
   DpaTransactionTask transaction(pulse);
   dpa_handler_->ExecuteDpaTransaction(transaction);
   int errorCode = transaction.waitFinish();
