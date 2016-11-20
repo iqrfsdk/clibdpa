@@ -46,13 +46,23 @@ void PrfThermometer::parseResponse(const DpaMessage& response)
 
 void PrfThermometer::toStream(std::ostream& os) const
 {
-  os << PRF_NAME_Thermometer << " " << getAddress() << " " << getIntTemperature() << " " << getFloatTemperature();
+  os << PrfThermometer::convertCommand(m_command) << " " << getFloatTemperature();
 }
 
 int PrfThermometer::convertCommand(const std::string& command)
 {
-  if ("CMD_THERMOMETER_READ" == command)
+  if ("READ" == command)
     return CMD_THERMOMETER_READ;
   else
     return CMD_THERMOMETER_READ;
+}
+
+std::string PrfThermometer::convertCommand(int command)
+{
+  switch (command) {
+  case CMD_THERMOMETER_READ:
+    return "READ";
+  default:
+    return "UKNOWN";
+  }
 }

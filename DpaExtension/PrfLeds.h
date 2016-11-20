@@ -22,6 +22,7 @@ public:
   virtual void toStream(std::ostream& os) const;
   int getLedState() const; // -1 uknown, 0 off, 1 on
   static int convertCommand(const std::string& command);
+  static std::string convertCommand(int command);
 private:
   int m_ledState;
 };

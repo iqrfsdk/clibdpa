@@ -90,9 +90,11 @@ typedef uint16_t  uns16;
 #define	sizeofBufferCOM 64
 
 // Disables alignment of members of structures
-//#define	STRUCTATTR	__attribute__((packed))
-
+#ifndef WIN32
+#define	STRUCTATTR	__attribute__((packed))
+#else
 #define	STRUCTATTR
+#endif
 
 #endif
 
@@ -1088,7 +1090,7 @@ bit IsDpaLongTimeslot				  @_DpaParams.3;
 
 #endif
 
-#pragma pack( pop, 1 )
+#pragma pack( pop )
 
 #endif
 //############################################################################################

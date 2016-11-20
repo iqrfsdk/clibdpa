@@ -27,19 +27,35 @@ void PrfLed::parseResponse(const DpaMessage& response)
 
 void PrfLed::toStream(std::ostream& os) const
 {
-  os << PRF_NAME_LedG << "[" << getAddress() << "] ";
+  os << PrfLed::convertCommand(m_command);
 }
 
 int PrfLed::convertCommand(const std::string& command)
 {
-  if ("CMD_LED_SET_OFF" == command)
+  if ("OFF" == command)
     return CMD_LED_SET_OFF;
-  else if ("CMD_LED_SET_ON" == command)
+  else if ("ON" == command)
     return CMD_LED_SET_ON;
-  else if ("CMD_LED_GET" == command)
+  else if ("GET" == command)
     return CMD_LED_GET;
-  else if ("CMD_LED_PULSE" == command)
+  else if ("PULSE" == command)
     return CMD_LED_PULSE;
   else
     return CMD_LED_SET_OFF;
+}
+
+std::string PrfLed::convertCommand(int command)
+{
+  switch (command) {
+  case CMD_LED_SET_OFF:
+    return "OFF";
+  case CMD_LED_SET_ON:
+    return "ON";
+  case CMD_LED_GET:
+    return "GET";
+  case CMD_LED_PULSE:
+    return "PULSE";
+  default:
+    return "UKNOWN";
+  }
 }

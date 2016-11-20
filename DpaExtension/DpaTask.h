@@ -23,7 +23,7 @@ public:
   virtual void parseResponse(const DpaMessage& response) = 0;
   virtual const DpaMessage& getRequest() const { return m_request; }
   virtual void toStream(std::ostream& os) const = 0;
-  //virtual int convertCommand(const std::string& command) const = 0;
+  const std::string& getTaskName() const { return m_taskName; }
   unsigned short getAddress() const { return m_address; }
   friend std::ostream& operator<<(std::ostream& o, const DpaTask& dt) {
     dt.toStream(o);
