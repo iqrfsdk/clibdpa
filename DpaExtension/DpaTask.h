@@ -10,29 +10,43 @@ static const std::string  PRF_NAME_RawTask("RawTask");
 class DpaTask
 {
 public:
-  DpaTask(unsigned short address, const std::string& taskName, int command)
-    :m_address(address)
-    ,m_taskName(taskName)
-    ,m_command(command)
-  {}
-
   DpaTask() = delete;
 
-  virtual ~DpaTask() {};
+  DpaTask(const std::string& prfName)
+    :m_prfName(prfName)
+  {}
+
+  DpaTask(const std::string& prfName, int address, int command)
+    : m_prfName(prfName)
+    , m_address(address)
+    , m_command(command)
+  {}
+
+  virtual ~DpaTask()
+  {}
+
+  //from IQRF 
+  virtual const DpaMessage& getRequest() = 0;
   virtual void parseConfirmation(const DpaMessage& confirmation) {}
   virtual void parseResponse(const DpaMessage& response) = 0;
-  virtual const DpaMessage& getRequest() const { return m_request; }
-  virtual void toStream(std::ostream& os) const = 0;
-  const std::string& getTaskName() const { return m_taskName; }
-  unsigned short getAddress() const { return m_address; }
-  friend std::ostream& operator<<(std::ostream& o, const DpaTask& dt) {
-    dt.toStream(o);
-    return o;
-  }
+
+  //from Messaging 
+  virtual void parseCommand(const std::string& command) = 0;
+  virtual const std::string& encodeCommand() const = 0;
+  virtual void parseRequestMessage(std::istream& istr) {}
+  virtual void encodeResponseMessage(std::ostream& ostr, const std::string& errStr) {}
+
+  const std::string& getPrfName() const { return m_prfName; }
+  int getAddress() const { return m_address; }
+  void setAddress(int address) { m_address = address; }
+  int getCommand() const { return m_command; }
+  bool isValid() const { return m_valid; }
+
 protected:
-  unsigned short m_address;
-  std::string m_taskName;
-  int m_command;
+  std::string m_prfName;
+  bool m_valid = false;
+  int m_address = -1;
+  int m_command = -1;
   DpaMessage m_request;
 };
 
@@ -41,10 +55,16 @@ class DpaRawTask : public DpaTask
 public:
   DpaRawTask(const DpaMessage& request);
   virtual ~DpaRawTask() {}
-  virtual void parseConfirmation(const DpaMessage& confirmation);
-  virtual void parseResponse(const DpaMessage& response);
-  const DpaMessage& getResponse() const { return m_response; }
-  virtual void toStream(std::ostream& os) const;
+
+  //from IQRF 
+  const DpaMessage& getRequest() override;
+  void parseConfirmation(const DpaMessage& confirmation) override;
+  void parseResponse(const DpaMessage& response) override;
+
+  //from Messaging 
+  void parseCommand(const std::string& command) override;
+  const std::string& encodeCommand() const override;
+
 private:
   DpaMessage m_confirmation;
   DpaMessage m_response;

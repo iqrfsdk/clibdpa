@@ -316,7 +316,7 @@ void DpaLibraryDemo::ReadTemperature(uint16_t address) {
 
 void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
 {
-  PrfThermometer thermometer(address, PrfThermometer::READ);
+  PrfThermometer thermometer((int)address, PrfThermometer::Cmd::READ);
   DpaTransactionTask transaction(thermometer);
   dpa_handler_->ExecuteDpaTransaction(transaction);
   int errorCode = transaction.waitFinish();
@@ -328,12 +328,12 @@ void DpaLibraryDemo::ReadTemperatureDpaTransaction(uint16_t address)
 
 void DpaLibraryDemo::PulseLedRDpaTransaction(uint16_t address)
 {
-  PrfLedR pulse(address, PrfLed::PULSE);
+  PrfLedR pulse((int)address, PrfLed::Cmd::PULSE);
   DpaTransactionTask transaction(pulse);
   dpa_handler_->ExecuteDpaTransaction(transaction);
   int errorCode = transaction.waitFinish();
   if (errorCode == 0)
-    std::cout << pulse << std::endl;
+    std::cout << pulse.getPrfName() << " " << pulse.getAddress() << " " << pulse.encodeCommand() << std::endl;
   else
     std::cout << transaction.getErrorStr() << std::endl;
 }

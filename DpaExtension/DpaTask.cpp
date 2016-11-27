@@ -1,12 +1,10 @@
 #include "DpaTask.h"
 #include "IqrfLogging.h"
 
-//////////////////////////////
-// class DpaRawTask
-//////////////////////////////
+const std::string STR_CMD_UNKNOWN("UNKNOWN");
 
 DpaRawTask::DpaRawTask(const DpaMessage& request)
-  :DpaTask(0, PRF_NAME_RawTask, 0)
+  :DpaTask(PRF_NAME_RawTask)
 {
   m_address = request.DpaPacket().DpaRequestPacket_t.NADR;
   m_request = request;
@@ -22,7 +20,16 @@ void DpaRawTask::parseResponse(const DpaMessage& response)
   m_response = response;
 }
 
-void DpaRawTask::toStream(std::ostream& os) const
+void DpaRawTask::parseCommand(const std::string& command)
 {
-  os << PRF_NAME_RawTask << "[" << getAddress() << "] " << FORM_HEX(m_request.DpaPacket().Buffer, m_request.Length());
+}
+
+const std::string& DpaRawTask::encodeCommand() const
+{
+  return STR_CMD_UNKNOWN;
+}
+
+const DpaMessage& DpaRawTask::getRequest()
+{
+  return m_request;
 }
