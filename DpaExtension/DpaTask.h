@@ -33,7 +33,7 @@ public:
   //from Messaging 
   virtual void parseCommand(const std::string& command) = 0;
   virtual const std::string& encodeCommand() const = 0;
-  virtual void parseRequestMessage(std::istream& istr) {}
+  //virtual void parseRequestMessage(std::istream& istr) {}
   virtual void encodeResponseMessage(std::ostream& ostr, const std::string& errStr) {}
 
   const std::string& getPrfName() const { return m_prfName; }
