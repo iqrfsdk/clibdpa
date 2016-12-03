@@ -33,8 +33,7 @@ public:
   //from Messaging 
   virtual void parseCommand(const std::string& command) = 0;
   virtual const std::string& encodeCommand() const = 0;
-  //virtual void parseRequestMessage(std::istream& istr) {}
-  virtual void encodeResponseMessage(std::ostream& ostr, const std::string& errStr) {}
+  virtual std::string encodeResponse(const std::string& errStr) const { return std::string(); }
 
   const std::string& getPrfName() const { return m_prfName; }
   int getAddress() const { return m_address; }
@@ -53,6 +52,9 @@ protected:
 class DpaRawTask : public DpaTask
 {
 public:
+  static const std::string PRF_NAME;
+
+  DpaRawTask();
   DpaRawTask(const DpaMessage& request);
   virtual ~DpaRawTask() {}
 
@@ -65,7 +67,9 @@ public:
   void parseCommand(const std::string& command) override;
   const std::string& encodeCommand() const override;
 
-private:
+  void setRequest(const DpaMessage& request);
+
+protected:
   DpaMessage m_confirmation;
   DpaMessage m_response;
 };

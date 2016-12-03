@@ -1,10 +1,22 @@
 #include "DpaTask.h"
 #include "IqrfLogging.h"
 
+const std::string DpaRawTask::PRF_NAME("Raw");
+
 const std::string STR_CMD_UNKNOWN("UNKNOWN");
+
+DpaRawTask::DpaRawTask()
+  :DpaTask(DpaRawTask::PRF_NAME)
+{
+}
 
 DpaRawTask::DpaRawTask(const DpaMessage& request)
   :DpaTask(PRF_NAME_RawTask)
+{
+  setRequest(request);
+}
+
+void DpaRawTask::setRequest(const DpaMessage& request)
 {
   m_address = request.DpaPacket().DpaRequestPacket_t.NADR;
   m_request = request;
