@@ -90,7 +90,11 @@ typedef uint16_t  uns16;
 #define	sizeofBufferCOM 64
 
 // Disables alignment of members of structures
-#ifndef WIN32
+#if defined WIN32 || defined _WIN32 || defined _WIN64
+#define WIN
+#endif
+
+#ifndef WIN
 #define	STRUCTATTR	__attribute__((packed))
 #else
 #define	STRUCTATTR
