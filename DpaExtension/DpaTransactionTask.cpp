@@ -17,6 +17,11 @@ const DpaMessage& DpaTransactionTask::getMessage() const
   return m_dpaTask.getRequest();
 }
 
+int DpaTransactionTask::getTimeout() const
+{
+  return m_dpaTask.getTimeout();
+}
+
 void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation)
 {
   m_dpaTask.parseResponse(confirmation);

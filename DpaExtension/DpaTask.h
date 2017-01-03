@@ -38,6 +38,8 @@ public:
   const std::string& getPrfName() const { return m_prfName; }
   int getAddress() const { return m_address; }
   void setAddress(int address) { m_address = address; }
+  int getTimeout() const { return m_timeout; }
+  void setTimeout(int timeout) { m_timeout = timeout; }
   int getCommand() const { return m_command; }
   bool isValid() const { return m_valid; }
 
@@ -45,6 +47,7 @@ protected:
   std::string m_prfName;
   bool m_valid = false;
   int m_address = -1;
+  int m_timeout = -1;
   int m_command = -1;
   DpaMessage m_request;
 };

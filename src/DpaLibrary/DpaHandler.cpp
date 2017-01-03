@@ -69,6 +69,12 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   const DpaMessage& message = dpaTransaction.getMessage();
 
   int32_t remains(0);
+  int32_t defaultTimeout = Timeout();
+  int32_t requiredTimeout = dpaTransaction.getTimeout();
+
+  if (requiredTimeout > 0)
+    Timeout(requiredTimeout);
+
   DpaRequest::DpaRequestStatus status(DpaRequest::kCreated);
 
   try {
@@ -86,6 +92,7 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
     TRC_WAR("Send error occured: " << e.what());
   }
 
+  Timeout(defaultTimeout);
   dpaTransaction.processFinish(status);
 }
 
