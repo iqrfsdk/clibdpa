@@ -1,8 +1,8 @@
 project(DpaExtension)
 
 set(DpaExtension_SRC_FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/DpaTask.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTransactionTask.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/PrfRaw.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfLeds.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfThermometer.cpp
 )
@@ -10,6 +10,7 @@ set(DpaExtension_SRC_FILES
 set(DpaExtension_INC_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTask.h
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTransactionTask.h
+	${CMAKE_CURRENT_SOURCE_DIR}/PrfRaw.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfLeds.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfThermometer.h
 )

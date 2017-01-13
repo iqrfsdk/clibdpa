@@ -5,8 +5,6 @@
 #include <sstream>
 #include <memory>
 
-static const std::string  PRF_NAME_RawTask("RawTask");
-
 class DpaTask
 {
 public:
@@ -36,6 +34,8 @@ public:
   virtual std::string encodeResponse(const std::string& errStr) const { return std::string(); }
 
   const std::string& getPrfName() const { return m_prfName; }
+  const std::string& getClid() const { return m_clid; }
+  void setClid(const std::string& clid) { m_clid = clid; }
   int getAddress() const { return m_address; }
   void setAddress(int address) { m_address = address; }
   int getTimeout() const { return m_timeout; }
@@ -45,34 +45,10 @@ public:
 
 protected:
   std::string m_prfName;
+  std::string m_clid; //client ID
   bool m_valid = false;
   int m_address = -1;
   int m_timeout = -1;
   int m_command = -1;
   DpaMessage m_request;
-};
-
-class DpaRawTask : public DpaTask
-{
-public:
-  static const std::string PRF_NAME;
-
-  DpaRawTask();
-  DpaRawTask(const DpaMessage& request);
-  virtual ~DpaRawTask() {}
-
-  //from IQRF 
-  const DpaMessage& getRequest() override;
-  void parseConfirmation(const DpaMessage& confirmation) override;
-  void parseResponse(const DpaMessage& response) override;
-
-  //from Messaging 
-  void parseCommand(const std::string& command) override;
-  const std::string& encodeCommand() const override;
-
-  void setRequest(const DpaMessage& request);
-
-protected:
-  DpaMessage m_confirmation;
-  DpaMessage m_response;
 };
