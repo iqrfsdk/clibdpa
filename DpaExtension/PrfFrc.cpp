@@ -10,9 +10,9 @@ const std::string STR_CMD_SEND_SELECTIVE("SEND_SELECTIVE");
 const std::string STR_CMD_SET_PARAMS("SET_PARAMS");
 
 // Type of collected data
-const std::string STR_GET_2BIT("GET_2BIT");
+const std::string STR_GET_BIT2("GET_BIT2");
 const std::string STR_GET_BYTE("GET_BYTE");
-const std::string STR_GET_2BYTE("GET_2BYTE_FROM");
+const std::string STR_GET_BYTE2("GET_BYTE2");
 
 // Predefined FRC commands
 const std::string STR_FRC_Prebonding("Prebonding");
@@ -84,10 +84,11 @@ void PrfFrc::setFrcCommand(FrcCmd frcCmd)
 
 void PrfFrc::setFrcCommand(FrcType frcType, uint8_t frcUser)
 {
-  if ((frcType == FrcType::GET_BIT2 && frcUser <= FRC_USER_BIT_TO - FRC_USER_BIT_FROM) ||
-    (frcType == FrcType::GET_BYTE && frcUser <= FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM) ||
-    (frcType == FrcType::GET_BYTE2 && frcUser <= FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM)) {
-    THROW_EX(std::logic_error, "Inappropriate: " << NAME_PAR(frcType, (uint8_t)frcType) << PAR(frcUser));
+  if ((frcType == FrcType::GET_BIT2 && frcUser > FRC_USER_BIT_TO - FRC_USER_BIT_FROM) ||
+    (frcType == FrcType::GET_BYTE && frcUser > FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM) ||
+    (frcType == FrcType::GET_BYTE2 && frcUser > FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM)) {
+    THROW_EX(std::logic_error, "Inappropriate: " << 
+      NAME_PAR(FrcType, encodeFrcType(frcType)) << NAME_PAR(FrcUser, (int)frcUser));
   }
   else {
     m_frcType = frcType;
@@ -244,30 +245,30 @@ const std::string& PrfFrc::encodeCommand() const
   case Cmd::SEND_SELECTIVE: return STR_CMD_SEND_SELECTIVE;
   case Cmd::SET_PARAMS: return STR_CMD_SET_PARAMS;
   default:
-    THROW_EX(std::logic_error, "Invalid command: " << NAME_PAR(command, (uint8_t)getCmd()));
+    THROW_EX(std::logic_error, "Invalid command: " << NAME_PAR(command, (int)getCmd()));
   }
 }
 
 PrfFrc::FrcType PrfFrc::parseFrcType(const std::string& frcType)
 {
-  if (STR_GET_2BIT == frcType)
+  if (STR_GET_BIT2 == frcType)
     return FrcType::GET_BIT2;
   else if (STR_GET_BYTE == frcType)
     return FrcType::GET_BYTE;
-  else if (STR_GET_2BYTE == frcType)
+  else if (STR_GET_BYTE2 == frcType)
     return FrcType::GET_BYTE2;
   else
-    THROW_EX(std::logic_error, "Invalid: " << PAR(frcType));
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(FrcType, frcType));
 }
 
 const std::string& PrfFrc::encodeFrcType(FrcType frcType)
 {
   switch (frcType) {
-  case FrcType::GET_BIT2: return STR_GET_2BIT;
+  case FrcType::GET_BIT2: return STR_GET_BIT2;
   case FrcType::GET_BYTE: return STR_GET_BYTE;
-  case FrcType::GET_BYTE2: return STR_GET_2BYTE;
+  case FrcType::GET_BYTE2: return STR_GET_BYTE2;
   default:
-    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(frcType, (uint8_t)frcType));
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(FrcType, (int)frcType));
   }
 }
 
@@ -290,7 +291,7 @@ PrfFrc::FrcCmd PrfFrc::parseFrcCmd(const std::string& frcCmd)
   else if (STR_FRC_FrcResponseTime == frcCmd)
     return FrcCmd::FrcResponseTime;
   else
-    THROW_EX(std::logic_error, "Invalid: " << PAR(frcCmd));
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(FrcCmd, frcCmd));
 }
 
 const std::string& PrfFrc::encodeFrcCmd(FrcCmd frcCmd)
@@ -305,6 +306,6 @@ const std::string& PrfFrc::encodeFrcCmd(FrcCmd frcCmd)
   case FrcCmd::MemoryReadPlus1: return STR_FRC_MemoryReadPlus1;
   case FrcCmd::FrcResponseTime: return STR_FRC_FrcResponseTime;
   default:
-    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(frcCmd, (int)frcCmd));
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(FrcCmd, (int)frcCmd));
   }
 }
