@@ -46,8 +46,8 @@ public:
   typedef std::basic_string<unsigned char> UserData;
 
   PrfFrc();
-  PrfFrc::PrfFrc(Cmd command, FrcType frcType, uint8_t frcUser, UserData udata = { 0, 0 });
-  PrfFrc::PrfFrc(Cmd command, FrcCmd frcCmd, UserData udata = { 0, 0 });
+  PrfFrc(Cmd command, FrcType frcType, uint8_t frcUser, UserData udata = { 0, 0 });
+  PrfFrc(Cmd command, FrcCmd frcCmd, UserData udata = { 0, 0 });
   virtual ~PrfFrc();
 
   void parseResponse(const DpaMessage& response) override;
