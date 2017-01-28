@@ -84,10 +84,6 @@ private:
   uint8_t m_frcOffset = 0;
   uint8_t m_status = 0;
 
-  union {
-    uint8_t bit2[FRC_MAX_NODE_BIT2];
-    uint8_t byte[FRC_MAX_NODE_BYTE];
-    uint16_t byte2[FRC_MAX_NODE_BYTE2];
-  } m_data = { 0 };
+  uint8_t m_data[FRC_MAX_NODE_BIT2] = { 0 };
 
 };

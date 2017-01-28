@@ -101,7 +101,7 @@ uint8_t PrfFrc::getFrcData_bit2(uint16_t addr) const
 {
   uint8_t retval = 0;
   if (addr <= FRC_MAX_NODE_BIT2 && addr > 0)
-    retval = m_data.bit2[addr-1];
+    retval = m_data[addr-1];
   return retval;
 }
 
@@ -109,7 +109,7 @@ uint8_t PrfFrc::getFrcData_Byte(uint16_t addr) const
 {
   uint8_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE && addr > 0)
-    retval = m_data.byte[addr-1];
+    retval = m_data[addr-1];
   return retval;
 }
 
@@ -117,7 +117,7 @@ uint16_t PrfFrc::getFrcData_Byte2(uint16_t addr) const
 {
   uint16_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE2 && addr > 0)
-    retval = m_data.byte2[addr-1];
+    retval = *((uint16_t*)&m_data[(addr-1)*2]);
   return retval;
 }
 
@@ -151,13 +151,11 @@ void PrfFrc::setDpaTask(const DpaTask& dpaTask)
 
 void PrfFrc::parseResponse(const DpaMessage& response)
 {
-  //TODO Len of m_data and FrcData is not checked properly
-  //missing Extra result processing
+  //TODO missing Extra result processing
   bool extraResult = false;
 
   if (getCmd() == Cmd::SEND) {
     m_status = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.Status;
-    //size_t sz = DPA_MAX_DATA_LENGTH - sizeof(uns8);
 
     switch (m_frcType) {
     
@@ -180,7 +178,7 @@ void PrfFrc::parseResponse(const DpaMessage& response)
           val0 >>= 1;
           val1 >>= 1;
           if (iii = 8*i + ii) //skip 0 node
-            m_data.bit2[iii-1] = val;
+            m_data[iii-1] = val;
         }
       }
     }
@@ -191,7 +189,7 @@ void PrfFrc::parseResponse(const DpaMessage& response)
       int resulSize = extraResult ? 62 : 54;
       const uint8_t* pdata = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[1]);
       for (int i = 0; i < resulSize; i++) {
-        m_data.byte[i] = *(pdata + i);
+        m_data[i] = *(pdata + i);
       }
     }
     break;
@@ -199,9 +197,12 @@ void PrfFrc::parseResponse(const DpaMessage& response)
     case FrcType::GET_BYTE2:
     {
       int resulSize = extraResult ? 30 : 26;
-      const uint8_t* pdata = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[2]);
-      for (int i = 0; i < extraResult; i++) {
-        m_data.byte2[i] = *((uint16_t*)(pdata + i * 2));
+      resulSize *= 2;
+      TPerFrcSend_Response rsp = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response;
+      const uint8_t* pdata = &(rsp.FrcData[2]);
+      for (int i = 0; i < resulSize; i += 2) {
+        m_data[i] = *(pdata + i);
+        m_data[i + 1] = *(pdata + i + 1);
       }
     }
     break;
