@@ -12,12 +12,10 @@ public:
   static const std::string PRF_NAME;
 
   PrfThermometer();
-  PrfThermometer(int address, Cmd command);
+  PrfThermometer(uint16_t address, Cmd command);
   virtual ~PrfThermometer();
 
-  const DpaMessage& getRequest() override;
   void parseResponse(const DpaMessage& response) override;
-
   void parseCommand(const std::string& command) override;
   const std::string& encodeCommand() const override;
 
@@ -26,7 +24,11 @@ public:
   uint8_t getRaw8Temperature() const { return m_8Temperature; }
   uint16_t getRaw16Temperature() const { return m_16Temperature; }
 
+  Cmd getCmd() const;
+  void setCmd(Cmd cmd);
+
 private:
+  Cmd m_cmd = Cmd::READ;
   int m_intTemperature = -273;
   float m_floatTemperature = -273.15f;
   uint8_t m_8Temperature = 0;

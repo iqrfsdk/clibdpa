@@ -15,10 +15,9 @@ public:
 
   PrfRaw();
   PrfRaw(const DpaMessage& request);
-  virtual ~PrfRaw() {}
+  virtual ~PrfRaw();
 
   //from IQRF 
-  const DpaMessage& getRequest() override;
   void parseConfirmation(const DpaMessage& confirmation) override;
   void parseResponse(const DpaMessage& response) override;
 

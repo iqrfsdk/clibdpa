@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DpaTask.h"
+#include <bitset>
 
 class PrfFrc : public DpaTask
 {
@@ -14,47 +15,79 @@ public:
 
   // Type of collected data
   enum class FrcType {
-    USER_BIT = FRC_USER_BIT_FROM,
-    USER_BYTE = FRC_USER_BYTE_FROM,
-    USER_2BYTE = FRC_USER_2BYTE_FROM
+    GET_BIT2 = FRC_USER_BIT_FROM,
+    GET_BYTE = FRC_USER_BYTE_FROM,
+    GET_BYTE2 = FRC_USER_2BYTE_FROM
+  };
+
+  // Predefined FRC commands
+  enum class FrcCmd {
+    Prebonding = FRC_Prebonding,
+    UART_SPI_data = FRC_UART_SPI_data,
+    AcknowledgedBroadcastBits = FRC_AcknowledgedBroadcastBits,
+    Temperature = FRC_Temperature,
+    AcknowledgedBroadcastBytes = FRC_AcknowledgedBroadcastBytes,
+    MemoryRead = FRC_MemoryRead,
+    MemoryReadPlus1 = FRC_MemoryReadPlus1,
+    FrcResponseTime = FRC_FrcResponseTime
   };
 
   static const std::string PRF_NAME;
-  static const int FRC_MAX_NODE = 240;
+
+  static const int FRC_MAX_NODE_BIT2 = 239;
+  static const int FRC_MAX_NODE_BYTE = 62;
+  static const int FRC_MAX_NODE_BYTE2 = 30;
+
   static const int FRC_MIN_UDATA_LEN = 2;
   static const int FRC_MAX_UDATA_LEN = 30;
+  
+  static const int FRC_DEFAULT_TIMEOUT = 2000;
 
   typedef std::basic_string<unsigned char> UserData;
 
   PrfFrc();
-  PrfFrc::PrfFrc(int address, Cmd command, FrcType frcType, uint8_t frcUser, UserData udata = { 0, 0 });
-  PrfFrc::PrfFrc(int address, Cmd command, uint8_t frc, UserData udata = { 0, 0 });
+  PrfFrc::PrfFrc(Cmd command, FrcType frcType, uint8_t frcUser, UserData udata = { 0, 0 });
+  PrfFrc::PrfFrc(Cmd command, FrcCmd frcCmd, UserData udata = { 0, 0 });
   virtual ~PrfFrc();
 
-  const DpaMessage& getRequest() override;
   void parseResponse(const DpaMessage& response) override;
 
   void parseCommand(const std::string& command) override;
   const std::string& encodeCommand() const override;
 
+  Cmd getCmd() const;
+  void setCmd(Cmd cmd);
+
+  uint8_t getFrcCommand() const;
+  void setFrcCommand(FrcCmd frcCmd);
+  void setFrcCommand(FrcType frcType, uint8_t frcUser);
   FrcType getFrcType() const { return m_frcType; }
-  uint8_t getFrcUser() const { return m_frcUser; }
-  uint8_t getFrc() const { return (uint8_t)m_frcType + m_frcUser; }
+  uint8_t getFrcUser() const { return m_frcOffset; }
 
-  uint16_t getData(uint16_t addr) const;
+  uint8_t getFrcData_bit2(uint16_t addr) const;
+  uint8_t getFrcData_Byte(uint16_t addr) const;
+  uint16_t getFrcData_Byte2(uint16_t addr) const;
 
-  static bool separateFrc(uint8_t frc, FrcType& frcType, uint8_t& frcUser);
-  static void trimFrcUser(FrcType frcType, uint8_t& frcUser);
-  static void trimUserData(UserData& udata);
+  void setUserData(const UserData& udata);
+  void setDpaTask(const DpaTask& dpaTask); //hosted DpaRequest
+
+protected:
+  static FrcType parseFrcType(const std::string& frcType);
+  static const std::string& encodeFrcType(FrcType frcType);
+  static PrfFrc::FrcCmd parseFrcCmd(const std::string& frcCmd);
+  static const std::string& encodeFrcCmd(FrcCmd frcCmd);
 
 private:
-  void parseFrcType(const std::string& frcType);
-  const std::string& encodeFrcType() const;
-
-  FrcType m_frcType = FrcType::USER_BIT;
-  uint8_t m_frcUser = 0;
-  UserData m_udata = { 0, 0 };
-
+  void init();
+  Cmd m_cmd = Cmd::SEND;
+  FrcType m_frcType = FrcType::GET_BIT2;
+  uint8_t m_frcOffset = 0;
   uint8_t m_status = 0;
-  uint16_t m_data[FRC_MAX_NODE] = { 0 };
+
+  union {
+    uint8_t bit2[FRC_MAX_NODE_BIT2];
+    uint8_t byte[FRC_MAX_NODE_BYTE];
+    uint16_t byte2[FRC_MAX_NODE_BYTE2];
+  } m_data = { 0 };
+
 };

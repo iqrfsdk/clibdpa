@@ -9,22 +9,12 @@ class DpaTask
 {
 public:
   DpaTask() = delete;
-
-  DpaTask(const std::string& prfName)
-    :m_prfName(prfName)
-  {}
-
-  DpaTask(const std::string& prfName, int address, int command)
-    : m_prfName(prfName)
-    , m_address(address)
-    , m_command(command)
-  {}
-
-  virtual ~DpaTask()
-  {}
+  DpaTask(const std::string& prfName, uint8_t prfNum);
+  DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command);
+  virtual ~DpaTask();
 
   //from IQRF 
-  virtual const DpaMessage& getRequest() = 0;
+  const DpaMessage& getRequest() const { return m_request; }
   virtual void parseConfirmation(const DpaMessage& confirmation) {}
   virtual void parseResponse(const DpaMessage& response) = 0;
 
@@ -36,19 +26,16 @@ public:
   const std::string& getPrfName() const { return m_prfName; }
   const std::string& getClid() const { return m_clid; }
   void setClid(const std::string& clid) { m_clid = clid; }
-  int getAddress() const { return m_address; }
-  void setAddress(int address) { m_address = address; }
+  uint16_t getAddress() const;
+  void setAddress(uint16_t address);
+  uint8_t getPcmd() const;
+  void setPcmd(uint8_t command);
   int getTimeout() const { return m_timeout; }
   void setTimeout(int timeout) { m_timeout = timeout; }
-  int getCommand() const { return m_command; }
-  bool isValid() const { return m_valid; }
 
 protected:
   std::string m_prfName;
   std::string m_clid; //client ID
-  bool m_valid = false;
-  int m_address = -1;
   int m_timeout = -1;
-  int m_command = -1;
   DpaMessage m_request;
 };

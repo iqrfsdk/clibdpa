@@ -4,34 +4,19 @@
 const std::string PrfThermometer::PRF_NAME("Thermometer");
 
 const std::string STR_CMD_THERMOMETER_READ("READ");
-const std::string STR_CMD_UNKNOWN("UNKNOWN");
 
 PrfThermometer::PrfThermometer()
-  :DpaTask(PRF_NAME)
+  :DpaTask(PRF_NAME, PNUM_THERMOMETER)
 {
 }
 
-PrfThermometer::PrfThermometer(int address, Cmd command)
-  : DpaTask(PRF_NAME, address, (int)command)
+PrfThermometer::PrfThermometer(uint16_t address, Cmd command)
+  : DpaTask(PRF_NAME, PNUM_THERMOMETER, address, (uint8_t)command)
 {
 }
 
 PrfThermometer::~PrfThermometer()
 {
-}
-
-const DpaMessage& PrfThermometer::getRequest()
-{
-  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
-
-  packet.DpaRequestPacket_t.NADR = m_address;
-  packet.DpaRequestPacket_t.PNUM = PNUM_THERMOMETER;
-  packet.DpaRequestPacket_t.PCMD = (uint8_t)m_command;
-  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-
-  m_request.SetLength(sizeof(TDpaIFaceHeader));
-
-  return m_request;
 }
 
 void PrfThermometer::parseResponse(const DpaMessage& response)
@@ -56,21 +41,31 @@ void PrfThermometer::parseResponse(const DpaMessage& response)
   m_floatTemperature = tempi * 0.0625; // *1/16
 }
 
+PrfThermometer::Cmd PrfThermometer::getCmd() const
+{
+  return m_cmd;
+}
+
+void PrfThermometer::setCmd(PrfThermometer::Cmd cmd)
+{
+  m_cmd = cmd;
+  setPcmd((uint8_t)m_cmd);
+}
+
 void PrfThermometer::parseCommand(const std::string& command)
 {
-  m_valid = true;
   if (STR_CMD_THERMOMETER_READ == command)
-    m_command =  CMD_THERMOMETER_READ;
+    setCmd(Cmd::READ);
   else
-    m_valid = false;
+    THROW_EX(std::logic_error, "Invalid command: " << PAR(command));
 }
 
 const std::string& PrfThermometer::encodeCommand() const
 {
-  switch (m_command) {
-  case CMD_THERMOMETER_READ:
+  switch (getCmd()) {
+  case Cmd::READ:
     return STR_CMD_THERMOMETER_READ;
   default:
-    return STR_CMD_UNKNOWN;
+    THROW_EX(std::logic_error, "Invalid command: " << NAME_PAR(command, (uint8_t)getCmd()));
   }
 }

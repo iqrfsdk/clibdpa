@@ -1,6 +1,7 @@
 project(DpaExtension)
 
 set(DpaExtension_SRC_FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/DpaTask.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/DpaTransactionTask.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfRaw.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfLeds.cpp

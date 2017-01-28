@@ -3,230 +3,308 @@
 
 const std::string PrfFrc::PRF_NAME("FRC");
 
+// Commands
 const std::string STR_CMD_SEND("SEND");
 const std::string STR_CMD_EXTRARESULT("EXTRARESULT");
 const std::string STR_CMD_SEND_SELECTIVE("SEND_SELECTIVE");
 const std::string STR_CMD_SET_PARAMS("SET_PARAMS");
 
-const std::string STR_UNKNOWN("UNKNOWN");
-
 // Type of collected data
-const std::string STR_USER_BIT("USER_BIT_FROM");
-const std::string STR_USER_BYTE("USER_BIT_FROM");
-const std::string STR_USER_2BYTE("USER_BIT_FROM");
+const std::string STR_GET_2BIT("GET_2BIT");
+const std::string STR_GET_BYTE("GET_BYTE");
+const std::string STR_GET_2BYTE("GET_2BYTE_FROM");
+
+// Predefined FRC commands
+const std::string STR_FRC_Prebonding("Prebonding");
+const std::string STR_FRC_UART_SPI_data("UART_SPI_data");
+const std::string STR_FRC_AcknowledgedBroadcastBits("AcknowledgedBroadcastBits");
+const std::string STR_FRC_Temperature("Temperature");
+const std::string STR_FRC_AcknowledgedBroadcastBytes("AcknowledgedBroadcastBytes");
+const std::string STR_FRC_MemoryRead("MemoryRead");
+const std::string STR_FRC_MemoryReadPlus1("MemoryReadPlus1");
+const std::string STR_FRC_FrcResponseTime("FrcResponseTime");
+
+void PrfFrc::init()
+{
+  m_request.SetLength(sizeof(TDpaIFaceHeader) + sizeof(uint8_t));
+  setTimeout(FRC_DEFAULT_TIMEOUT);
+}
 
 PrfFrc::PrfFrc()
-  :DpaTask(PRF_NAME)
+  :DpaTask(PRF_NAME, PNUM_FRC)
 {
-  trimUserData(m_udata);
+  init();
+  setUserData({ 0,0 });
 }
 
-PrfFrc::PrfFrc(int address, Cmd command, FrcType frcType, uint8_t frcUser, UserData udata)
-  : DpaTask(PRF_NAME, address, (int)command)
+PrfFrc::PrfFrc(Cmd command, FrcType frcType, uint8_t frcUser, UserData udata)
+  : DpaTask(PRF_NAME, PNUM_FRC, 0, (uint8_t)command)
   , m_frcType(frcType)
-  , m_frcUser(frcUser)
-  , m_udata(udata)
+  , m_frcOffset(frcUser)
 {
-  trimFrcUser(frcType, frcUser);
-  trimUserData(m_udata);
+  init();
+  setFrcCommand(frcType, frcUser);
+  setUserData(udata);
 }
 
-PrfFrc::PrfFrc(int address, Cmd command, uint8_t frc, UserData udata)
-  : DpaTask(PRF_NAME, address, (int)command)
-  , m_udata(udata)
+PrfFrc::PrfFrc(Cmd command, FrcCmd frcCmd, UserData udata)
+  : DpaTask(PRF_NAME, PNUM_FRC, 0, (uint8_t)command)
 {
-  if (!separateFrc(frc, m_frcType, m_frcUser)) {
-    THROW_EX(std::logic_error, "Reserved value: " << PAR(frc));
-  }
-  trimUserData(m_udata);
+  init();
+  setFrcCommand(frcCmd);
+  setUserData(udata);
 }
 
 PrfFrc::~PrfFrc()
 {
 }
 
-bool PrfFrc::separateFrc(uint8_t frc, FrcType& frcType, uint8_t& frcUser)
+uint8_t PrfFrc::getFrcCommand() const
 {
-  bool retval = true;
-  if (frc < FRC_USER_BIT_FROM) {
-    retval = false;
+  return m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand;
+}
+
+void PrfFrc::setFrcCommand(FrcCmd frcCmd)
+{
+  if ((uint8_t)frcCmd <= FRC_USER_BIT_TO) {
+    m_frcType = FrcType::GET_BIT2;
+    m_frcOffset = (uint8_t)frcCmd;
   }
-  else if (frc <= FRC_USER_BIT_TO) {
-    frcType = FrcType::USER_BIT;
-    frcUser = frc - FRC_USER_BIT_FROM;
+  else if ((uint8_t)frcCmd <= FRC_USER_BYTE_TO) {
+    m_frcType = FrcType::GET_BYTE;
+    m_frcOffset = (uint8_t)frcCmd - FRC_USER_BIT_TO + 1;
   }
-  else if (frc < FRC_USER_BYTE_FROM) {
-    retval = false;
+  else {
+    m_frcType = FrcType::GET_BYTE2;
+    m_frcOffset = (uint8_t)frcCmd - FRC_USER_BYTE_TO + 1;
   }
-  else if (frc <= FRC_USER_BYTE_TO) {
-    frcType = FrcType::USER_BYTE;
-    frcUser = frc - FRC_USER_BYTE_FROM;
+  
+  m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)frcCmd;
+}
+
+void PrfFrc::setFrcCommand(FrcType frcType, uint8_t frcUser)
+{
+  if ((frcType == FrcType::GET_BIT2 && frcUser <= FRC_USER_BIT_TO - FRC_USER_BIT_FROM) ||
+    (frcType == FrcType::GET_BYTE && frcUser <= FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM) ||
+    (frcType == FrcType::GET_BYTE2 && frcUser <= FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM)) {
+    THROW_EX(std::logic_error, "Inappropriate: " << NAME_PAR(frcType, (uint8_t)frcType) << PAR(frcUser));
   }
-  else if (frc < FRC_USER_2BYTE_FROM) {
-    retval = false;
+  else {
+    m_frcType = frcType;
+    m_frcOffset = frcUser;
+    m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)m_frcType + m_frcOffset;
   }
-  else if (frc <= FRC_USER_2BYTE_TO) {
-    frcType = FrcType::USER_2BYTE;
-    frcUser = frc - FRC_USER_2BYTE_FROM;
-  }
+}
+
+uint8_t PrfFrc::getFrcData_bit2(uint16_t addr) const
+{
+  uint8_t retval = 0;
+  if (addr <= FRC_MAX_NODE_BIT2 && addr > 0)
+    retval = m_data.bit2[addr-1];
   return retval;
 }
 
-void PrfFrc::trimFrcUser(FrcType frcType, uint8_t& frcUser)
+uint8_t PrfFrc::getFrcData_Byte(uint16_t addr) const
 {
-  switch (frcType) {
-  case FrcType::USER_BIT:
-    frcUser = frcUser <= FRC_USER_BIT_TO - FRC_USER_BIT_FROM ?
-      frcUser : FRC_USER_BIT_TO - FRC_USER_BIT_FROM;
-    break;
-  case FrcType::USER_BYTE:
-    frcUser = frcUser <= FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM ?
-      frcUser : FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM;
-    break;
-  case FrcType::USER_2BYTE:
-    frcUser = frcUser <= FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM ?
-      frcUser : FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM;
-    break;
-  default:
-    frcUser = 0;
-  }
+  uint8_t retval = 0;
+  if (addr <= FRC_MAX_NODE_BYTE && addr > 0)
+    retval = m_data.byte[addr-1];
+  return retval;
 }
 
-void PrfFrc::trimUserData(UserData& udata)
-{
-  while (udata.size() < FRC_MIN_UDATA_LEN) {
-    udata.push_back(0);
-  }
-  if (udata.size() > FRC_MAX_UDATA_LEN) {
-    udata = udata.substr(0, FRC_MAX_UDATA_LEN - 1);
-  }
-}
-
-const DpaMessage& PrfFrc::getRequest()
-{
-  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
-
-  packet.DpaRequestPacket_t.NADR = m_address;
-  packet.DpaRequestPacket_t.PNUM = PNUM_FRC;
-  packet.DpaRequestPacket_t.PCMD = (uint8_t)m_command;
-  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-
-  switch (m_command) {
-  case (int)Cmd::SEND: {
-    packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)m_frcType + m_frcUser;
-    //TODO user data
-    packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData[0] = 0;
-    packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData[1] = 0;
-
-    m_request.SetLength(sizeof(TDpaIFaceHeader) + 3);
-
-    break;
-  }
-  case (int)Cmd::EXTRARESULT:
-  case (int)Cmd::SEND_SELECTIVE:
-  case (int)Cmd::SET_PARAMS:
-  default:
-    m_request.SetLength(sizeof(TDpaIFaceHeader) + 3);
-  }
-
-  return m_request;
-}
-
-uint16_t PrfFrc::getData(uint16_t addr) const
+uint16_t PrfFrc::getFrcData_Byte2(uint16_t addr) const
 {
   uint16_t retval = 0;
-  if (addr < FRC_MAX_NODE)
-    retval = m_data[addr];
+  if (addr <= FRC_MAX_NODE_BYTE2 && addr > 0)
+    retval = m_data.byte2[addr-1];
   return retval;
+}
+
+void PrfFrc::setUserData(const UserData& udata)
+{
+  if (udata.size() < FRC_MIN_UDATA_LEN || udata.size() > FRC_MAX_UDATA_LEN)
+    THROW_EX(std::logic_error, "Bad user data size: " << NAME_PAR(size, udata.size()));
+
+  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+
+  switch (getCmd()) {
+  case Cmd::SEND: {
+    packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)m_frcType + m_frcOffset;
+    std::copy(udata.begin(), udata.end()-1, packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData);
+    m_request.SetLength(m_request.Length() + udata.size());
+
+    break;
+  }
+  case Cmd::EXTRARESULT:
+  case Cmd::SEND_SELECTIVE:
+  case Cmd::SET_PARAMS:
+  default:
+    m_request.SetLength(sizeof(TDpaIFaceHeader) + 3);
+  }
+}
+
+void PrfFrc::setDpaTask(const DpaTask& dpaTask)
+{
+  DpaMessage msg = dpaTask.getRequest();
 }
 
 void PrfFrc::parseResponse(const DpaMessage& response)
 {
-  if (m_command == CMD_FRC_SEND) {
-    uns8 status = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.Status;
-    size_t sz = DPA_MAX_DATA_LENGTH - sizeof(uns8);
+  //TODO Len of m_data and FrcData is not checked properly
+  //missing Extra result processing
+  bool extraResult = false;
 
-    //TODO 30, 32 as constants? Derived from DPA_MAX_DATA_LENGTH
+  if (getCmd() == Cmd::SEND) {
+    m_status = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.Status;
+    //size_t sz = DPA_MAX_DATA_LENGTH - sizeof(uns8);
+
     switch (m_frcType) {
     
-    case FrcType::USER_BIT:
+    case FrcType::GET_BIT2:
     {
-      const uint8_t* pdata1 = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[0]);
-      const uint8_t* pdata2 = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[32]);
-      uint8_t val1, val2, v;
-      for (int i = 0; i < 30; i++) {
+      int resulSize = extraResult ? 30 : 23;
+      TPerFrcSend_Response rsp = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response;
+
+      const uint8_t* pdata0 = &(rsp.FrcData[0]);
+      const uint8_t* pdata1 = &(rsp.FrcData[32]);
+      uint8_t val0, val1, val;
+      int i, ii, iii;
+      for (i = 0; i < resulSize; i++) {
+        val0 = *(pdata0 + i);
         val1 = *(pdata1 + i);
-        val2 = *(pdata2 + i);
-        for (int ii = 0; ii < 8; ii++) {
-          v = val1 & 0x80;
-          v >>= 1;
-          v |= val2 & 0x80;
-          v >>= 6;
-          m_data[i*ii] = v;
-          val1 <<= 1;
-          val2 <<= 1;
+        for (ii = 0; ii < 8; ii++) {
+          val = val1 & 0x01;
+          val <<= 1;
+          val |= val0 & 0x01;
+          val0 >>= 1;
+          val1 >>= 1;
+          if (iii = 8*i + ii) //skip 0 node
+            m_data.bit2[iii-1] = val;
         }
       }
     }
     break;
     
-    case FrcType::USER_BYTE:
-      //TODO
-      break;
-    case FrcType::USER_2BYTE:
-      //TODO
-      break;
+    case FrcType::GET_BYTE:
+    {
+      int resulSize = extraResult ? 62 : 54;
+      const uint8_t* pdata = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[1]);
+      for (int i = 0; i < resulSize; i++) {
+        m_data.byte[i] = *(pdata + i);
+      }
+    }
+    break;
+
+    case FrcType::GET_BYTE2:
+    {
+      int resulSize = extraResult ? 30 : 26;
+      const uint8_t* pdata = &(response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.FrcData[2]);
+      for (int i = 0; i < extraResult; i++) {
+        m_data.byte2[i] = *((uint16_t*)(pdata + i * 2));
+      }
+    }
+    break;
+    
     default:
       ;
     }
   }
 }
 
+PrfFrc::Cmd PrfFrc::getCmd() const
+{
+  return m_cmd;
+}
+
+void PrfFrc::setCmd(PrfFrc::Cmd cmd)
+{
+  m_cmd = cmd;
+  setPcmd((uint8_t)m_cmd);
+}
+
 void PrfFrc::parseCommand(const std::string& command)
 {
-  m_valid = true;
   if (STR_CMD_SEND == command)
-    m_command = CMD_FRC_SEND;
+    setCmd(Cmd::SEND);
   else if (STR_CMD_EXTRARESULT == command)
-    m_command = CMD_FRC_EXTRARESULT;
+    setCmd(Cmd::EXTRARESULT);
   else if (STR_CMD_SEND_SELECTIVE == command)
-    m_command = CMD_FRC_SEND_SELECTIVE;
+    setCmd(Cmd::SEND_SELECTIVE);
   else if (STR_CMD_SET_PARAMS == command)
-    m_command = CMD_FRC_SET_PARAMS;
-  m_valid = false;
+    setCmd(Cmd::SET_PARAMS);
+  else
+    THROW_EX(std::logic_error, "Invalid command: " << PAR(command));
 }
 
 const std::string& PrfFrc::encodeCommand() const
 {
-  switch (m_command) {
-  case CMD_FRC_SEND: return STR_CMD_SEND;
-  case CMD_FRC_EXTRARESULT: return STR_CMD_EXTRARESULT;
-  case CMD_FRC_SEND_SELECTIVE: return STR_CMD_SEND_SELECTIVE;
-  case CMD_FRC_SET_PARAMS: return STR_CMD_SET_PARAMS;
+  switch (getCmd()) {
+  case Cmd::SEND: return STR_CMD_SEND;
+  case Cmd::EXTRARESULT: return STR_CMD_EXTRARESULT;
+  case Cmd::SEND_SELECTIVE: return STR_CMD_SEND_SELECTIVE;
+  case Cmd::SET_PARAMS: return STR_CMD_SET_PARAMS;
   default:
-    return STR_UNKNOWN;
+    THROW_EX(std::logic_error, "Invalid command: " << NAME_PAR(command, (uint8_t)getCmd()));
   }
 }
 
-void PrfFrc::parseFrcType(const std::string& frcType)
+PrfFrc::FrcType PrfFrc::parseFrcType(const std::string& frcType)
 {
-  m_valid = true;
-  if (STR_USER_BIT == frcType)
-    m_frcType = FrcType::USER_BIT;
-  else if (STR_USER_BYTE == frcType)
-    m_frcType = FrcType::USER_BYTE;
-  else if (STR_USER_2BYTE == frcType)
-    m_frcType = FrcType::USER_2BYTE;
-  m_valid = false;
+  if (STR_GET_2BIT == frcType)
+    return FrcType::GET_BIT2;
+  else if (STR_GET_BYTE == frcType)
+    return FrcType::GET_BYTE;
+  else if (STR_GET_2BYTE == frcType)
+    return FrcType::GET_BYTE2;
+  else
+    THROW_EX(std::logic_error, "Invalid: " << PAR(frcType));
 }
 
-const std::string& PrfFrc::encodeFrcType() const
+const std::string& PrfFrc::encodeFrcType(FrcType frcType)
 {
-  switch (m_frcType) {
-  case FrcType::USER_BIT: return STR_USER_BIT;
-  case FrcType::USER_BYTE: return STR_USER_BYTE;
-  case FrcType::USER_2BYTE: return STR_USER_2BYTE;
+  switch (frcType) {
+  case FrcType::GET_BIT2: return STR_GET_2BIT;
+  case FrcType::GET_BYTE: return STR_GET_BYTE;
+  case FrcType::GET_BYTE2: return STR_GET_2BYTE;
   default:
-    return STR_UNKNOWN;
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(frcType, (uint8_t)frcType));
+  }
+}
+
+PrfFrc::FrcCmd PrfFrc::parseFrcCmd(const std::string& frcCmd)
+{
+  if (STR_FRC_Prebonding == frcCmd)
+    return FrcCmd::Prebonding;
+  else if (STR_FRC_UART_SPI_data == frcCmd)
+    return FrcCmd::UART_SPI_data;
+  else if (STR_FRC_AcknowledgedBroadcastBits == frcCmd)
+    return FrcCmd::AcknowledgedBroadcastBits;
+  else if (STR_FRC_Temperature == frcCmd)
+    return FrcCmd::Temperature;
+  else if (STR_FRC_AcknowledgedBroadcastBytes == frcCmd)
+    return FrcCmd::AcknowledgedBroadcastBytes;
+  else if (STR_FRC_MemoryRead == frcCmd)
+    return FrcCmd::MemoryRead;
+  else if (STR_FRC_MemoryReadPlus1 == frcCmd)
+    return FrcCmd::MemoryReadPlus1;
+  else if (STR_FRC_FrcResponseTime == frcCmd)
+    return FrcCmd::FrcResponseTime;
+  else
+    THROW_EX(std::logic_error, "Invalid: " << PAR(frcCmd));
+}
+
+const std::string& PrfFrc::encodeFrcCmd(FrcCmd frcCmd)
+{
+  switch (frcCmd) {
+  case FrcCmd::Prebonding: return STR_FRC_Prebonding;
+  case FrcCmd::UART_SPI_data: return STR_FRC_UART_SPI_data;
+  case FrcCmd::AcknowledgedBroadcastBits: return STR_FRC_AcknowledgedBroadcastBits;
+  case FrcCmd::Temperature: return STR_FRC_Temperature;
+  case FrcCmd::AcknowledgedBroadcastBytes: return STR_FRC_AcknowledgedBroadcastBytes;
+  case FrcCmd::MemoryRead: return STR_FRC_MemoryRead;
+  case FrcCmd::MemoryReadPlus1: return STR_FRC_MemoryReadPlus1;
+  case FrcCmd::FrcResponseTime: return STR_FRC_FrcResponseTime;
+  default:
+    THROW_EX(std::logic_error, "Invalid: " << NAME_PAR(frcCmd, (int)frcCmd));
   }
 }

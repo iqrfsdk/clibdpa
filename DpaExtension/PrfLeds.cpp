@@ -8,41 +8,31 @@ const std::string STR_CMD_LED_SET_OFF("OFF");
 const std::string STR_CMD_LED_SET_ON("ON");
 const std::string STR_CMD_LED_GET("GET");
 const std::string STR_CMD_LED_PULSE("PULSE");
-const std::string STR_CMD_UNKNOWN("UNKNOWN");
 
-PrfLed::PrfLed(const std::string& prfName, int colour)
-  : DpaTask(prfName)
+PrfLed::PrfLed(const std::string& prfName, uint8_t colour)
+  : DpaTask(prfName, colour)
 {
-  m_colour = colour;
+  m_request.DpaPacket().DpaRequestPacket_t.PNUM = colour;
 }
 
-PrfLed::PrfLed(const std::string& prfName, int colour, int address, Cmd command)
-  : DpaTask(prfName, address, (int)command)
+PrfLed::PrfLed(const std::string& prfName, uint8_t colour, uint16_t address, Cmd command)
+  : DpaTask(prfName, colour, address, (uint8_t)command)
 {
-  m_colour = colour;
+  m_request.DpaPacket().DpaRequestPacket_t.PNUM = colour;
 }
 
 PrfLed::~PrfLed()
 {
 }
 
-const DpaMessage& PrfLed::getRequest()
+uint8_t PrfLed::getColour() const
 {
-  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
-
-  packet.DpaRequestPacket_t.NADR = m_address;
-  packet.DpaRequestPacket_t.PNUM = (uint8_t)m_colour;
-  packet.DpaRequestPacket_t.PCMD = (uint8_t)m_command;
-  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-
-  m_request.SetLength(sizeof(TDpaIFaceHeader));
-
-  return m_request;
+  return m_request.DpaPacket().DpaRequestPacket_t.PNUM;
 }
 
 void PrfLed::parseResponse(const DpaMessage& response)
 {
-  if (m_command == (int)Cmd::GET) {
+  if (getPcmd() == (uint8_t)Cmd::GET) {
     m_ledState = response.DpaPacket().DpaResponsePacket_t.DpaMessage.Response.PData[0];
   }
   else {
@@ -50,33 +40,43 @@ void PrfLed::parseResponse(const DpaMessage& response)
   }
 }
 
+PrfLed::Cmd PrfLed::getCmd() const
+{
+  return m_cmd;
+}
+
+void PrfLed::setCmd(PrfLed::Cmd cmd)
+{
+  m_cmd = cmd;
+  setPcmd((uint8_t)m_cmd);
+}
+
 void PrfLed::parseCommand(const std::string& command)
 {
-  m_valid = true;
   if (STR_CMD_LED_SET_OFF == command)
-    m_command = CMD_LED_SET_OFF;
+    setCmd(Cmd::SET_OFF);
   else if (STR_CMD_LED_SET_ON == command)
-    m_command = CMD_LED_SET_ON;
+    setCmd(Cmd::SET_ON);
   else if (STR_CMD_LED_GET == command)
-    m_command = CMD_LED_GET;
+    setCmd(Cmd::GET);
   else if (STR_CMD_LED_PULSE == command)
-    m_command = CMD_LED_PULSE;
+    setCmd(Cmd::PULSE);
   else
-    m_valid = false;
+    THROW_EX(std::logic_error, "Invalid command: " << PAR(command));
 }
 
 const std::string& PrfLed::encodeCommand() const
 {
-  switch (m_command) {
-  case CMD_LED_SET_OFF:
+  switch (getCmd()) {
+  case Cmd::SET_OFF:
     return STR_CMD_LED_SET_OFF;
-  case CMD_LED_SET_ON:
+  case Cmd::SET_ON:
     return STR_CMD_LED_SET_ON;
-  case CMD_LED_GET:
+  case Cmd::GET:
     return STR_CMD_LED_GET;
-  case CMD_LED_PULSE:
+  case Cmd::PULSE:
     return STR_CMD_LED_PULSE;
   default:
-    return STR_CMD_UNKNOWN;
+    THROW_EX(std::logic_error, "Invalid command: " << NAME_PAR(command, (uint8_t)getCmd()));
   }
 }
