@@ -13,15 +13,14 @@ public:
   DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command);
   virtual ~DpaTask();
 
-  //from IQRF 
   const DpaMessage& getRequest() const { return m_request; }
   virtual void parseConfirmation(const DpaMessage& confirmation) {}
   virtual void parseResponse(const DpaMessage& response) = 0;
 
-  //from Messaging 
   virtual void parseCommand(const std::string& command) = 0;
   virtual const std::string& encodeCommand() const = 0;
   virtual std::string encodeResponse(const std::string& errStr) const { return std::string(); }
+  virtual std::string encodeRequest() const { return std::string(); }
 
   const std::string& getPrfName() const { return m_prfName; }
   const std::string& getClid() const { return m_clid; }

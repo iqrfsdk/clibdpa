@@ -99,14 +99,20 @@ void PrfFrc::setFrcCommand(FrcType frcType, uint8_t frcUser)
 
 uint8_t PrfFrc::getFrcData_bit2(uint16_t addr) const
 {
+  if (m_frcType != FrcType::GET_BIT2) {
+    TRC_WAR("Beware inconsistent call of the method: " << NAME_PAR(FrcType, encodeFrcType(m_frcType)));
+  }
   uint8_t retval = 0;
   if (addr <= FRC_MAX_NODE_BIT2 && addr > 0)
-    retval = m_data[addr-1];
+    retval = m_data[addr - 1];
   return retval;
 }
 
 uint8_t PrfFrc::getFrcData_Byte(uint16_t addr) const
 {
+  if (m_frcType != FrcType::GET_BYTE) {
+    TRC_WAR("Beware inconsistent call of the method: " << NAME_PAR(FrcType, encodeFrcType(m_frcType)));
+  }
   uint8_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE && addr > 0)
     retval = m_data[addr-1];
@@ -115,6 +121,9 @@ uint8_t PrfFrc::getFrcData_Byte(uint16_t addr) const
 
 uint16_t PrfFrc::getFrcData_Byte2(uint16_t addr) const
 {
+  if (m_frcType != FrcType::GET_BYTE2) {
+    TRC_WAR("Beware inconsistent call of the method: " << NAME_PAR(FrcType, encodeFrcType(m_frcType)));
+  }
   uint16_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE2 && addr > 0)
     retval = *((uint16_t*)&m_data[(addr-1)*2]);
