@@ -7,6 +7,7 @@ set(DpaExtension_SRC_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfLeds.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfThermometer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfFrc.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/PrfOs.cpp
 )
 
 set(DpaExtension_INC_FILES
@@ -16,6 +17,7 @@ set(DpaExtension_INC_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfLeds.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfThermometer.h
 	${CMAKE_CURRENT_SOURCE_DIR}/PrfFrc.h
+	${CMAKE_CURRENT_SOURCE_DIR}/PrfOs.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
