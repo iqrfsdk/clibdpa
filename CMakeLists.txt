@@ -49,11 +49,11 @@ include_directories(${clibspi_INCLUDE_DIRS})
 include_directories(${cutils_INCLUDE_DIRS})
 
 #library build
-add_subdirectory(dpa)
+add_subdirectory(Dpa)
 add_subdirectory(DpaExtension)
 
 #example build
-add_subdirectory(dpa_demo)
+add_subdirectory(DpaDemo)
 
 # Configure config file.
 # This file specifies actions performed and variables exported when using find_package on this project.

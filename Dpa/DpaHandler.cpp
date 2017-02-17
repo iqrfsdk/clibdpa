@@ -1,5 +1,5 @@
-﻿#include "include/DpaMessage.h"
-#include "include/DpaHandler.h"
+﻿#include "DpaMessage.h"
+#include "DpaHandler.h"
 #include "IqrfLogging.h"
 
 DpaHandler::DpaHandler(IChannel* dpa_interface) {

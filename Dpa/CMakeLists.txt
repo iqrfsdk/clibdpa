@@ -1,0 +1,35 @@
+project(Dpa)
+
+# Specify source and header files.
+set(Dpa_SRC_FILES
+	${CMAKE_SOURCE_DIR}/Dpa/DpaHandler.cpp
+	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.cpp
+	${CMAKE_SOURCE_DIR}/Dpa/DpaRequest.cpp
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.cpp
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.cpp
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.cpp
+)
+
+set(Dpa_INC_FILES
+	${CMAKE_SOURCE_DIR}/Dpa/DPA.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaWrapper.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaHandler.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaRequest.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaTransaction.h
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.h
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.h
+	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.h
+)
+
+include_directories(${CMAKE_SOURCE_DIR}/Dpa)
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")
+
+add_library(${PROJECT_NAME}
+	STATIC
+	${Dpa_SRC_FILES}
+	${Dpa_INC_FILES}
+)
+
+#install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
