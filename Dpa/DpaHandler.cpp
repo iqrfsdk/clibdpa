@@ -26,6 +26,9 @@ void DpaHandler::ResponseHandler(const std::basic_string<unsigned char>& message
   if (message.length() == 0)
     return;
 
+  TRC_DBG(">>>>>>>>>>>>>>>>>>" << std::endl <<
+      "Received from DPA interface: " << std::endl << FORM_HEX(message.data(), message.length()));
+
   DpaMessage received_message;
   try {
     received_message.FillFromResponse(message.data(), message.length());
@@ -49,6 +52,9 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
   }
 
   try {
+    TRC_DBG("<<<<<<<<<<<<<<<<<<" << std::endl <<
+      "Sent to DPA interface: " << std::endl << FORM_HEX(message.DpaPacketData(), message.Length()));
+
     dpa_interface_->sendTo(std::basic_string<unsigned char>(message.DpaPacketData(), message.Length()));
   }
   catch (std::exception& e) {
