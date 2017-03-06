@@ -1,9 +1,11 @@
 # IQRF - DPA Library
 
-IQRF DPA communication library with basic support of sending and receiving messages in DPA protocol message format. The library is based on DPA.h file where main message structures are defined. Messages are sent via DpaInterface class. DPA Library has no dependency on OS. 
-The core of library is DpaHandler class. It contains functions for sending and asynchronously receiving data from communication interface. All DPA commands are composed from request and response for coordinator requests and from request, confirmation and response in case of remote node. All states are internally controlled by DpaHandler class. 
- 
-Demo application uses implementation of DpaInterface for CDC message parser. CDC message parser is available for Linux and Microsoft Windows OS. 
+[![Build Status](https://travis-ci.org/Roman3349/clibdpa.svg?branch=master)](https://travis-ci.org/Roman3349/clibdpa)
+
+IQRF DPA communication library with basic support of sending and receiving messages in DPA protocol message format. The library is based on DPA.h file where main message structures are defined. Messages are sent via DpaInterface class. DPA Library has no dependency on OS.
+The core of library is DpaHandler class. It contains functions for sending and asynchronously receiving data from communication interface. All DPA commands are composed from request and response for coordinator requests and from request, confirmation and response in case of remote node. All states are internally controlled by DpaHandler class.
+
+Demo application uses implementation of DpaInterface for CDC message parser. CDC message parser is available for Linux and Microsoft Windows OS.
 
 
 Features
@@ -22,9 +24,9 @@ src
 
 ## How to use DPA Library
 To be able to use DPA Library you will need some communication interface based on abstract class defined in DpaInterface.h file.
- 
+
 ### CDC Dpa Interface
-For demo purposes we prepared implementation of CDC DPA interface. This interface is used by DPA Library. Source codes are in directory `src/DpaInterfaces/CdcDpaInterface`. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system. Function open has one parameter, the device name. This parameter is communication port identifier. On Linux based OS is in format `"/dev/ttyACM0"` and `"COM1"` on Windows machines.  Do not forget to set right privileges on Linux for port. 
+For demo purposes we prepared implementation of CDC DPA interface. This interface is used by DPA Library. Source codes are in directory `src/DpaInterfaces/CdcDpaInterface`. Static library with CDC driver from [this repository](https://github.com/iqrfsdk/clibcdc-linux) should be stored in lib/ windows or lib/linux folder depending on your system. Function open has one parameter, the device name. This parameter is communication port identifier. On Linux based OS is in format `"/dev/ttyACM0"` and `"COM1"` on Windows machines.  Do not forget to set right privileges on Linux for port.
 ```c
 CdcDpaInterface cdcDpaInterface;
 
@@ -43,13 +45,13 @@ The other interface prepared for demo is communication interface for Raspberry P
 SpiDpaInterface communication_interface;
 try {
 	communication_interface.Open("/dev/spidev0.0");
-} 
+}
 catch (...) {
 	// clean and return, something wrong was happened
 }
 ```
 
-If you are using Raspberry Pi with KON-RASP-01, you have to enable power for module and enable `CE0`. At the end, of course, disable and clean these GPIO. 
+If you are using Raspberry Pi with KON-RASP-01, you have to enable power for module and enable `CE0`. At the end, of course, disable and clean these GPIO.
 ```c
 gpio_setup(RPIIO_PIN_CE0, GPIO_DIRECTION_OUT, 0);
 gpio_setup(RESET_GPIO, GPIO_DIRECTION_OUT, 1);
@@ -61,7 +63,7 @@ gpio_cleanup(RPIIO_PIN_CE0);
 
 ```
 
-Now, you are ready to use DPA Library. In fact, you need only `DpaMessage` and `DpaHandler` classes. DpaMessage holds information about DPA packet used in IQRF DPA environment. All settings and packet types are described in DPA Framework Technical guide.  DpaHandler takes care about your requests, timeouts and other communication related stuffs. 
+Now, you are ready to use DPA Library. In fact, you need only `DpaMessage` and `DpaHandler` classes. DpaMessage holds information about DPA packet used in IQRF DPA environment. All settings and packet types are described in DPA Framework Technical guide.  DpaHandler takes care about your requests, timeouts and other communication related stuffs.
 Create an instance of DpaHandler with communication interface and use it. The example bellow pulses with green LED on the coordinator module.
 ```c
 DpaMessage message;
