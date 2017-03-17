@@ -36,7 +36,7 @@
 * @author Frantisek Mikulu, Rostislav Spinar
 */
 
-TRC_INIT("");
+TRC_INIT();
 
 int main(int argc, char** argv)
 {
