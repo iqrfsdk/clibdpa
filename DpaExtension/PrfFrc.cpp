@@ -1,3 +1,19 @@
+/**
+ * Copyright 2015-2017 MICRORISC s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "PrfFrc.h"
 #include "IqrfLogging.h"
 
@@ -78,7 +94,7 @@ void PrfFrc::setFrcCommand(FrcCmd frcCmd)
     m_frcType = FrcType::GET_BYTE2;
     m_frcOffset = (uint8_t)frcCmd - FRC_USER_BYTE_TO + 1;
   }
-  
+
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)frcCmd;
 }
 
@@ -87,7 +103,7 @@ void PrfFrc::setFrcCommand(FrcType frcType, uint8_t frcUser)
   if ((frcType == FrcType::GET_BIT2 && frcUser > FRC_USER_BIT_TO - FRC_USER_BIT_FROM) ||
     (frcType == FrcType::GET_BYTE && frcUser > FRC_USER_BYTE_TO - FRC_USER_BYTE_FROM) ||
     (frcType == FrcType::GET_BYTE2 && frcUser > FRC_USER_2BYTE_TO - FRC_USER_2BYTE_FROM)) {
-    THROW_EX(std::logic_error, "Inappropriate: " << 
+    THROW_EX(std::logic_error, "Inappropriate: " <<
       NAME_PAR(FrcType, encodeFrcType(frcType)) << NAME_PAR(FrcUser, (int)frcUser));
   }
   else {
@@ -167,7 +183,7 @@ void PrfFrc::parseResponse(const DpaMessage& response)
     m_status = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerFrcSend_Response.Status;
 
     switch (m_frcType) {
-    
+
     case FrcType::GET_BIT2:
     {
       int resulSize = extraResult ? 30 : 23;
@@ -192,7 +208,7 @@ void PrfFrc::parseResponse(const DpaMessage& response)
       }
     }
     break;
-    
+
     case FrcType::GET_BYTE:
     {
       int resulSize = extraResult ? 62 : 54;
@@ -215,7 +231,7 @@ void PrfFrc::parseResponse(const DpaMessage& response)
       }
     }
     break;
-    
+
     default:
       ;
     }
