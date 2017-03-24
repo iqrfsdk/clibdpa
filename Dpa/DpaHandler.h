@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-﻿#ifndef __DPA_HANDLER
+#ifndef __DPA_HANDLER
 #define __DPA_HANDLER
 
 #include "DpaMessage.h"
