@@ -1,3 +1,19 @@
+/**
+ * Copyright 2015-2017 MICRORISC s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "PrfIo.h"
 #include "IqrfLogging.h"
 
@@ -85,7 +101,7 @@ void PrfIo::directionCommand(Port port, uint8_t bit, bool direction)
 
   if (bit > 7)
     THROW_EX(std::logic_error, PAR(bit) << " is invalid");
-  
+
   TDpaMessage& dpaMsg = m_request.DpaPacket().DpaRequestPacket_t.DpaMessage;
 
   auto& trip = dpaMsg.PerIoDirectionAndSet_Request.Triplets[0];
@@ -190,7 +206,7 @@ bool PrfIo::getInput(Port port, uint8_t bit) const
 {
   if (bit > 7)
     THROW_EX(std::logic_error, "Unexpected: " << PAR(bit));
-  
+
   uint8_t val = getInput(port);
   return (val & (1 << bit)) > 0;
 }
@@ -262,4 +278,3 @@ const std::string& PrfIo::encodePort(Port port)
     THROW_EX(std::logic_error, "Invalid port: " << NAME_PAR(port, (int)port));
   }
 }
-
