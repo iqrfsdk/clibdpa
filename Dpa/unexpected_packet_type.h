@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __UNEXPECTED_PACKET_TYPE
-#define __UNEXPECTED_PACKET_TYPE
+#pragma once
 
 #include <stdexcept>
 
@@ -34,4 +33,3 @@ public:
 	}
 
 };
-#endif // !__UNEXPECTED_PACKET_TYPE

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef DPALIBRARY_DPALIBRARYDEMO_H
-#define DPALIBRARY_DPALIBRARYDEMO_H
+#pragma once
 
 #include "IChannel.h"
 #include "DpaTransactionTask.h"
@@ -52,5 +51,3 @@ private:
   void executeCommand(DpaMessage& message);
   void unexpectedMessage(const DpaMessage& message);
 };
-
-#endif //DPALIBRARY_DPALIBRARYDEMO_H

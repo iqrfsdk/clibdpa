@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __UNEXPECTED_COMMAND
-#define __UNEXPECTED_COMMAND
+#pragma once
 
 #include <stdexcept>
 
@@ -33,4 +32,3 @@ public:
 	{
 	}
 };
-#endif // !__UNEXPECTED_COMMAND

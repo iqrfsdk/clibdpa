@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __DPA_MESSAGE
-#define __DPA_MESSAGE
+#pragma once
 
 #include "DpaWrapper.h"
 #include <memory>
@@ -213,5 +212,3 @@ private:
 
   bool IsConfirmationMessage() const;
 };
-
-#endif // !__DPA_MESSAGE

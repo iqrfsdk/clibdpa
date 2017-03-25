@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __DPA_REQUEST
-#define __DPA_REQUEST
+#pragma once
 
 #include "DpaMessage.h"
 #include <chrono>
@@ -155,5 +154,3 @@ private:
   static bool IsInProgressStatus(DpaRequestStatus status);
   DpaTransaction* dpaTransaction_;
 };
-
-#endif // !__DPA_REQUEST

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __DPA_HANDLER
-#define __DPA_HANDLER
+#pragma once
 
 #include "DpaMessage.h"
 #include "DpaRequest.h"
@@ -153,5 +152,3 @@ class DpaHandler {
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = -1;
 };
-
-#endif // !__DPA_HANDLER
