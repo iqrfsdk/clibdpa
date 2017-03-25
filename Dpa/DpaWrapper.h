@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __DPA_H_WRAPPER
-#define __DPA_H_WRAPPER
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +28,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif // !__DPA_H_WRAPPER

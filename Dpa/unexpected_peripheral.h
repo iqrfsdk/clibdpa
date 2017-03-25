@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef __UNEXPECTED_PERIPHERAL
-#define __UNEXPECTED_PERIPHERAL
+#pragma once
 
 #include <stdexcept>
 
@@ -33,4 +32,3 @@ public:
 	{
 	}
 };
-#endif // !__UNEXPECTED_PERIPHERAL
