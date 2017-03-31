@@ -1,3 +1,6 @@
+#!/bin/bash
+# Script for building clibdpa on Linux machine
+
 project=clibdpa
 
 #expected build dir structure
@@ -33,4 +36,3 @@ popd
 
 #build from generated build environment
 cmake --build ${builddir}
-
