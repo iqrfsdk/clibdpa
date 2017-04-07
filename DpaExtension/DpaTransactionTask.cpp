@@ -40,7 +40,7 @@ int DpaTransactionTask::getTimeout() const
 
 void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation)
 {
-  m_dpaTask.parseResponse(confirmation);
+  m_dpaTask.parseConfirmation(confirmation);
 }
 
 void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
