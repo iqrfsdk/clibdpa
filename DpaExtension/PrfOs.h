@@ -58,14 +58,30 @@ public:
   void sleep(const std::chrono::milliseconds& milis, uint8_t ctrl = 0);
   void calibration();
 
+  void read();
+
+  const std::string& getModuleId() { return m_moduleId; }
+  const std::string& getOsVersion() { return m_osVersion; }
+  const std::string& getTrType() { return m_trType; }
+  const std::string& getMcuType() { return m_mcuType; }
+  const std::string& getOsBuild() { return m_osBuild; }
+
+  Cmd getCmd() const;
 private:
   typedef std::chrono::duration<unsigned long, std::ratio<2097, 1000>> milis2097;
   typedef std::chrono::duration<unsigned long, std::ratio<32768, 1000000>> micros32768;
 
-  Cmd getCmd() const;
   void setCmd(Cmd cmd);
   Cmd m_cmd = Cmd::READ;
 
   uint16_t m_time = 0;
   uint8_t m_timeCtrl = 0;
+
+  std::string m_moduleId;
+  std::string m_osVersion;
+  std::string m_trType;
+  bool m_fcc = false;
+  std::string m_mcuType;
+  std::string m_osBuild;
+  //TODO
 };
