@@ -3,6 +3,7 @@
 #include "DpaRequest.h"
 #include "unexpected_packet_type.h"
 #include "unexpected_command.h"
+#include "IqrfLogging.h"
 
 DpaRequest::DpaRequest()
   : status_(kCreated), sent_message_(nullptr), response_message_(nullptr),
@@ -30,6 +31,7 @@ void DpaRequest::ProcessSentMessage(const DpaMessage& sent_message) {
   delete sent_message_;
   sent_message_ = new DpaMessage(sent_message);
   SetTimeoutForCurrentRequest();
+  TRC_ENTER("Sent");
 }
 
 void DpaRequest::ProcessConfirmationMessage(const DpaMessage& confirmation_packet) {
@@ -39,6 +41,7 @@ void DpaRequest::ProcessConfirmationMessage(const DpaMessage& confirmation_packe
   else {
     status_ = kConfirmation;
   }
+  TRC_ENTER("Confirmation");
   SetTimeoutForCurrentRequest(EstimatedTimeout(confirmation_packet));
 }
 
@@ -46,6 +49,7 @@ void DpaRequest::ProcessResponseMessage(const DpaMessage& response_message) {
   status_ = kProcessed;
   delete response_message_;
   response_message_ = new DpaMessage(response_message);
+  TRC_ENTER("Processed");
 }
 
 void DpaRequest::ProcessReceivedMessage(const DpaMessage& received_message) {
@@ -155,6 +159,7 @@ int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet) {
       response_time_slot_length_ms = 50;
   }
   estimated_timeout_ms += (iFace.HopsResponse + 1) * response_time_slot_length_ms + 40;
+  TRC_DBG("Estimanted timeout: " << estimated_timeout_ms << std::endl);
   return estimated_timeout_ms;
 }
 
@@ -177,6 +182,7 @@ void DpaRequest::SetTimeoutForCurrentRequest(int32_t extra_time_in_ms) {
 
 void DpaRequest::SetStatus(DpaRequest::DpaRequestStatus status) {
   status_ = status;
+  TRC_DBG("Status: " << status << std::endl);
 }
 
 bool DpaRequest::IsInProgressStatus(DpaRequestStatus status) {

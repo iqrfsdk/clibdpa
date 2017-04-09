@@ -18,6 +18,7 @@ public:
   virtual ~DpaLibraryDemo();
 
   void Start();
+  void CommunicationTest();
 
   void ListenerWrapper(unsigned char* data, unsigned int length);
 
@@ -36,6 +37,11 @@ private:
   void ReadTemperatureDpaTransaction(uint16_t address);
 
   void PulseLedRDpaTransaction(uint16_t address);
+  void ReadFrcReadTemperature();
+
+  void OpenUart(uint16_t address, uint8_t br);
+  void SendDataToUart(uint16_t address, uint8_t timeout, uint8_t* data, uint8_t dataCount);
+  uint16_t CoordinatorGetAddressingInfo();
 
 };
 
