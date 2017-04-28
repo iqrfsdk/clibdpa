@@ -29,13 +29,14 @@ public:
   DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command);
   virtual ~DpaTask();
 
-  const DpaMessage& getRequest() const { return m_request; }
-  virtual void parseConfirmation(const DpaMessage& confirmation) {}
+  void handleConfirmation(const DpaMessage& confirmation);
+  void handleResponse(const DpaMessage& response);
+
   virtual void parseResponse(const DpaMessage& response) = 0;
 
   virtual void parseCommand(const std::string& command) = 0;
   virtual const std::string& encodeCommand() const = 0;
-  virtual std::string encodeResponse(const std::string& errStr) const { return std::string(); }
+  virtual std::string encodeResponse(const std::string& errStr) { return std::string(); }
   virtual std::string encodeRequest() const { return std::string(); }
 
   const std::string& getPrfName() const { return m_prfName; }
@@ -48,9 +49,17 @@ public:
   int getTimeout() const { return m_timeout; }
   void setTimeout(int timeout) { m_timeout = timeout; }
 
+  const DpaMessage& getRequest() const { return m_request;  }
+  const DpaMessage& getConfirmation() const { return m_confirmation; }
+  const DpaMessage& getResponse() const { return m_response; }
+
 protected:
+  DpaMessage m_request;
+
+private:
+  DpaMessage m_confirmation;
+  DpaMessage m_response;
   std::string m_prfName;
   std::string m_clid; //client ID
   int m_timeout = -1;
-  DpaMessage m_request;
 };

@@ -41,14 +41,8 @@ void PrfRaw::setRequest(const DpaMessage& request)
   m_request = request;
 }
 
-void PrfRaw::parseConfirmation(const DpaMessage& confirmation)
-{
-  m_confirmation = confirmation;
-}
-
 void PrfRaw::parseResponse(const DpaMessage& response)
 {
-  m_response = response;
 }
 
 void PrfRaw::parseCommand(const std::string& command)

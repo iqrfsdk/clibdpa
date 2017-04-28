@@ -32,7 +32,6 @@ public:
   virtual ~PrfRaw();
 
   //from IQRF
-  void parseConfirmation(const DpaMessage& confirmation) override;
   void parseResponse(const DpaMessage& response) override;
 
   //from Messaging

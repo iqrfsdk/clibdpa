@@ -40,13 +40,13 @@ int DpaTransactionTask::getTimeout() const
 
 void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation)
 {
-  m_dpaTask.parseConfirmation(confirmation);
+  m_dpaTask.handleConfirmation(confirmation);
 }
 
 void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
 {
   m_error = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
-  m_dpaTask.parseResponse(response);
+  m_dpaTask.handleResponse(response);
 }
 
 void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)

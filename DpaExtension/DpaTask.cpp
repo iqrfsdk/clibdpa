@@ -63,3 +63,16 @@ void DpaTask::setPcmd(uint8_t command)
 {
   m_request.DpaPacket().DpaRequestPacket_t.PCMD = command;
 }
+
+void DpaTask::handleConfirmation(const DpaMessage& confirmation)
+{
+  //TODO save timestamp
+  m_confirmation = confirmation;
+}
+
+void DpaTask::handleResponse(const DpaMessage& response)
+{
+  //TODO save timestamp
+  m_response = response;
+  parseResponse(m_response);
+}
