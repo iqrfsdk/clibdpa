@@ -22,8 +22,6 @@
 #include <sstream>
 #include <memory>
 
-static const std::string  PRF_NAME_RawTask("RawTask");
-
 class PrfRaw : public DpaTask
 {
 public:

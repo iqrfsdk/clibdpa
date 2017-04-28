@@ -18,7 +18,7 @@
 #include "IqrfLogging.h"
 
 
-const std::string PrfIo::PRF_NAME("IO");
+const std::string PrfIo::PRF_NAME("std-per-io");
 
 // Commands
 const std::string STR_CMD_DIRECTION("DIRECTION");

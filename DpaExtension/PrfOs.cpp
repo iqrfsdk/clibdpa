@@ -17,7 +17,7 @@
 #include "PrfOs.h"
 #include "IqrfLogging.h"
 
-const std::string PrfOs::PRF_NAME("OS");
+const std::string PrfOs::PRF_NAME("std-per-os");
 
 // Commands
 const std::string STR_CMD_READ("READ");

@@ -17,7 +17,7 @@
 #include "PrfThermometer.h"
 #include "IqrfLogging.h"
 
-const std::string PrfThermometer::PRF_NAME("Thermometer");
+const std::string PrfThermometer::PRF_NAME("std-per-thermometer");
 
 const std::string STR_CMD_THERMOMETER_READ("READ");
 
