@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <chrono>
 
 class DpaTask
 {
@@ -53,6 +54,11 @@ public:
   const DpaMessage& getConfirmation() const { return m_confirmation; }
   const DpaMessage& getResponse() const { return m_response; }
 
+  const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const { return m_request_ts; }
+  const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const { return m_confirmation_ts; }
+  const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const { return m_response_ts; }
+  void timestampRequest();
+
 protected:
   DpaMessage m_request;
 
@@ -62,4 +68,8 @@ private:
   std::string m_prfName;
   std::string m_clid; //client ID
   int m_timeout = -1;
+
+  std::chrono::time_point<std::chrono::system_clock> m_request_ts;
+  std::chrono::time_point<std::chrono::system_clock> m_confirmation_ts;
+  std::chrono::time_point<std::chrono::system_clock> m_response_ts;
 };

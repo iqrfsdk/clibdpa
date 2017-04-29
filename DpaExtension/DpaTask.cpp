@@ -66,13 +66,19 @@ void DpaTask::setPcmd(uint8_t command)
 
 void DpaTask::handleConfirmation(const DpaMessage& confirmation)
 {
-  //TODO save timestamp
+  m_confirmation_ts = std::chrono::system_clock::now();
   m_confirmation = confirmation;
 }
 
 void DpaTask::handleResponse(const DpaMessage& response)
 {
   //TODO save timestamp
+  m_response_ts = std::chrono::system_clock::now();
   m_response = response;
   parseResponse(m_response);
+}
+
+void DpaTask::timestampRequest()
+{
+  m_request_ts = std::chrono::system_clock::now();
 }

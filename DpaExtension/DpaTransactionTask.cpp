@@ -30,6 +30,7 @@ DpaTransactionTask::~DpaTransactionTask()
 
 const DpaMessage& DpaTransactionTask::getMessage() const
 {
+  m_dpaTask.timestampRequest();
   return m_dpaTask.getRequest();
 }
 
