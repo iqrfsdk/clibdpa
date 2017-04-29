@@ -18,9 +18,6 @@
 
 #include "DpaTask.h"
 #include "DpaMessage.h"
-#include <string>
-#include <sstream>
-#include <memory>
 
 class PrfRaw : public DpaTask
 {
@@ -40,7 +37,4 @@ public:
 
   void setRequest(const DpaMessage& request);
 
-protected:
-  DpaMessage m_confirmation;
-  DpaMessage m_response;
 };

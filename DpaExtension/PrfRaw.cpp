@@ -15,7 +15,6 @@
  */
 
 #include "PrfRaw.h"
-#include "IqrfLogging.h"
 
 const std::string PrfRaw::PRF_NAME("raw");
 

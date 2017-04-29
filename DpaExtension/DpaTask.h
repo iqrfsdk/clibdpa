@@ -45,6 +45,8 @@ public:
   void setClid(const std::string& clid) { m_clid = clid; }
   uint16_t getAddress() const;
   void setAddress(uint16_t address);
+  uint16_t getHwpid() const;
+  void setHwpid(uint16_t hwpid);
   uint8_t getPcmd() const;
   void setPcmd(uint8_t command);
   int getTimeout() const { return m_timeout; }

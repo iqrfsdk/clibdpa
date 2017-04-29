@@ -54,6 +54,16 @@ void DpaTask::setAddress(uint16_t address)
   m_request.DpaPacket().DpaRequestPacket_t.NADR = address;
 }
 
+uint16_t DpaTask::getHwpid() const
+{
+  return m_request.DpaPacket().DpaRequestPacket_t.HWPID;
+}
+
+void DpaTask::setHwpid(uint16_t hwpid)
+{
+  m_request.DpaPacket().DpaRequestPacket_t.HWPID = hwpid;
+}
+
 uint8_t DpaTask::getPcmd() const
 {
   return m_request.DpaPacket().DpaRequestPacket_t.PCMD;
