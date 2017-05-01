@@ -29,6 +29,18 @@
 
 class DpaHandler {
  public:
+	 enum IqrfRfCommunicationMode
+	 {
+		 kStd,
+		 kLp
+	 };
+
+	enum DpaVersion
+	{
+		k22x,
+		k30x
+	};
+
   /**
    Constructor.
 
@@ -115,6 +127,12 @@ class DpaHandler {
    */
   int32_t Timeout() const;
 
+  DpaVersion GetDpaVersion() const;
+  void SetDpaVersion(DpaVersion new_dpa_version);
+
+  IqrfRfCommunicationMode GetIqrfCommunicationMode() const;
+  void SetIqrfCommunicationMode(IqrfRfCommunicationMode new_communication_mode);
+
  private:
   /** The current request. */
   DpaRequest* current_request_;
@@ -151,4 +169,7 @@ class DpaHandler {
 
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = -1;
+
+  IqrfRfCommunicationMode current_communication_mode_;
+  DpaVersion current_dpa_version_;
 };

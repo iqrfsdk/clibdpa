@@ -18,7 +18,10 @@
 #include "DpaHandler.h"
 #include "IqrfLogging.h"
 
-DpaHandler::DpaHandler(IChannel* dpa_interface) {
+DpaHandler::DpaHandler(IChannel* dpa_interface)
+	: current_communication_mode_(kStd)
+	, current_dpa_version_(k30x)
+{
   if (dpa_interface == nullptr) {
     throw std::invalid_argument("dpa_interface argument can not be nullptr.");
   }
@@ -170,4 +173,32 @@ void DpaHandler::Timeout(int32_t timeout_ms) {
 
 int32_t DpaHandler::Timeout() const {
   return default_timeout_ms_;
+}
+
+DpaHandler::DpaVersion DpaHandler::GetDpaVersion() const
+{
+	return current_dpa_version_;
+}
+
+void DpaHandler::SetDpaVersion(DpaVersion new_dpa_version)
+{
+	if (IsDpaMessageInProgress())
+	{
+		//TODO:  doplnit vyjimku
+	}
+	current_dpa_version_ = new_dpa_version;
+}
+
+DpaHandler::IqrfRfCommunicationMode DpaHandler::GetIqrfCommunicationMode() const
+{
+	return current_communication_mode_;
+}
+
+void DpaHandler::SetIqrfCommunicationMode(IqrfRfCommunicationMode new_communication_mode)
+{
+	if (IsDpaMessageInProgress())
+	{
+		//TODO:  doplnit vyjimku
+	}
+	current_communication_mode_ = new_communication_mode;
 }

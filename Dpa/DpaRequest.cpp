@@ -147,26 +147,29 @@ bool DpaRequest::IsInProgress(int32_t& expected_duration) {
 
 
 int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet) {
-  int32_t estimated_timeout_ms;
-  int32_t response_time_slot_length_ms;
-
   if (confirmation_packet.MessageDirection() != DpaMessage::kConfirmation)
     throw std::invalid_argument("Parameter is not a confirmation packet.");
 
   auto iFace = confirmation_packet.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
+    
+  return EstimateTimeout(iFace.Hops, iFace.HopsResponse, iFace.TimeSlotLength);
+}
 
-  estimated_timeout_ms = (iFace.Hops + 1) * iFace.TimeSlotLength * 10;
-  if (iFace.TimeSlotLength == 20) {
-    response_time_slot_length_ms = 200;
-  }
-  else {
-    if (iFace.TimeSlotLength > 6)
-      response_time_slot_length_ms = 100;
-    else
-      response_time_slot_length_ms = 50;
-  }
-  estimated_timeout_ms += (iFace.HopsResponse + 1) * response_time_slot_length_ms + 40;
-  return estimated_timeout_ms;
+int32_t DpaRequest::EstimateTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot)
+{
+	auto estimated_timeout_ms = (hops + 1) * timeslot * 10;
+	int32_t response_time_slot_length_ms;
+	if (timeslot == 20) {
+		response_time_slot_length_ms = 200;
+	}
+	else {
+		if (timeslot > 6)
+			response_time_slot_length_ms = 100;
+		else
+			response_time_slot_length_ms = 50;
+	}
+	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + 40;
+	return estimated_timeout_ms;
 }
 
 void DpaRequest::SetTimeoutForCurrentRequest(int32_t extra_time_in_ms) {
