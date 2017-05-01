@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <chrono>
 
 class DpaTask
 {
@@ -29,13 +30,14 @@ public:
   DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command);
   virtual ~DpaTask();
 
-  const DpaMessage& getRequest() const { return m_request; }
-  virtual void parseConfirmation(const DpaMessage& confirmation) {}
+  void handleConfirmation(const DpaMessage& confirmation);
+  void handleResponse(const DpaMessage& response);
+
   virtual void parseResponse(const DpaMessage& response) = 0;
 
   virtual void parseCommand(const std::string& command) = 0;
   virtual const std::string& encodeCommand() const = 0;
-  virtual std::string encodeResponse(const std::string& errStr) const { return std::string(); }
+  virtual std::string encodeResponse(const std::string& errStr) { return std::string(); }
   virtual std::string encodeRequest() const { return std::string(); }
 
   const std::string& getPrfName() const { return m_prfName; }
@@ -43,14 +45,33 @@ public:
   void setClid(const std::string& clid) { m_clid = clid; }
   uint16_t getAddress() const;
   void setAddress(uint16_t address);
+  uint16_t getHwpid() const;
+  void setHwpid(uint16_t hwpid);
   uint8_t getPcmd() const;
   void setPcmd(uint8_t command);
   int getTimeout() const { return m_timeout; }
   void setTimeout(int timeout) { m_timeout = timeout; }
 
+  const DpaMessage& getRequest() const { return m_request;  }
+  const DpaMessage& getConfirmation() const { return m_confirmation; }
+  const DpaMessage& getResponse() const { return m_response; }
+
+  const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const { return m_request_ts; }
+  const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const { return m_confirmation_ts; }
+  const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const { return m_response_ts; }
+  void timestampRequest();
+
 protected:
+  DpaMessage m_request;
+
+private:
+  DpaMessage m_confirmation;
+  DpaMessage m_response;
   std::string m_prfName;
   std::string m_clid; //client ID
   int m_timeout = -1;
-  DpaMessage m_request;
+
+  std::chrono::time_point<std::chrono::system_clock> m_request_ts;
+  std::chrono::time_point<std::chrono::system_clock> m_confirmation_ts;
+  std::chrono::time_point<std::chrono::system_clock> m_response_ts;
 };

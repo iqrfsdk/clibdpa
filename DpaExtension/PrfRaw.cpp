@@ -15,9 +15,8 @@
  */
 
 #include "PrfRaw.h"
-#include "IqrfLogging.h"
 
-const std::string PrfRaw::PRF_NAME("Raw");
+const std::string PrfRaw::PRF_NAME("raw");
 
 const std::string STR_CMD_UNKNOWN("UNKNOWN");
 
@@ -27,7 +26,7 @@ PrfRaw::PrfRaw()
 }
 
 PrfRaw::PrfRaw(const DpaMessage& request)
-  :DpaTask(PRF_NAME_RawTask, 0)
+  :DpaTask(PRF_NAME, 0)
 {
   setRequest(request);
 }
@@ -41,14 +40,8 @@ void PrfRaw::setRequest(const DpaMessage& request)
   m_request = request;
 }
 
-void PrfRaw::parseConfirmation(const DpaMessage& confirmation)
-{
-  m_confirmation = confirmation;
-}
-
 void PrfRaw::parseResponse(const DpaMessage& response)
 {
-  m_response = response;
 }
 
 void PrfRaw::parseCommand(const std::string& command)

@@ -54,6 +54,16 @@ void DpaTask::setAddress(uint16_t address)
   m_request.DpaPacket().DpaRequestPacket_t.NADR = address;
 }
 
+uint16_t DpaTask::getHwpid() const
+{
+  return m_request.DpaPacket().DpaRequestPacket_t.HWPID;
+}
+
+void DpaTask::setHwpid(uint16_t hwpid)
+{
+  m_request.DpaPacket().DpaRequestPacket_t.HWPID = hwpid;
+}
+
 uint8_t DpaTask::getPcmd() const
 {
   return m_request.DpaPacket().DpaRequestPacket_t.PCMD;
@@ -62,4 +72,23 @@ uint8_t DpaTask::getPcmd() const
 void DpaTask::setPcmd(uint8_t command)
 {
   m_request.DpaPacket().DpaRequestPacket_t.PCMD = command;
+}
+
+void DpaTask::handleConfirmation(const DpaMessage& confirmation)
+{
+  m_confirmation_ts = std::chrono::system_clock::now();
+  m_confirmation = confirmation;
+}
+
+void DpaTask::handleResponse(const DpaMessage& response)
+{
+  //TODO save timestamp
+  m_response_ts = std::chrono::system_clock::now();
+  m_response = response;
+  parseResponse(m_response);
+}
+
+void DpaTask::timestampRequest()
+{
+  m_request_ts = std::chrono::system_clock::now();
 }
