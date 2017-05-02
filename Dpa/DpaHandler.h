@@ -35,7 +35,7 @@ class DpaHandler {
 		 kLp
 	 };
 
-	enum DpaVersion
+	 enum DpaVersion
 	{
 		k22x,
 		k30x
@@ -81,6 +81,7 @@ class DpaHandler {
    */
   void ResponseHandler(const std::basic_string<unsigned char>& message);
 
+	DpaRequest* CreateDpaRequest(DpaTransaction* dpa_transaction) const;
   /**
    Sends a DPA message.
 
@@ -130,10 +131,14 @@ class DpaHandler {
   DpaVersion GetDpaVersion() const;
   void SetDpaVersion(DpaVersion new_dpa_version);
 
-  IqrfRfCommunicationMode GetIqrfCommunicationMode() const;
-  void SetIqrfCommunicationMode(IqrfRfCommunicationMode new_communication_mode);
+  IqrfRfCommunicationMode RfCommunicationMode() const
+  {
+	  return current_communication_mode_;
+  }
 
- private:
+  void RfCommunicationMode(IqrfRfCommunicationMode mode);
+
+private:
   /** The current request. */
   DpaRequest* current_request_;
   /** The DPA communication interface. */
@@ -170,6 +175,6 @@ class DpaHandler {
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = -1;
 
-  IqrfRfCommunicationMode current_communication_mode_;
   DpaVersion current_dpa_version_;
+  IqrfRfCommunicationMode current_communication_mode_;
 };

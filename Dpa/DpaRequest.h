@@ -24,6 +24,12 @@ class DpaTransaction;
 
 class DpaRequest {
 public:
+	enum IqrfRfCommunicationMode
+	{
+		kStd,
+		kLp
+	};
+
   /** Values that represent DPA request status. */
   enum DpaRequestStatus {
     ///< An enum constant representing the request is created.
@@ -46,7 +52,7 @@ public:
   DpaRequest(DpaTransaction* dpaTransaction);
 
   /** Destructor. */
-  ~DpaRequest();
+	virtual ~DpaRequest();
 
   /**
    Processes message sent to network, stores it for future uses and sets status. Only one message per
@@ -127,6 +133,10 @@ public:
     this->timeout_ms_ = timeout_ms;
   }
 
+	IqrfRfCommunicationMode IqrfRfMode() const;
+
+	void IqrfRfMode(IqrfRfCommunicationMode mode);
+
   /**
    Estimated timeout calculated for confirmation message.
 
@@ -137,7 +147,8 @@ public:
   int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
 
 protected:
-	virtual int32_t EstimateTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot);
+	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot);
+	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot);
 
 private:
   DpaRequestStatus status_;
@@ -147,6 +158,7 @@ private:
   std::chrono::system_clock::time_point start_time_;
   int32_t expected_duration_ms_;
   int32_t timeout_ms_;
+  IqrfRfCommunicationMode current_communication_mode_;
 
   void SetTimeoutForCurrentRequest(int32_t extra_time_in_ms = 0);
   //bool IsTimeout() const;
