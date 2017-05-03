@@ -5,6 +5,7 @@ class Dpa30xRequest
 	: public DpaRequest
 {
 public:
+	Dpa30xRequest(DpaTransaction* dpaTransaction);
 	~Dpa30xRequest() override;
 protected:
 	int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot) override;

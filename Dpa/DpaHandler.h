@@ -35,7 +35,7 @@ class DpaHandler {
 		 kLp
 	 };
 
-	 enum DpaVersion
+	 enum DpaProtocolVersion
 	{
 		k22x,
 		k30x
@@ -128,15 +128,12 @@ class DpaHandler {
    */
   int32_t Timeout() const;
 
-  DpaVersion GetDpaVersion() const;
-  void SetDpaVersion(DpaVersion new_dpa_version);
+  DpaProtocolVersion DpaVersion() const;
+  void DpaVersion(DpaProtocolVersion new_dpa_version);
 
-  IqrfRfCommunicationMode RfCommunicationMode() const
-  {
-	  return current_communication_mode_;
-  }
+	IqrfRfCommunicationMode GetRfCommunicationMode() const;
 
-  void RfCommunicationMode(IqrfRfCommunicationMode mode);
+  void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
 
 private:
   /** The current request. */
@@ -175,6 +172,6 @@ private:
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = -1;
 
-  DpaVersion current_dpa_version_;
+  DpaProtocolVersion current_dpa_version_;
   IqrfRfCommunicationMode current_communication_mode_;
 };

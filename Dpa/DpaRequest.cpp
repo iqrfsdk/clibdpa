@@ -201,10 +201,7 @@ int32_t DpaRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint
 	}
 	else
 	{
-		if (timeslot > 6)
-			response_time_slot_length_ms = 100;
-		else
-			response_time_slot_length_ms = 50;
+		response_time_slot_length_ms = 50;
 	}
 	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + 40;
 	return estimated_timeout_ms;

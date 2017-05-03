@@ -17,6 +17,7 @@
 #include "DpaMessage.h"
 #include "DpaHandler.h"
 #include "IqrfLogging.h"
+#include "Dpa30xRequest.h"
 
 DpaHandler::DpaHandler(IChannel* dpa_interface)
 	: current_communication_mode_(kStd)
@@ -73,6 +74,7 @@ DpaRequest* DpaHandler::CreateDpaRequest(DpaTransaction* dpa_transaction) const
 		response = new DpaRequest(dpa_transaction);
 	} else
 	{
+		response = new Dpa30xRequest(dpa_transaction);
 	}
 	
 	if (current_communication_mode_ == kLp)
@@ -195,12 +197,12 @@ int32_t DpaHandler::Timeout() const {
   return default_timeout_ms_;
 }
 
-DpaHandler::DpaVersion DpaHandler::GetDpaVersion() const
+DpaHandler::DpaProtocolVersion DpaHandler::DpaVersion() const
 {
 	return current_dpa_version_;
 }
 
-void DpaHandler::SetDpaVersion(DpaVersion new_dpa_version)
+void DpaHandler::DpaVersion(DpaProtocolVersion new_dpa_version)
 {
 	if (IsDpaMessageInProgress())
 	{
@@ -209,7 +211,12 @@ void DpaHandler::SetDpaVersion(DpaVersion new_dpa_version)
 	current_dpa_version_ = new_dpa_version;
 }
 
-void DpaHandler::RfCommunicationMode(IqrfRfCommunicationMode mode)
+DpaHandler::IqrfRfCommunicationMode DpaHandler::GetRfCommunicationMode() const
+{
+	return current_communication_mode_;
+}
+
+void DpaHandler::SetRfCommunicationMode(IqrfRfCommunicationMode mode)
 {
 	if (IsDpaMessageInProgress())
 	{
