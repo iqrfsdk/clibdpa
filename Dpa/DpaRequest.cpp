@@ -191,7 +191,7 @@ int32_t DpaRequest::EstimatedTimeout(const DpaMessage& confirmation_packet)
 	return EstimateStdTimeout(iFace.Hops, iFace.HopsResponse, iFace.TimeSlotLength);
 }
 
-int32_t DpaRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot)
+int32_t DpaRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1)
 {
 	auto estimated_timeout_ms = (hops + 1) * timeslot * 10;
 	int32_t response_time_slot_length_ms;
@@ -207,7 +207,7 @@ int32_t DpaRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint
 	return estimated_timeout_ms;
 }
 
-int32_t DpaRequest::EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot)
+int32_t DpaRequest::EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1)
 {
 	auto estimated_timeout_ms = (hops + 1) * timeslot * 10;
 	int32_t response_time_slot_length_ms;

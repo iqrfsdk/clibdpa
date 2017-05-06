@@ -147,8 +147,8 @@ public:
   int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
 
 protected:
-	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot);
-	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot);
+	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
+	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
 
 private:
   DpaRequestStatus status_;
