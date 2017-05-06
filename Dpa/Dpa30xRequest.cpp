@@ -9,7 +9,7 @@ Dpa30xRequest::~Dpa30xRequest()
 {
 }
 
-int32_t Dpa30xRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1)
+int32_t Dpa30xRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response)
 {
 	auto estimated_timeout_ms = (hops + 1) * timeslot * 10;
 	int32_t response_time_slot_length_ms;
@@ -36,7 +36,7 @@ int32_t Dpa30xRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, u
 	return estimated_timeout_ms;
 }
 
-int32_t Dpa30xRequest::EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1)
+int32_t Dpa30xRequest::EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response)
 {
 	auto estimated_timeout_ms = (hops + 1) * timeslot * 10;
 	int32_t response_time_slot_length_ms;
