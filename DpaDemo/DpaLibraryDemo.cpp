@@ -264,9 +264,9 @@ void DpaLibraryDemo::executeCommand(DpaMessage& message) {
 	}
 
 	++sent_messages;
-
-	while (m_dpaHandler->IsDpaMessageInProgress()) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	int32_t expected_duration;
+	while (m_dpaHandler->IsDpaTransactionInProgress(expected_duration)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(expected_duration));
 	}
 
 	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
@@ -298,7 +298,8 @@ void DpaLibraryDemo::communicationTest()
 		std::cout << "There was an error during DPA handler creation: " << ae.what() << std::endl;
 	}
 
-	m_dpaHandler->Timeout(200); // Default timeout is infinite
+	m_dpaHandler->Timeout(50); // Default timeout is infinite
+	m_dpaHandler->SetRfCommunicationMode(DpaHandler::kLp);
 
 	int16_t i = 100;
 	//wait for a while, there could be some unread message in CDC
@@ -321,10 +322,10 @@ void DpaLibraryDemo::communicationTest()
 	{
 		//sendDataToUart(7, 0, uartData, sizeof uartData);
 		//sendDataToUart(15, 0, uartData, sizeof uartData);
-		pulseLed(11, kLedGreen);
-		std::this_thread::sleep_for(std::chrono::milliseconds(200));
-		pulseLed(11, kLedRed);
-		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		pulseLed(1, kLedGreen);
+		//std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		pulseLed(1, kLedRed);
+		//std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
 		/*
 		*PulseLed(15, kLedGreen);
