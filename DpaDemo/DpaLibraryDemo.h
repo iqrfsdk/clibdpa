@@ -37,6 +37,7 @@ public:
   DpaLibraryDemo(IChannel* communicationInterface);
   virtual ~DpaLibraryDemo();
   void start();
+  void communicationTest();
 
 private:
   IChannel* m_dpaInterface;
@@ -50,4 +51,8 @@ private:
   void readTemperature(uint16_t address);
   void executeCommand(DpaMessage& message);
   void unexpectedMessage(const DpaMessage& message);
+
+  void openUart(uint16_t address, uint8_t br);
+  void sendDataToUart(uint16_t address, uint8_t timeout, uint8_t* data, uint8_t dataCount);
+  uint16_t coordinatorGetAddressingInfo();
 };

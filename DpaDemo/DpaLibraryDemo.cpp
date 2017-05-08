@@ -85,7 +85,8 @@ int main(int argc, char** argv)
 
   // start the app
   DpaLibraryDemo* demoApp = new DpaLibraryDemo(dpaInterface);
-  demoApp->start();
+  //demoApp->start();
+  demoApp->communicationTest();
   std::cout << "That's all for today...";
 
   // clean
@@ -281,4 +282,131 @@ void DpaLibraryDemo::executeCommand(DpaMessage& message) {
 
 void DpaLibraryDemo::unexpectedMessage(const DpaMessage& message) {
 	std::cout << "Unexpected message received.\n";
+}
+
+void DpaLibraryDemo::communicationTest()
+{
+	try
+	{
+		m_dpaHandler = new DpaHandler(m_dpaInterface);
+		m_dpaHandler->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::unexpectedMessage,
+			this,
+			std::placeholders::_1));
+	}
+	catch (std::invalid_argument& ae)
+	{
+		std::cout << "There was an error during DPA handler creation: " << ae.what() << std::endl;
+	}
+
+	m_dpaHandler->Timeout(200); // Default timeout is infinite
+
+	int16_t i = 100;
+	//wait for a while, there could be some unread message in CDC
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+
+	uint8_t uartData[55];
+	for (uint8_t a = 0; a < 55; ++a)
+		uartData[a] = i;
+
+		coordinatorGetAddressingInfo();
+
+//	pulseLed(15, kLedGreen);
+//	pulseLed(7, kLedGreen);
+
+
+	//openUart(15, 3);
+	//openUart(7, 3);
+
+	while (i--)
+	{
+		//sendDataToUart(7, 0, uartData, sizeof uartData);
+		//sendDataToUart(15, 0, uartData, sizeof uartData);
+		pulseLed(11, kLedGreen);
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		pulseLed(11, kLedRed);
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+		/*
+		*PulseLed(15, kLedGreen);
+		PulseLed(7, kLedGreen);
+		PulseLed(8, kLedGreen);*/
+		//std::this_thread::sleep_for(std::chrono::seconds(1));
+
+	}
+}
+
+
+void DpaLibraryDemo::openUart(uint16_t address, uint8_t br)
+{
+	static int num(0);
+	DpaMessage::DpaPacket_t packet;
+	packet.DpaRequestPacket_t.NADR = address;
+	packet.DpaRequestPacket_t.PNUM = PNUM_UART;
+
+	packet.DpaRequestPacket_t.PCMD = CMD_UART_OPEN;
+	packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+	packet.DpaRequestPacket_t.DpaMessage.PerUartOpen_Request.BaudRate = br;
+
+	DpaMessage message;
+	message.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader) + 1);
+
+	executeCommand(message);
+
+	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kProcessed)
+	{
+		if (m_dpaHandler->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.ResponseCode != STATUS_NO_ERROR)
+		{
+			std::cout << num++ << " UART Open Error." << std::endl;
+		}
+	}
+
+}
+
+void DpaLibraryDemo::sendDataToUart(uint16_t address, uint8_t timeout, uint8_t* data, uint8_t dataCount)
+{
+	static int num(0);
+	DpaMessage::DpaPacket_t packet;
+	packet.DpaRequestPacket_t.NADR = address;
+	packet.DpaRequestPacket_t.PNUM = PNUM_UART;
+
+	packet.DpaRequestPacket_t.PCMD = CMD_UART_WRITE_READ;
+	packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+	packet.DpaRequestPacket_t.DpaMessage.PerUartSpiWriteRead_Request.ReadTimeout = timeout;
+	uint8_t* databuff = packet.DpaRequestPacket_t.DpaMessage.PerUartSpiWriteRead_Request.WrittenData;
+	uint8_t messageSize = 1 + dataCount;
+	while (dataCount--)
+	{
+		*databuff++ = *data++;
+	}
+
+	DpaMessage message;
+	message.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader) + messageSize);
+
+	executeCommand(message);
+
+	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kProcessed)
+	{
+	}
+}
+
+uint16_t DpaLibraryDemo::coordinatorGetAddressingInfo()
+{
+	static int num(0);
+	DpaMessage::DpaPacket_t packet;
+	packet.DpaRequestPacket_t.NADR = 0x00;
+	packet.DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
+
+	packet.DpaRequestPacket_t.PCMD = CMD_COORDINATOR_ADDR_INFO;
+	packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+	DpaMessage message;
+	message.DataToBuffer(packet.Buffer, sizeof(TDpaIFaceHeader));
+
+	executeCommand(message);
+
+	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kProcessed)
+	{
+		return m_dpaHandler->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerCoordinatorAddrInfo_Response.DevNr;
+	}
+	return 0;
 }
