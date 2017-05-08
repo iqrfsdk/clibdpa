@@ -203,7 +203,7 @@ int32_t DpaRequest::EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint
 	{
 		response_time_slot_length_ms = 50;
 	}
-	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + 40;
+	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + safety_timeout_ms_;
 	return estimated_timeout_ms;
 }
 
@@ -219,7 +219,7 @@ int32_t DpaRequest::EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8
 	{
 		response_time_slot_length_ms = 100;
 	}
-	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + 40;
+	estimated_timeout_ms += (hops_response + 1) * response_time_slot_length_ms + safety_timeout_ms_;
 	return estimated_timeout_ms;
 }
 
