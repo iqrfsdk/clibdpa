@@ -1,5 +1,20 @@
-﻿#ifndef __DPA_REQUEST
-#define __DPA_REQUEST
+/**
+ * Copyright 2015-2017 MICRORISC s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
 
 #include "DpaMessage.h"
 #include <chrono>
@@ -9,6 +24,12 @@ class DpaTransaction;
 
 class DpaRequest {
 public:
+	enum IqrfRfCommunicationMode
+	{
+		kStd,
+		kLp
+	};
+
   /** Values that represent DPA request status. */
   enum DpaRequestStatus {
     ///< An enum constant representing the request is created.
@@ -31,7 +52,7 @@ public:
   DpaRequest(DpaTransaction* dpaTransaction);
 
   /** Destructor. */
-  ~DpaRequest();
+	virtual ~DpaRequest();
 
   /**
    Processes message sent to network, stores it for future uses and sets status. Only one message per
@@ -112,6 +133,10 @@ public:
     this->timeout_ms_ = timeout_ms;
   }
 
+	IqrfRfCommunicationMode IqrfRfMode() const;
+
+	void IqrfRfMode(IqrfRfCommunicationMode mode);
+
   /**
    Estimated timeout calculated for confirmation message.
 
@@ -119,7 +144,11 @@ public:
 
    @return	Estimated timeout in ms.
    */
-  static int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
+  int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
+
+protected:
+	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
+	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
 
 private:
   DpaRequestStatus status_;
@@ -129,6 +158,7 @@ private:
   std::chrono::system_clock::time_point start_time_;
   int32_t expected_duration_ms_;
   int32_t timeout_ms_;
+  IqrfRfCommunicationMode current_communication_mode_;
 
   void SetTimeoutForCurrentRequest(int32_t extra_time_in_ms = 0);
   //bool IsTimeout() const;
@@ -139,5 +169,3 @@ private:
   static bool IsInProgressStatus(DpaRequestStatus status);
   DpaTransaction* dpaTransaction_;
 };
-
-#endif // !__DPA_REQUEST
