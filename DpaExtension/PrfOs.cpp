@@ -26,8 +26,7 @@ const std::string STR_CMD_READ_CFG("READ_CFG");
 const std::string STR_CMD_RFPGM("RFPGM");
 const std::string STR_CMD_SLEEP("SLEEP");
 const std::string STR_CMD_BATCH("BATCH");
-const std::string STR_CMD_SET_USEC("SET_USEC");
-const std::string STR_CMD_SET_MID("SET_MID");
+const std::string STR_CMD_SET_SECURITY("SET_SECURITY");
 const std::string STR_CMD_RESTART("RESTART");
 const std::string STR_CMD_WRITE_CFG_BYTE("WRITE_CFG_BYTE");
 const std::string STR_CMD_LOAD_CODE("LOAD_CODE");
@@ -172,10 +171,8 @@ void PrfOs::parseCommand(const std::string& command)
     setCmd(Cmd::SLEEP);
   else if (STR_CMD_BATCH == command)
     setCmd(Cmd::BATCH);
-  else if (STR_CMD_SET_USEC == command)
-    setCmd(Cmd::SET_USEC);
-  else if (STR_CMD_SET_MID == command)
-    setCmd(Cmd::SET_MID);
+  else if (STR_CMD_SET_SECURITY == command)
+    setCmd(Cmd::SET_SECURITY);
   else if (STR_CMD_RESTART == command)
     setCmd(Cmd::RESTART);
   else if (STR_CMD_WRITE_CFG_BYTE == command)
@@ -196,8 +193,7 @@ const std::string& PrfOs::encodeCommand() const
   case Cmd::RFPGM: return STR_CMD_RFPGM;
   case Cmd::SLEEP: return STR_CMD_SLEEP;
   case Cmd::BATCH: return STR_CMD_BATCH;
-  case Cmd::SET_USEC: return STR_CMD_SET_USEC;
-  case Cmd::SET_MID: return STR_CMD_SET_MID;
+  case Cmd::SET_SECURITY: return STR_CMD_SET_SECURITY;
   case Cmd::RESTART: return STR_CMD_RESTART;
   case Cmd::WRITE_CFG_BYTE: return STR_CMD_WRITE_CFG_BYTE;
   case Cmd::LOAD_CODE: return STR_CMD_LOAD_CODE;
