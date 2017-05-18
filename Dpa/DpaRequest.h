@@ -44,7 +44,8 @@ public:
 		///< An enum constant representing the timeout expired.
 		kTimeout,
 		///< An enum constant representing the whole request was processed.
-		kProcessed
+		kProcessed,
+		kReceivedResponse
 	};
 
 	/** Default constructor. */

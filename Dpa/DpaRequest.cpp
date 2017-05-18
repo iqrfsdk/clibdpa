@@ -66,7 +66,7 @@ void DpaRequest::ProcessConfirmationMessage(const DpaMessage& confirmation_packe
 
 void DpaRequest::ProcessResponseMessage(const DpaMessage& response_message)
 {
-	status_ = kProcessed;
+	status_ = kReceivedResponse;
 	delete response_message_;
 	response_message_ = new DpaMessage(response_message);
 }
@@ -138,7 +138,7 @@ int32_t DpaRequest::CheckTimeout()
 
 	if (timeout)
 	{
-		if (status_ == kConfirmationBroadcast)
+		if (status_ == kConfirmationBroadcast || status_ == kReceivedResponse)
 			SetStatus(kProcessed);
 		else
 			SetStatus(kTimeout);
