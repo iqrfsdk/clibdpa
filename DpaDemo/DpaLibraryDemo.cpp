@@ -265,9 +265,12 @@ void DpaLibraryDemo::executeCommand(DpaMessage& message) {
 	}
 
 	++sent_messages;
-	int32_t expected_duration;
-	while (m_dpaHandler->IsDpaTransactionInProgress(expected_duration)) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(expected_duration));
+	//int32_t expected_duration;
+	//while (m_dpaHandler->IsDpaTransactionInProgress(expected_duration)) {
+	//	std::this_thread::sleep_for(std::chrono::milliseconds(expected_duration));
+	//}
+	while (m_dpaHandler->IsDpaMessageInProgress()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
