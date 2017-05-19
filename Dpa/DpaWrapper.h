@@ -19,12 +19,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
 	#include <cstdint>
-
 	#include "DPA.h"
-
 #ifdef __cplusplus
 }
 #endif

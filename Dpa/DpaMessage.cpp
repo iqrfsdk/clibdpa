@@ -17,7 +17,6 @@
 #include "DpaMessage.h"
 #include "unexpected_packet_type.h"
 
-
 DpaMessage::DpaMessage()
   : length_(0) {
   dpa_packet_ = new DpaPacket_t();
@@ -77,22 +76,6 @@ void DpaMessage::FillFromResponse(const unsigned char* data, uint32_t length) {
     throw std::invalid_argument("Invalid length.");
 
   DataToBuffer(data, length);
-}
-
-void DpaMessage::AddDataToBuffer(const unsigned char* data, uint32_t length) {
-  if (length == 0)
-    return;
-
-  if (data == nullptr)
-    throw std::invalid_argument("Data argument can not be null.");
-
-  if (length_ + length > kMaxDpaMessageSize)
-    throw std::length_error("Not enough space for this data.");
-
-  //TODO error here - doesn't add, but copies from beginning, however increase length
-  //does it make sense at all to copy raw data over structured buffer?
-  std::copy(data, data + length, dpa_packet_->Buffer);
-  length_ += length;
 }
 
 void DpaMessage::DataToBuffer(const unsigned char* data, uint32_t length) {
