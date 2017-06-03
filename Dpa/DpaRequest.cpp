@@ -117,12 +117,9 @@ int32_t DpaRequest::CheckTimeout()
 {
 	int32_t remains(0);
 
-	if (status_ == kProcessed
-		|| status_ == kConfirmationBroadcast
-		|| status_ == kCreated)
+	if (status_ == kProcessed || status_ == kConfirmationBroadcast || status_ == kReceivedResponse)
 	{
-		if (status_ == kConfirmationBroadcast)
-			SetStatus(kProcessed);
+  	SetStatus(kProcessed);
 		return remains;
 	}
 
