@@ -28,5 +28,5 @@ public:
   virtual void processConfirmationMessage(const DpaMessage& confirmation) = 0;
   virtual void processResponseMessage(const DpaMessage& response) = 0;
   virtual void processFinish(DpaRequest::DpaRequestStatus status) = 0;
-  bool isProcessed(DpaRequest::DpaRequestStatus status) { return status == DpaRequest::kProcessed ? true : false; }
+  //bool isProcessed(DpaRequest::DpaRequestStatus status) { return status == DpaRequest::kProcessed ? true : false; }
 };

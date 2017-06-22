@@ -45,8 +45,9 @@ public:
 		kTimeout,
 		///< An enum constant representing the whole request was processed.
 		kProcessed,
-		kReceivedResponse
-	};
+		kReceivedResponse,
+    kAborted
+  };
 
 	/** Default constructor. */
 	DpaRequest();
@@ -105,14 +106,19 @@ public:
 	 */
 	DpaRequestStatus Status();
 
-	/**
+  /**
+  Aborts pending request
+  */
+  void Abort();
+
+  /**
 	 Query if request is in progress state.
   
 	 @return	true if is in progress, false if not.
 	 */
 	bool IsInProgress();
 
-	/**
+  /**
 	Query if request is in progress state.
   
 	@param [in,out]	expected_duration	Expected time to finish DPA transaction.

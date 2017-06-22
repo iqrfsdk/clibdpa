@@ -122,6 +122,9 @@ int32_t DpaRequest::CheckTimeout()
   	SetStatus(kProcessed);
 		return remains;
 	}
+  else if (status_ == kAborted) {
+    return remains;
+  }
 
 	bool timeout(false);
 
@@ -150,6 +153,13 @@ DpaRequest::DpaRequestStatus DpaRequest::Status()
 	CheckTimeout();
 	return status_;
 }
+
+void DpaRequest::Abort()
+{
+  std::lock_guard<std::mutex> lck(status_mutex_);
+  status_ = kAborted;
+}
+
 
 bool DpaRequest::IsInProgress()
 {

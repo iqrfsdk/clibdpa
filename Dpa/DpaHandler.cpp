@@ -145,6 +145,17 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   dpaTransaction.processFinish(status);
 }
 
+void DpaHandler::KillDpaTransaction()
+{
+  TRC_ENTER("");
+  TRC_WAR("Killing transaction");
+  //TODO
+  current_request_->Abort();
+  std::unique_lock<std::mutex> lck(condition_variable_mutex_);
+  condition_variable_.notify_one();
+  TRC_LEAVE("");
+}
+
 bool DpaHandler::ProcessMessage(const DpaMessage& message) {
   try {
     current_request_->ProcessReceivedMessage(message);

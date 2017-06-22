@@ -96,6 +96,7 @@ class DpaHandler {
   @param [in,out]	DPA transaction to be executed.
   */
   void ExecuteDpaTransaction(DpaTransaction& dpaTransaction);
+  void KillDpaTransaction();
 
   /**
    Registers the function called when unexpected message is received.
