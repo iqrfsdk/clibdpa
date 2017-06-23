@@ -59,12 +59,19 @@ void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)
 
 int DpaTransactionTask::waitFinish()
 {
-  std::chrono::milliseconds span(m_dpaTask.getTimeout() * 4);
-  if (m_future.wait_for(span) == std::future_status::timeout) {
-    m_error = -2;
+  int timeout = m_dpaTask.getTimeout();
+  if (timeout < 0) {
+    m_future.wait(); //Blocks until the result becomes available
+    m_error = m_future.get();
   }
   else {
-    m_error = m_future.get(); //? m_error : -1;
+    std::chrono::milliseconds span(m_dpaTask.getTimeout() * 2);
+    if (m_future.wait_for(span) == std::future_status::timeout) {
+      m_error = -2;
+    }
+    else {
+      m_error = m_future.get();
+    }
   }
   return m_error;
 }
