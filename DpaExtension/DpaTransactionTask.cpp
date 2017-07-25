@@ -54,6 +54,8 @@ void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)
 {
   if (status == DpaRequest::DpaRequestStatus::kAborted)
     m_error = -3;
+  if (status == DpaRequest::DpaRequestStatus::kTimeout)
+    m_error = -1;
   m_promise.set_value(m_error);
 }
 
