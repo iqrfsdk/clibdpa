@@ -20,10 +20,10 @@
 const std::string  PrfLedG::PRF_NAME("std-per-ledg");
 const std::string  PrfLedR::PRF_NAME("std-per-ledr");
 
-const std::string STR_CMD_LED_SET_OFF("OFF");
-const std::string STR_CMD_LED_SET_ON("ON");
-const std::string STR_CMD_LED_GET("GET");
-const std::string STR_CMD_LED_PULSE("PULSE");
+const std::string STR_CMD_LED_SET_OFF("off");
+const std::string STR_CMD_LED_SET_ON("on");
+const std::string STR_CMD_LED_GET("get");
+const std::string STR_CMD_LED_PULSE("pulse");
 
 PrfLed::PrfLed(const std::string& prfName, uint8_t colour)
   : DpaTask(prfName, colour)

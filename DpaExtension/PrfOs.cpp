@@ -20,17 +20,17 @@
 const std::string PrfOs::PRF_NAME("std-per-os");
 
 // Commands
-const std::string STR_CMD_READ("READ");
-const std::string STR_CMD_RESET("RESET");
-const std::string STR_CMD_READ_CFG("READ_CFG");
-const std::string STR_CMD_RFPGM("RFPGM");
-const std::string STR_CMD_SLEEP("SLEEP");
-const std::string STR_CMD_BATCH("BATCH");
-const std::string STR_CMD_SET_SECURITY("SET_SECURITY");
-const std::string STR_CMD_RESTART("RESTART");
-const std::string STR_CMD_WRITE_CFG_BYTE("WRITE_CFG_BYTE");
-const std::string STR_CMD_LOAD_CODE("LOAD_CODE");
-const std::string STR_CMD_WRITE_CFG("WRITE_CFG");
+const std::string STR_CMD_READ("read");
+const std::string STR_CMD_RESET("reset");
+const std::string STR_CMD_READ_CFG("read_cfg");
+const std::string STR_CMD_RFPGM("rfpgm");
+const std::string STR_CMD_SLEEP("sleep");
+const std::string STR_CMD_BATCH("batch");
+const std::string STR_CMD_SET_SECURITY("set_security");
+const std::string STR_CMD_RESTART("restart");
+const std::string STR_CMD_WRITE_CFG_BYTE("write_cfg_byte");
+const std::string STR_CMD_LOAD_CODE("load_code");
+const std::string STR_CMD_WRITE_CFG("write_cfg");
 
 using namespace std::chrono;
 

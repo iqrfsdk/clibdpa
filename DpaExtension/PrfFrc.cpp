@@ -20,25 +20,25 @@
 const std::string PrfFrc::PRF_NAME("std-per-frc");
 
 // Commands
-const std::string STR_CMD_SEND("SEND");
-const std::string STR_CMD_EXTRARESULT("EXTRARESULT");
-const std::string STR_CMD_SEND_SELECTIVE("SEND_SELECTIVE");
-const std::string STR_CMD_SET_PARAMS("SET_PARAMS");
+const std::string STR_CMD_SEND("send");
+const std::string STR_CMD_EXTRARESULT("extraresult");
+const std::string STR_CMD_SEND_SELECTIVE("send_selective");
+const std::string STR_CMD_SET_PARAMS("set_params");
 
 // Type of collected data
-const std::string STR_GET_BIT2("GET_BIT2");
-const std::string STR_GET_BYTE("GET_BYTE");
-const std::string STR_GET_BYTE2("GET_BYTE2");
+const std::string STR_GET_BIT2("get_bit2");
+const std::string STR_GET_BYTE("get_byte");
+const std::string STR_GET_BYTE2("get_byte2");
 
 // Predefined FRC commands
-const std::string STR_FRC_Prebonding("Prebonding");
-const std::string STR_FRC_UART_SPI_data("UART_SPI_data");
-const std::string STR_FRC_AcknowledgedBroadcastBits("AcknowledgedBroadcastBits");
-const std::string STR_FRC_Temperature("Temperature");
-const std::string STR_FRC_AcknowledgedBroadcastBytes("AcknowledgedBroadcastBytes");
-const std::string STR_FRC_MemoryRead("MemoryRead");
-const std::string STR_FRC_MemoryReadPlus1("MemoryReadPlus1");
-const std::string STR_FRC_FrcResponseTime("FrcResponseTime");
+const std::string STR_FRC_Prebonding("prebonding");
+const std::string STR_FRC_UART_SPI_data("uart_spi_data");
+const std::string STR_FRC_AcknowledgedBroadcastBits("acknowledged_broadcast_bits");
+const std::string STR_FRC_Temperature("temperature");
+const std::string STR_FRC_AcknowledgedBroadcastBytes("acknowledged_broadcast_bytes");
+const std::string STR_FRC_MemoryRead("memory_read");
+const std::string STR_FRC_MemoryReadPlus1("memory_read_plus1");
+const std::string STR_FRC_FrcResponseTime("frc_response_time");
 
 void PrfFrc::init()
 {

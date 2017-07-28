@@ -19,7 +19,7 @@
 
 const std::string PrfThermometer::PRF_NAME("std-per-thermometer");
 
-const std::string STR_CMD_THERMOMETER_READ("READ");
+const std::string STR_CMD_THERMOMETER_READ("read");
 
 PrfThermometer::PrfThermometer()
   :DpaTask(PRF_NAME, PNUM_THERMOMETER)

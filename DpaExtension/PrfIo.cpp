@@ -21,17 +21,17 @@
 const std::string PrfIo::PRF_NAME("std-per-io");
 
 // Commands
-const std::string STR_CMD_DIRECTION("DIRECTION");
-const std::string STR_CMD_SET("SET");
-const std::string STR_CMD_GET("GET");
+const std::string STR_CMD_DIRECTION("direction");
+const std::string STR_CMD_SET("set");
+const std::string STR_CMD_GET("get");
 
 // Port names
-const std::string STR_PORTA("PORTA");
-const std::string STR_PORTB("PORTB");
-const std::string STR_PORTC("PORTC");
-const std::string STR_PORTE("PORTE");
-const std::string STR_WPUB("WPUB");
-const std::string STR_WPUE("WPUE");
+const std::string STR_PORTA("porta");
+const std::string STR_PORTB("portb");
+const std::string STR_PORTC("portc");
+const std::string STR_PORTE("porte");
+const std::string STR_WPUB("wpub");
+const std::string STR_WPUE("wpue");
 //DELAY = 0xff
 
 using namespace std::chrono;

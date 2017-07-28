@@ -18,7 +18,7 @@
 
 const std::string PrfRaw::PRF_NAME("raw");
 
-const std::string STR_CMD_UNKNOWN("UNKNOWN");
+const std::string STR_CMD_UNKNOWN("unknown");
 
 PrfRaw::PrfRaw()
   :DpaTask(PrfRaw::PRF_NAME, 0)
