@@ -54,6 +54,7 @@ add_subdirectory(DpaExtension)
 
 #example build
 add_subdirectory(DpaDemo)
+add_subdirectory(DpaExamples)
 
 # Configure config file.
 # This file specifies actions performed and variables exported when using find_package on this project.
