@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 	// coordinator address
 	dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
 	
-	// embedded peripheral ledr
+	// embedded peripheral
 	dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = 0x06;
 	//dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_LEDR;
 
@@ -74,7 +74,11 @@ int main(int argc, char** argv) {
 	dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = 0x03;
 	//dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
 	
+	// hwpid
 	dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = 0xFFFF;
+
+	// set request data length
+	dpaRequest.SetLength(sizeof(TDpaIFaceHeader));
 
 	// Raw DPA access
 	PrfRaw rawDpa(dpaRequest);
