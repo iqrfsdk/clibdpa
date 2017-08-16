@@ -19,19 +19,24 @@
 #include "DpaHandler.h"
 #include "DpaTransactionTask.h"
 #include "PrfRaw.h"
-
 #include "IqrfLogging.h"
 
 using namespace std;
+using namespace iqrf;
 
 TRC_INIT();
 
+void asynchronousMessageHandler(const DpaMessage& message) {
+	TRC_INF("Asynchronous message recevied");
+}
+
 int main(int argc, char** argv) {
 
+	TRC_START("log.txt", Level::dbg, 1000000);
 	TRC_ENTER("");
 
 	// COM interface
-	string portNameWinCdc = "COM3";
+	string portNameWinCdc = "COM4";
 	//string portNameLinuxCdc = "/dev/ttyACM0";
 	//string portNameLinuxSpi = "/dev/spidev0.0";
 
@@ -48,6 +53,8 @@ int main(int argc, char** argv) {
 	DpaHandler *dpaHandler;
 	dpaHandler = new DpaHandler(iqrfChannel);
 
+	// async messages
+	dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
 	// default timeout waiting for response is infinite
 	dpaHandler->Timeout(1000);
 	// default iqrf communication mode is standard 
@@ -90,4 +97,5 @@ int main(int argc, char** argv) {
 	delete dpaHandler;
 
 	TRC_LEAVE("");
+	TRC_STOP();
 }
