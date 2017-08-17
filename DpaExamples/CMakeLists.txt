@@ -1,7 +1,7 @@
 project(DpaExamples)
 
 set(DpaExamples_SRC_FILES
-	${CMAKE_SOURCE_DIR}/DpaExamples/RawExample.cpp
+	${CMAKE_SOURCE_DIR}/DpaExamples/Example.cpp
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/Dpa)
