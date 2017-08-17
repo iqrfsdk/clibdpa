@@ -15,10 +15,11 @@
 */
 
 #include "IqrfCdcChannel.h"
-//#include "IqrfSpiChannel.h"
+#include "IqrfSpiChannel.h"
 #include "DpaHandler.h"
 #include "DpaTransactionTask.h"
 #include "PrfRaw.h"
+#include "PrfLeds.h"
 #include "IqrfLogging.h"
 
 using namespace std;
@@ -32,7 +33,8 @@ void asynchronousMessageHandler(const DpaMessage& message) {
 
 int main(int argc, char** argv) {
 
-	TRC_START("log.txt", Level::dbg, 1000000);
+	//TRC_START("log.txt", Level::dbg, 1000000);
+	TRC_START("", Level::dbg, 1000000);
 	TRC_ENTER("");
 
 	// COM interface
@@ -55,13 +57,14 @@ int main(int argc, char** argv) {
 
 	// async messages
 	dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
-	// default timeout waiting for response is infinite
-	dpaHandler->Timeout(1000);
 	// default iqrf communication mode is standard 
 	dpaHandler->SetRfCommunicationMode(DpaHandler::kStd);
 
-	// DPA message
+/*** 1) Generic Raw DPA access ***/
 	TRC_INF("Creating DPA request to pulse LEDR on coordinator");
+/* Option 1*/
+
+	// DPA message
 	DpaMessage dpaRequest;
 	// coordinator address
 	dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
@@ -80,21 +83,63 @@ int main(int argc, char** argv) {
 	// set request data length
 	dpaRequest.SetLength(sizeof(TDpaIFaceHeader));
 
+/* Option 2*/
+/*
+	DpaMessage::DpaPacket_t dpaPacket;
+	dpaPacket.DpaRequestPacket_t.NADR = 0x00;
+	dpaPacket.DpaRequestPacket_t.PNUM = PNUM_LEDR;
+	dpaPacket.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+	dpaPacket.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+	dpaRequest.DataToBuffer(dpaPacket.Buffer, sizeof(TDpaIFaceHeader));
+*/
+
 	// Raw DPA access
 	PrfRaw rawDpa(dpaRequest);
 
 	// DPA transaction task
 	TRC_INF("Running DPA transaction");
-	DpaTransactionTask dpaTT(rawDpa);
-	dpaHandler->ExecuteDpaTransaction(dpaTT);
-	uint8_t result = dpaTT.waitFinish();
+	DpaTransactionTask dpaTT1(rawDpa);
+	// default timeout waiting for response is infinite
+	// sets according to your needs and dpa timing requirements
+	dpaHandler->Timeout(500);
+	dpaHandler->ExecuteDpaTransaction(dpaTT1);
+	int result = dpaTT1.waitFinish();
 	TRC_DBG("Result from DPA transaction :" << PAR(result));
+	TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT1.getErrorStr()));
 	
 	if(result == 0)
 		TRC_INF("Pulse LEDR done!");
 
-	TRC_INF("Waiting 10s before exiting");
-	this_thread::sleep_for(chrono::seconds(10));
+	TRC_INF("Waiting 5s before next transaction");
+	this_thread::sleep_for(chrono::seconds(5));
+
+/*** 2) Peripheral Ledr DPA access ***/
+
+	// PrfLedr DPA access
+	PrfLedR ledrPulseDpa(0x00, PrfLed::Cmd::PULSE);
+
+	// DPA transaction task
+	TRC_INF("Running DPA transaction");
+	DpaTransactionTask dpaTT2(ledrPulseDpa);
+	// default timeout waiting for response is infinite
+	// sets according to your needs and dpa timing requirements
+	dpaHandler->Timeout(500);
+	dpaHandler->ExecuteDpaTransaction(dpaTT2);
+	int result = dpaTT2.waitFinish();
+	TRC_DBG("Result from DPA transaction :" << PAR(result));
+	TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT2.getErrorStr()));
+
+	if (result == 0) {
+		TRC_INF("Pulse LEDR done!");
+		TRC_DBG("DPA transaction :" << NAME_PAR(ledrPulseDpa.getPrfName(), ledrPulseDpa.getAddress()) << PAR(ledrPulseDpa.encodeCommand()));
+	}
+	else {
+		TRC_DBG("DPA transaction error: " << PAR(result));
+	}
+
+	TRC_INF("Waiting 5s before next transaction");
+	this_thread::sleep_for(chrono::seconds(5));
 
 	TRC_INF("Clean after yourself");
 	delete iqrfChannel;
