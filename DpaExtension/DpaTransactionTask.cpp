@@ -19,7 +19,7 @@
 
 DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask)
   :m_dpaTask(dpaTask)
-  ,m_error(0)
+  , m_error(0)
 {
   m_future = m_promise.get_future();
 }
@@ -52,10 +52,18 @@ void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
 
 void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)
 {
-  if (status == DpaRequest::DpaRequestStatus::kAborted)
+  switch (status) {
+  case DpaRequest::DpaRequestStatus::kError:
+    m_error = -4;
+    break;
+  case DpaRequest::DpaRequestStatus::kAborted:
     m_error = -3;
-  if (status == DpaRequest::DpaRequestStatus::kTimeout)
+    break;
+  case DpaRequest::DpaRequestStatus::kTimeout:
     m_error = -1;
+    break;
+  default:;
+  }
   m_promise.set_value(m_error);
 }
 
@@ -86,6 +94,8 @@ int DpaTransactionTask::getError() const
 std::string DpaTransactionTask::getErrorStr() const
 {
   switch (m_error) {
+  case -4:
+    return "ERROR_IFACE";
   case -3:
     return "ERROR_ABORTED";
   case -2:

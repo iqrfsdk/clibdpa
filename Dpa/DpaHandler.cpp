@@ -139,6 +139,7 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   }
   catch (std::exception& e) {
     TRC_WAR("Send error occured: " << e.what());
+    status = DpaRequest::DpaRequestStatus::kError;
   }
 
   Timeout(defaultTimeout);

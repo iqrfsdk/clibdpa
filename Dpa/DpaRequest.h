@@ -46,7 +46,8 @@ public:
 		///< An enum constant representing the whole request was processed.
 		kProcessed,
 		kReceivedResponse,
-    kAborted
+    kAborted,
+    kError
   };
 
 	/** Default constructor. */
