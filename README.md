@@ -1,7 +1,7 @@
 # IQRF - DPA Library
 
-[![Build Status](https://travis-ci.org/iqrfsdk/clibdpa.svg?branch=develop)](https://travis-ci.org/iqrfsdk/clibdpa)
-[![Build Status](https://img.shields.io/appveyor/ci/spinarr/clibdpa/develop.svg)](https://ci.appveyor.com/project/spinarr/clibdpa)
+[![Build Status](https://travis-ci.org/iqrfsdk/clibdpa.svg?branch=master)](https://travis-ci.org/iqrfsdk/clibdpa)
+[![Build Status](https://img.shields.io/appveyor/ci/spinarr/clibdpa/master.svg)](https://ci.appveyor.com/project/spinarr/clibdpa)
 
 IQRF DPA communication library with basic support of sending and receiving messages in DPA protocol message format. The library is based on DPA.h file where main message structures are defined. Messages are sent via DpaInterface class. DPA Library has no dependency on OS.
 The core of library is DpaHandler class. It contains functions for sending and asynchronously receiving data from communication interface. All DPA commands are composed from request and response for coordinator requests and from request, confirmation and response in case of remote node. All states are internally controlled by DpaHandler class.
