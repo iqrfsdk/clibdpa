@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 	// sets according to your needs and dpa timing requirements
 	dpaHandler->Timeout(500);
 	dpaHandler->ExecuteDpaTransaction(dpaTT2);
-	int result = dpaTT2.waitFinish();
+	result = dpaTT2.waitFinish();
 	TRC_DBG("Result from DPA transaction :" << PAR(result));
 	TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT2.getErrorStr()));
 
