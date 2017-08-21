@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +17,6 @@
 
 #pragma once
 
-#include "DpaMessage.h"
-#include "DpaRequest.h"
-#include "IChannel.h"
-#include "DpaTransaction.h"
 #include <memory>
 #include <queue>
 #include <functional>
@@ -27,152 +24,152 @@
 #include <mutex>
 #include <condition_variable>
 
-class DpaHandler {
- public:
-	 enum IqrfRfCommunicationMode
-	 {
-		 kStd,
-		 kLp
-	 };
+#include "DpaTransfer.h"
+#include "DpaTransaction.h"
+#include "DpaMessage.h"
+#include "IChannel.h"
 
-	 enum DpaProtocolVersion
-	{
-		k22x,
-		k30x
+class DpaHandler {
+public:
+	/** Values that represent IQRF communication modes. */
+	enum IqrfRfCommunicationMode {
+		kStd,
+		kLp
 	};
 
-  /**
-   Constructor.
+	/**
+	 Constructor.
 
-   @param [in,out]	dpa_interface	Pointer to instance of DPA interface.
-   */
-  DpaHandler(IChannel* dpa_interface);
+	 @param [in,out]	iqrfInterface	Pointer to instance of IQRF interface.
+	 */
+	DpaHandler(IChannel* iqrfInterface);
 
-  /** Destructor. */
-  ~DpaHandler();
+	/** Destructor. */
+	~DpaHandler();
 
-  /**
-   Query if DPA message is in progress.
+	/**
+	Sends a DPA message.
 
-   @return	true if DPA message is in progress, false if not.
-   */
-  bool IsDpaMessageInProgress() const;
+	@param [in,out]	DPA message to be send.
+	*/
+	void SendDpaMessage(const DpaMessage& message, DpaTransaction* responseHandler = nullptr);
 
-  /**
-  Query if DPA Transaction is in progress.
+	/**
+	Handler, called when the response.
 
-  @param [in,out]	expected_duration	Expected time to finish DPA transaction.
-  @return	true if DPA message is in progress, false if not.
-  */
-  bool IsDpaTransactionInProgress(int32_t& expected_duration) const;
+	@param [in,out]	data	Pointer to received data.
+	@param	length			Length of received bytes.
+	*/
+	void ResponseMessageHandler(const std::basic_string<unsigned char>& message);
+	DpaTransfer* CreateDpaTransfer(DpaTransaction* dpaTransaction) const;
 
-  /**
-   Gets the status.
+	/**
+	Returns reference to currently running DPA transfer.
 
-   @return	Status of current DPA request.
-   */
-  DpaRequest::DpaRequestStatus Status() const;
+	@return Current transfer.
+	*/
+	const DpaTransfer& CurrentTransfer() const;
 
-  /**
-   Handler, called when the response.
+	/**
+	 Query if DPA message is in progress.
 
-   @param [in,out]	data	Pointer to received data.
-   @param	length			Length of received bytes.
-   */
-  void ResponseHandler(const std::basic_string<unsigned char>& message);
+	 @return	true if DPA message is in progress, false if not.
+	 */
+	bool IsDpaMessageInProgress() const;
 
-	DpaRequest* CreateDpaRequest(DpaTransaction* dpa_transaction) const;
-  /**
-   Sends a DPA message.
+	/**
+	Query if DPA Transaction is in progress.
 
-   @param [in,out]	DPA message to be send.
-   */
-  void SendDpaMessage(const DpaMessage& message, DpaTransaction* responseHndl = nullptr);
+	@param [in,out]	expectedDuration	Expected time to finish DPA transaction.
+	@return	true if DPA message is in progress, false if not.
+	*/
+	bool IsDpaTransactionInProgress(int32_t& expectedDuration) const;
 
-  /**
-  Executes a DPA transaction.
-  The method blocks until received response or timeout
+	/**
+	 Gets the status.
 
-  @param [in,out]	DPA transaction to be executed.
-  */
-  void ExecuteDpaTransaction(DpaTransaction& dpaTransaction);
-  void KillDpaTransaction();
+	 @return	Status of current DPA session.
+	 */
+	DpaTransfer::DpaTransferStatus Status() const;
+	
+	/**
+	 Registers the function called when asynchronous message is received.
 
-  /**
-   Registers the function called when unexpected message is received.
+	 @param	Pointer to called function.
+	 */
+	void RegisterAsyncMessageHandler(std::function<void(const DpaMessage&)> messageHandler);
 
-   @param	Pointer to called function.
-   */
-  void RegisterAsyncMessageHandler(std::function<void(const DpaMessage&)> message_handler);
+	/** Unregister function for unexpected messages. */
+	void UnregisterAsyncMessageHandler();
 
-  /** Unregister function for unexpected messages. */
-  void UnregisterAsyncMessageHandler();
+	/**
+	 Sets timeout for all new requests.
 
-  /**
-   Returns reference to currently processed request.
+	 @param Timeout in ms.
+	 */
+	void Timeout(int32_t timeoutMs);
 
-   @return Current request.
-   */
-  const DpaRequest& CurrentRequest() const;
+	/*
+	 Gets value of timeout in ms.
 
-  /**
-   Sets timeout for all new requests.
+	 @return Timeout in ms;
+	 */
+	int32_t Timeout() const;
 
-   @param Timeout in ms.
-   */
-  void Timeout(int32_t timeout_ms);
+	/**
+	Set and Get IQRF communication mode.
 
-  /*
-   Gets value of timeout in ms.
-
-   @return Timeout in ms;
-   */
-  int32_t Timeout() const;
-
-  DpaProtocolVersion DpaVersion() const;
-  void DpaVersion(DpaProtocolVersion new_dpa_version);
-
+	@param	IqrfRfCommunicationMode	mode.
+	@return	IqrfRfCommunicationMode	mode.
+	*/
+	void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
 	IqrfRfCommunicationMode GetRfCommunicationMode() const;
 
-  void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
+	/**
+	Executes a DPA transaction.
+	The method blocks until received response or timeout
+
+	@param [in,out]	DPA transaction to be executed.
+	*/
+	void ExecuteDpaTransaction(DpaTransaction& dpaTransaction);
+	void KillDpaTransaction();
 
 private:
-  /** The current request. */
-  DpaRequest* current_request_;
-  /** The DPA communication interface. */
-  IChannel* dpa_interface_;
-  /** Holds the pointer to function called when unexpected message is received. */
-  std::function<void(const DpaMessage&)> async_message_handler_;
-  /** Lock used for safety using of async_message_handler. */
-  std::mutex async_message_mutex_;
+	/** Default value of timeout in ms.*/
+	const int32_t kDefaultTimeout = -1;
+	/** Holds timeout in ms. */
+	int32_t m_defaultTimeoutMs;
+	/** Holds the communication mode */
+	IqrfRfCommunicationMode m_currentCommunicationMode;
 
-  /** Lock used in transaction handling */
-  std::mutex condition_variable_mutex_;
-  /** Condition to wait in transaction handling */
-  std::condition_variable condition_variable_;
+	/** The current transfer. */
+	DpaTransfer* m_currentTransfer;
+	/** The IQRF communication interface. */
+	IChannel* m_iqrfInterface;
+	
+	/** Holds the pointer to function called when asynchronous message is received. */
+	std::function<void(const DpaMessage&)> m_asyncMessageHandler;
+	/** Lock used for safety using of async_message_handler. */
+	std::mutex m_asyncMessageMutex;
 
-  /**
-   Process received message.
+	/** Lock used in transaction handling */
+	std::mutex m_conditionVariableMutex;
+	/** Condition to wait in transaction handling */
+	std::condition_variable m_conditionVariable;
 
-   @param	The message to be processed.
+	/**
+	 Process received message.
 
-   @return	true if succeeds, false if fails.
-   */
-  bool ProcessMessage(const DpaMessage& message);
+	 @param	The message to be processed.
 
-  /**
-   Process the unexpected message described by message.
+	 @return	true if succeeds, false if fails.
+	 */
+	bool ProcessMessage(const DpaMessage& message);
 
-   @param [in,out]	message	The message.
-   */
-  void ProcessUnexpectedMessage(DpaMessage& message);
+	/**
+	 Process the asynchronous message described by message.
 
-  /** Holds timeout in ms. */
-  int32_t default_timeout_ms_;
-
-  /** Default value of timeout in ms.*/
-  const int32_t kDefaultTimeout = -1;
-
-  DpaProtocolVersion current_dpa_version_;
-  IqrfRfCommunicationMode current_communication_mode_;
+	 @param [in,out]	message	the message.
+	 */
+	void ProcessAsynchronousMessage(DpaMessage& message);
 };

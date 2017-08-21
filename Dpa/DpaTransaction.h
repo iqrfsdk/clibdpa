@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +17,22 @@
 
 #pragma once
 
-#include "DpaRequest.h"
+#include "DpaTransfer.h"
+
 class DpaMessage;
 
+// interface
 class DpaTransaction
 {
 public:
   virtual ~DpaTransaction() {}
+
   virtual const DpaMessage& getMessage() const = 0;
   virtual int getTimeout() const = 0;
+
   virtual void processConfirmationMessage(const DpaMessage& confirmation) = 0;
   virtual void processResponseMessage(const DpaMessage& response) = 0;
-  virtual void processFinish(DpaRequest::DpaRequestStatus status) = 0;
-  bool isProcessed(DpaRequest::DpaRequestStatus status) { return status == DpaRequest::kProcessed ? true : false; }
+  virtual void processFinish(DpaTransfer::DpaTransferStatus status) = 0;
+
+  bool isProcessed(DpaTransfer::DpaTransferStatus status) { return status == DpaTransfer::kProcessed ? true : false; }
 };

@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,9 +238,9 @@ void DpaLibraryDemo::readTemperature(uint16_t address) {
   executeCommand(message);
 
   // process the response
-  if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kProcessed) {
+  if (m_dpaHandler->Status() == DpaTransfer::DpaTransferStatus::kProcessed) {
     int16_t temperature =
-	m_dpaHandler->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
+	m_dpaHandler->CurrentTransfer().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
 
     std::cout << num++ << " Temperature: "
     << std::dec << temperature << " oC" << std::endl;
@@ -269,7 +270,7 @@ void DpaLibraryDemo::executeCommand(DpaMessage& message) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
-	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
+	if (m_dpaHandler->Status() == DpaTransfer::DpaTransferStatus::kTimeout) {
 		++timeouts;
 		std::cout << message.NodeAddress()
 			<< " - Timeout ..."

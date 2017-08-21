@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +18,32 @@
 #pragma once
 
 #include "DpaWrapper.h"
+
 #include <memory>
 #include <string>
 #include <cstdint>
 
-///< Size of buffer for message.
-#define MAX_DPA_BUFFER    64
+/** Size of the buffer for a message */
+#define MAX_DPA_BUFFER	64
 
 class DpaMessage {
 public:
-  /** Size of the maximum DPA message. */
+  /** Size of the maximum DPA message */
   static const int kMaxDpaMessageSize = MAX_DPA_BUFFER;
+  
   /** Address for broadcast messages */
   static const uint16_t kBroadCastAddress = BROADCAST_ADDRESS;
-  /** Defines an alias representing the union. */
+  
+  /** Defines an alias representing the union */
   typedef union {
     uint8_t Buffer[MAX_DPA_BUFFER];
+	struct {
+		uint16_t NADR;
+		uint8_t PNUM;
+		uint8_t PCMD;
+		uint16_t HWPID;
+		TDpaMessage DpaMessage;
+	} DpaRequestPacket_t;
     struct {
       uint16_t NADR;
       uint8_t PNUM;
@@ -42,40 +53,33 @@ public:
       uint8_t DpaValue;
       TDpaMessage DpaMessage;
     } DpaResponsePacket_t;
-    struct {
-      uint16_t NADR;
-      uint8_t PNUM;
-      uint8_t PCMD;
-      uint16_t HWPID;
-      TDpaMessage DpaMessage;
-    } DpaRequestPacket_t;
   } DpaPacket_t;
 
-  /** Values that represent message types. */
+  /** Values that represent message types */
   enum MessageType {
-    ///< Request message
+    // Request message
     kRequest,
-    ///< Confirmation message
+    // Confirmation message
     kConfirmation,
-    ///< Notification message
+    // Notification message
     kNotification,
-    ///< Response message
+    // Response message
     kResponse
   };
 
-  /** Default constructor. */
+  /** Default constructor */
   DpaMessage();
 
   /** Constructor from data */
-  DpaMessage(const unsigned char* data, uint32_t length);
+  DpaMessage(const unsigned char* data, uint8_t length);
 
   /** Constructor from string */
   DpaMessage(const std::basic_string<unsigned char>& message);
 
   /**
-   Copy constructor.
+   Copy constructor
 
-   @param	other	The original message.
+   @param	other the original message
    */
   DpaMessage(const DpaMessage& other);
 
@@ -83,11 +87,10 @@ public:
   virtual ~DpaMessage();
 
   /**
-   Assignment operator.
+   Assignment operator
 
-   @param	other	The original message.
-
-   @return	A shallow copy of this object.
+   @param	other the original message
+   @return	A shallow copy of this object
    */
   DpaMessage& operator=(const DpaMessage& other);
 
@@ -101,101 +104,102 @@ public:
   DpaMessage& operator=(const std::basic_string<unsigned char>& message);
 
   /**
-   Gets message type.
+   Gets message type
 
-   @return	A MessageType.
+   @return	A MessageType
    */
   MessageType MessageDirection() const;
 
   /**
-   Fills message with data from IQRF network.
+   Fills message with data from IQRF network
 
    @exception   std::invalid_argument   Thrown when data length is 0.
-   @exception	std::invalid_argument	Thrown when data is nullptr.
-   @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+   @exception	std::invalid_argument	Thrown when data is nullptr
+   @exception	std::length_error	 	Raised when a length is bigger than max buffer size
 
    @param [in,out]	data	Pointer to data.
-   @param	length			The number of bytes to be added.
+   @param	length			The number of bytes to be added
    */
-  void FillFromResponse(const unsigned char* data, uint32_t length);
+  void FillFromResponse(const unsigned char* data, uint8_t length);
 
   /**
-  Stores data to message buffer.
+  Stores data to message buffer
 
-  @exception   std::invalid_argument   Thrown when data length is 0.
-  @exception	std::invalid_argument	Thrown when data is nullptr.
-  @exception	std::length_error	 	Raised when a length is bigger than max buffer size.
+  @exception   std::invalid_argument	Thrown when data length is 0
+  @exception	std::invalid_argument	Thrown when data is nullptr
+  @exception	std::length_error	 	Raised when a length is bigger than max buffer size
 
-  @param [in,out]	data	Pointer to data.
-  @param	length			The number of bytes to be stored.
+  @param	[in,out]		data	Pointer to data
+  @param	length					The number of bytes to be stored
   */
-  void DataToBuffer(const unsigned char* data, uint32_t length);
+  void DataToBuffer(const unsigned char* data, uint8_t length);
 
   /**
-   Gets length of data stored in message.
+   Gets length of data stored in message
 
-   @return	Number of bytes in message.
+   @return	Number of bytes in message
    */
-  int Length() const { return length_; }
+  int GetLength() const { return m_length; }
 
   /**
-  Gets length of data stored in message.
+  Gets length of data stored in message
 
-  @param	length The number of bytes to be set.
+  @param	length The number of bytes to be set
   */
   void SetLength(int length);
 
   /**
-   Gets destination or source address of sender/receiver.
+   Gets destination or source address of sender/receiver
 
-   @return	An address.
+   @return	An address
    */
-  uint16_t NodeAddress() const { return dpa_packet_->DpaRequestPacket_t.NADR; }
+  uint16_t NodeAddress() const { return m_dpa_packet->DpaRequestPacket_t.NADR; }
 
   /**
- Gets peripheral type.
+   Gets peripheral type
 
- @return	A peripheral type.
+   @return	A peripheral type
  */
-  TDpaPeripheralType PeripheralType() const { return TDpaPeripheralType(dpa_packet_->DpaRequestPacket_t.PNUM); }
+  TDpaPeripheralType PeripheralType() const { return TDpaPeripheralType(m_dpa_packet->DpaRequestPacket_t.PNUM); }
 
   /**
-   Gets command code.
+   Gets command code
 
-   @return	A command code.
+   @return	A peripheral command
    */
-  uint8_t CommandCode() const { return dpa_packet_->DpaResponsePacket_t.PCMD; }
+  uint8_t PeripheralCommand() const { return m_dpa_packet->DpaResponsePacket_t.PCMD; }
 
   /**
-   Gets response code from received message.
+   Gets response code from received message
 
-   @exception	unexpected_packet_type	Thrown when message is not a receive type.
+   @exception	unexpected_packet_type	Thrown when message is not a receive type
 
-   @return	A response code.
+   @return	A response code
    */
   TErrorCodes ResponseCode() const;
 
   /**
-   Gets DPA packet behind the message.
+   Gets DPA packet behind the message
 
-   @return	A reference to a const DpaPacket_t.
+   @return	A reference to a const DpaPacket_t
    */
-  const DpaPacket_t& DpaPacket() const { return *dpa_packet_; }
-  DpaPacket_t& DpaPacket() { return *dpa_packet_; }
+  DpaPacket_t& DpaPacket() { return *m_dpa_packet; }
+  const DpaPacket_t& DpaPacket() const { return *m_dpa_packet; }
 
   /**
-   Gets pointer to data stored in message.
+   Gets pointer to data stored in message
 
-   @return	Pointer to data stored in message.
+   @return	Pointer to data stored in message
    */
-  unsigned char* DpaPacketData() { return dpa_packet_->Buffer; }
-  const unsigned char* DpaPacketData() const { return dpa_packet_->Buffer; }
+  unsigned char* DpaPacketData() { return m_dpa_packet->Buffer; }
+  const unsigned char* DpaPacketData() const { return m_dpa_packet->Buffer; }
 
 private:
-  DpaPacket_t* dpa_packet_;
-  const int kCommandIndex = 0x03;
-  const int kStatusCodeIndex = 0x06;
-  int length_;
+	const int kCommandIndex = 0x03;
+	const int kStatusCodeIndex = 0x06;
 
-  bool IsConfirmationMessage() const;
+	DpaPacket_t *m_dpa_packet;
+	int m_length;
+
+	bool IsConfirmationMessage() const;
 };

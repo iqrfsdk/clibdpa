@@ -54,7 +54,7 @@ void PrfIo::parseResponse(const DpaMessage& response)
 {
   const uint8_t* p = response.DpaPacket().DpaResponsePacket_t.DpaMessage.Response.PData;
   if (getPcmd() == (uint8_t)Cmd::GET) {
-    int sz = response.Length() - sizeof(TDpaIFaceHeader) - 2; // - (ResponseCode + DpaValue)
+    int sz = response.GetLength() - sizeof(TDpaIFaceHeader) - 2; // - (ResponseCode + DpaValue)
     int i = 0;
     while (true) {
       //TODO better IO support? Why it does not reply with [port,value]?

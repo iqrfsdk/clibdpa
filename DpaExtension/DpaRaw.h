@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +20,14 @@
 #include "DpaTask.h"
 #include "DpaMessage.h"
 
-class PrfRaw : public DpaTask
+class DpaRaw : public DpaTask
 {
 public:
   static const std::string PRF_NAME;
 
-  PrfRaw();
-  PrfRaw(const DpaMessage& request);
-  virtual ~PrfRaw();
+  DpaRaw();
+  DpaRaw(const DpaMessage& request);
+  virtual ~DpaRaw();
 
   //from IQRF
   void parseResponse(const DpaMessage& response) override;
@@ -36,5 +37,4 @@ public:
   const std::string& encodeCommand() const override;
 
   void setRequest(const DpaMessage& request);
-
 };

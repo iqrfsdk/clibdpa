@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,78 +18,74 @@
 #include "DpaTask.h"
 #include "IqrfLogging.h"
 
-DpaTask::DpaTask(const std::string& prfName, uint8_t prfNum)
-  :m_prfName(prfName)
-{
-  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+DpaTask::DpaTask(const std::string& prfName, uint8_t prfNum) : m_prfName(prfName) {
+	DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
 
-  packet.DpaRequestPacket_t.PNUM = prfNum;
-  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+	packet.DpaRequestPacket_t.PNUM = prfNum;
+	packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
-  m_request.SetLength(sizeof(TDpaIFaceHeader));
+	m_request.SetLength(sizeof(TDpaIFaceHeader));
 }
 
-DpaTask::DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command)
-  :m_prfName(prfName)
-{
-  DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
+DpaTask::DpaTask(const std::string& prfName, uint8_t prfNum, uint16_t address, uint8_t command) : m_prfName(prfName) {
+	DpaMessage::DpaPacket_t& packet = m_request.DpaPacket();
 
-  packet.DpaRequestPacket_t.NADR = address;
-  packet.DpaRequestPacket_t.PNUM = prfNum;
-  packet.DpaRequestPacket_t.PCMD = command;
-  packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+	packet.DpaRequestPacket_t.NADR = address;
+	packet.DpaRequestPacket_t.PNUM = prfNum;
+	packet.DpaRequestPacket_t.PCMD = command;
+	packet.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
 
-  m_request.SetLength(sizeof(TDpaIFaceHeader));
+	m_request.SetLength(sizeof(TDpaIFaceHeader));
 }
 
-DpaTask::~DpaTask()
-{}
+DpaTask::~DpaTask() {}
 
 uint16_t DpaTask::getAddress() const
 {
-  return m_request.DpaPacket().DpaRequestPacket_t.NADR;
+	return m_request.DpaPacket().DpaRequestPacket_t.NADR;
 }
 
 void DpaTask::setAddress(uint16_t address)
 {
-  m_request.DpaPacket().DpaRequestPacket_t.NADR = address;
+	m_request.DpaPacket().DpaRequestPacket_t.NADR = address;
 }
 
 uint16_t DpaTask::getHwpid() const
 {
-  return m_request.DpaPacket().DpaRequestPacket_t.HWPID;
+	return m_request.DpaPacket().DpaRequestPacket_t.HWPID;
 }
 
 void DpaTask::setHwpid(uint16_t hwpid)
 {
-  m_request.DpaPacket().DpaRequestPacket_t.HWPID = hwpid;
+	m_request.DpaPacket().DpaRequestPacket_t.HWPID = hwpid;
 }
 
 uint8_t DpaTask::getPcmd() const
 {
-  return m_request.DpaPacket().DpaRequestPacket_t.PCMD;
+	return m_request.DpaPacket().DpaRequestPacket_t.PCMD;
 }
 
 void DpaTask::setPcmd(uint8_t command)
 {
-  m_request.DpaPacket().DpaRequestPacket_t.PCMD = command;
+	m_request.DpaPacket().DpaRequestPacket_t.PCMD = command;
 }
 
 void DpaTask::handleConfirmation(const DpaMessage& confirmation)
 {
-  m_confirmation_ts = std::chrono::system_clock::now();
-  m_confirmation = confirmation;
+	m_confirmation_ts = std::chrono::system_clock::now();
+	m_confirmation = confirmation;
 }
 
 void DpaTask::handleResponse(const DpaMessage& response)
 {
-  //TODO save timestamp
-  m_response_ts = std::chrono::system_clock::now();
-  m_response = response;
-  parseResponse(m_response);
+	//TODO save timestamp
+	m_response_ts = std::chrono::system_clock::now();
+	m_response = response;
+
+	parseResponse(m_response);
 }
 
 void DpaTask::timestampRequest()
 {
-  m_request_ts = std::chrono::system_clock::now();
+	m_request_ts = std::chrono::system_clock::now();
 }

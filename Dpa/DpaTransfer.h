@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +18,25 @@
 #pragma once
 
 #include "DpaMessage.h"
+
 #include <chrono>
 #include <mutex>
 
 class DpaTransaction;
 
-class DpaRequest
+class DpaTransfer
 {
 public:
+	/** Values that represent IQRF communication modes. */
 	enum IqrfRfCommunicationMode
 	{
 		kStd,
 		kLp
 	};
 
-	/** Values that represent DPA request status. */
-	enum DpaRequestStatus
+	/** Values that represent DPA transfer state. */
+	enum DpaTransferStatus
 	{
-		///< An enum constant representing the request is created.
 		kCreated,
 		///< An enum constant representing the first message was sent.
 		kSent,
@@ -46,17 +48,17 @@ public:
 		///< An enum constant representing the whole request was processed.
 		kProcessed,
 		kReceivedResponse,
-    kAborted
+		kAborted
   };
 
-	/** Default constructor. */
-	DpaRequest();
+	/** Default constructor */
+	DpaTransfer();
 
-	/** Ctor with external response handler. */
-	DpaRequest(DpaTransaction* dpaTransaction);
+	/** Ctor with external response handler */
+	DpaTransfer(DpaTransaction* dpaTransaction);
 
-	/** Destructor. */
-	virtual ~DpaRequest();
+	/** Destructor */
+	virtual ~DpaTransfer();
 
 	/**
 	 Processes message sent to network, stores it for future uses and sets status. Only one message per
@@ -66,7 +68,7 @@ public:
   
 	 @param	sent_message	The message which was sent.
 	 */
-	void ProcessSentMessage(const DpaMessage& sent_message);
+	void ProcessSentMessage(const DpaMessage& sentMessage);
 
 	/**
 	 Processes message received from the network.
@@ -77,7 +79,7 @@ public:
   
 	 @param	received_message	Received message.
 	 */
-	void ProcessReceivedMessage(const DpaMessage& received_message);
+	void ProcessReceivedMessage(const DpaMessage& receivedMessage);
 
 	/**
 	 Gets a sent message.
@@ -86,7 +88,7 @@ public:
 	 */
 	const DpaMessage& SentMessage() const
 	{
-		return *sent_message_;
+		return *m_sentMessage;
 	}
 
 	/**
@@ -96,35 +98,35 @@ public:
 	 */
 	const DpaMessage& ResponseMessage() const
 	{
-		return *response_message_;
+		return *m_responseMessage;
 	}
 
 	/**
-	 Gets the status of the request.
+	 Gets the status of the DPA transfer.
   
-	 @return	The status of the request.
+	 @return	The status of the message.
 	 */
-	DpaRequestStatus Status();
+	DpaTransferStatus ProcessStatus();
 
-  /**
-  Aborts pending request
-  */
-  void Abort();
+	/**
+	Aborts pending request
+	*/
+	void Abort();
 
-  /**
+	/**
 	 Query if request is in progress state.
-  
+
 	 @return	true if is in progress, false if not.
-	 */
+	*/
 	bool IsInProgress();
 
-  /**
-	Query if request is in progress state.
+    /**
+	 Query if request is in progress state.
   
-	@param [in,out]	expected_duration	Expected time to finish DPA transaction.
-	@return	true if is in progress, false if not.
+	 @param [in,out]	expectedDuration	Expected time to finish DPA transaction.
+	 @return	true if is in progress, false if not.
 	*/
-	bool IsInProgress(int32_t& expected_duration);
+	bool IsInProgress(int32_t& expectedDuration);
 
 	/**
 	 Gets timeout in ms.
@@ -133,54 +135,62 @@ public:
 	 */
 	int32_t DefaultTimeout() const
 	{
-		return timeout_ms_;
+		return m_timeoutMs;
 	}
 
 	/**
 	 Sets default timeout.
   
-	 @param	timeout_ms	Timeout in milliseconds.
+	 @param	timeoutMs	Timeout in milliseconds.
 	 */
-	void DefaultTimeout(int32_t timeout_ms)
+	void DefaultTimeout(int32_t timeoutMs)
 	{
-		this->timeout_ms_ = timeout_ms;
+		this->m_timeoutMs = timeoutMs;
 	}
 
-	IqrfRfCommunicationMode IqrfRfMode() const;
+	/**
+	Estimated timeout calculated for confirmation message.
 
-	void IqrfRfMode(IqrfRfCommunicationMode mode);
+	@param	confirmationMessage	The confirmation DPA message.
+	@return	Estimated timeout in ms.
+	*/
+	int32_t EstimatedTimeout(const DpaMessage& confirmationMessage);
 
 	/**
-	 Estimated timeout calculated for confirmation message.
-  
-	 @param	confirmation_packet	The confirmation DPA message.
-  
-	 @return	Estimated timeout in ms.
-	 */
-	int32_t EstimatedTimeout(const DpaMessage& confirmation_packet);
+	Set and Get IQRF communication mode.
+
+	@param	IqrfRfCommunicationMode	mode.
+	@return	IqrfRfCommunicationMode	mode.
+	*/
+	void SetIqrfRfMode(IqrfRfCommunicationMode mode);
+	IqrfRfCommunicationMode GetIqrfRfMode() const;
 
 protected:
 	/** An extra timeout added to timeout from a confirmation packet. */
-	const int32_t safety_timeout_ms_ = 40;
-	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
-	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hops_response, uint8_t timeslot, int32_t response = -1);
+	const int32_t m_safetyTimeoutMs = 40;
+
+	virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response = -1);
+	virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response = -1);
 
 private:
-	DpaRequestStatus status_;
-	DpaMessage* sent_message_;
-	DpaMessage* response_message_;
-	std::mutex status_mutex_;
-	std::chrono::system_clock::time_point start_time_;
-	int32_t expected_duration_ms_;
-	int32_t timeout_ms_;
-	IqrfRfCommunicationMode current_communication_mode_;
+	std::mutex m_statusMutex;
+	IqrfRfCommunicationMode m_currentCommunicationMode;
 
-	void SetTimeoutForCurrentRequest(int32_t extra_time_in_ms = 0);
-	//bool IsTimeout() const;
-	void ProcessConfirmationMessage(const DpaMessage& confirmation_message);
-	void ProcessResponseMessage(const DpaMessage& response_message);
-	void SetStatus(DpaRequestStatus status);
+	std::chrono::system_clock::time_point m_startTime;
+	int32_t m_timeoutMs;
+	int32_t m_expectedDurationMs;
+
+	DpaTransferStatus m_status;
+	DpaMessage* m_sentMessage;
+	DpaMessage* m_responseMessage;
+	DpaTransaction* m_dpaTransaction;
+
+	static bool IsInProgressStatus(DpaTransferStatus status);
+	void SetStatus(DpaTransferStatus status);
+
+	void SetTimeoutForCurrentTransfer(int32_t estimatedTimeMs = 0);
 	int32_t CheckTimeout();
-	static bool IsInProgressStatus(DpaRequestStatus status);
-	DpaTransaction* dpaTransaction_;
+
+	void ProcessConfirmationMessage(const DpaMessage& confirmationMessage);
+	void ProcessResponseMessage(const DpaMessage& responseMessage);
 };

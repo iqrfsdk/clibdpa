@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,114 +15,108 @@
  * limitations under the License.
  */
 
-#include "DpaTransactionTask.h"
 #include <chrono>
 
-DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask)
-  :m_dpaTask(dpaTask)
-  ,m_error(0)
-{
-  m_future = m_promise.get_future();
+#include "DpaTransactionTask.h"
+
+DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask): m_dpaTask(dpaTask), m_error(0) {
+	m_future = m_promise.get_future();
 }
 
-DpaTransactionTask::~DpaTransactionTask()
-{
+DpaTransactionTask::~DpaTransactionTask() {}
+
+const DpaMessage& DpaTransactionTask::getMessage() const {
+	m_dpaTask.timestampRequest();
+	return m_dpaTask.getRequest();
 }
 
-const DpaMessage& DpaTransactionTask::getMessage() const
-{
-  m_dpaTask.timestampRequest();
-  return m_dpaTask.getRequest();
+int DpaTransactionTask::getTimeout() const {
+	return m_dpaTask.getTimeout();
 }
 
-int DpaTransactionTask::getTimeout() const
-{
-  return m_dpaTask.getTimeout();
+void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation) {
+	m_dpaTask.handleConfirmation(confirmation);
 }
 
-void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation)
-{
-  m_dpaTask.handleConfirmation(confirmation);
+void DpaTransactionTask::processResponseMessage(const DpaMessage& response) {
+	m_error = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
+	m_dpaTask.handleResponse(response);
 }
 
-void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
-{
-  m_error = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
-  m_dpaTask.handleResponse(response);
-}
-
-void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)
-{
-  if (status == DpaRequest::DpaRequestStatus::kAborted)
-    m_error = -3;
-  if (status == DpaRequest::DpaRequestStatus::kTimeout)
-    m_error = -1;
-  m_promise.set_value(m_error);
+void DpaTransactionTask::processFinish(DpaTransfer::DpaTransferStatus status) {
+	if (status == DpaTransfer::DpaTransferStatus::kAborted)
+		m_error = -3;
+	
+	if (status == DpaTransfer::DpaTransferStatus::kTimeout)
+		m_error = -1;
+	
+	m_promise.set_value(m_error);
 }
 
 int DpaTransactionTask::waitFinish()
 {
-  int timeout = m_dpaTask.getTimeout();
-  if (timeout < 0) {
-    m_future.wait(); //Blocks until the result becomes available
-    m_error = m_future.get();
-  }
-  else {
-    std::chrono::milliseconds span(m_dpaTask.getTimeout() * 2);
-    if (m_future.wait_for(span) == std::future_status::timeout) {
-      m_error = -2;
-    }
-    else {
-      m_error = m_future.get();
-    }
-  }
-  return m_error;
+	int timeout = m_dpaTask.getTimeout();
+	if (timeout < 0) {
+		// blocks until the result becomes available
+		m_future.wait();
+		m_error = m_future.get();
+	}
+	else {
+		std::chrono::milliseconds span(m_dpaTask.getTimeout() * 2);
+		if (m_future.wait_for(span) == std::future_status::timeout) {
+			m_error = -2;
+		}
+		else {
+			m_error = m_future.get();
+		}
+	}
+	return m_error;
 }
 
 int DpaTransactionTask::getError() const
 {
-  return m_error;
+	return m_error;
 }
 
 std::string DpaTransactionTask::getErrorStr() const
 {
-  switch (m_error) {
-  case -3:
-    return "ERROR_ABORTED";
-  case -2:
-    return "ERROR_PROMISE_TIMEOUT";
-  case -1:
-    return "ERROR_TIMEOUT";
-  case STATUS_NO_ERROR:
-    return "STATUS_NO_ERROR";
-  case ERROR_FAIL:
-    return "ERROR_FAIL";
-  case ERROR_PCMD:
-    return "ERROR_PCMD";
-  case ERROR_PNUM:
-    return "ERROR_PNUM";
-  case ERROR_ADDR:
-    return "ERROR_ADDR";
-  case ERROR_DATA_LEN:
-    return "ERROR_DATA_LEN";
-  case ERROR_DATA:
-    return "ERROR_DATA";
-  case ERROR_HWPID:
-    return "ERROR_HWPID";
-  case ERROR_NADR:
-    return "ERROR_NADR";
-  case ERROR_IFACE_CUSTOM_HANDLER:
-    return "ERROR_IFACE_CUSTOM_HANDLER";
-  case ERROR_MISSING_CUSTOM_DPA_HANDLER:
-    return "ERROR_MISSING_CUSTOM_DPA_HANDLER";
-  case ERROR_USER_TO:
-    return "ERROR_USER_TO";
-  case STATUS_CONFIRMATION:
-    return "STATUS_CONFIRMATION";
-  case ERROR_USER_FROM:
-  default:
-    std::ostringstream os;
-    os << std::hex << m_error;
-    return os.str();
-  }
+	switch (m_error) {
+	case -3:
+		return "ERROR_ABORTED";
+	case -2:
+		return "ERROR_PROMISE_TIMEOUT";
+	case -1:
+		return "ERROR_TIMEOUT";
+	case STATUS_NO_ERROR:
+		return "STATUS_NO_ERROR";
+	case ERROR_FAIL:
+		return "ERROR_FAIL";
+	case ERROR_PCMD:
+		return "ERROR_PCMD";
+	case ERROR_PNUM:
+		return "ERROR_PNUM";
+	case ERROR_ADDR:
+		return "ERROR_ADDR";
+	case ERROR_DATA_LEN:
+		return "ERROR_DATA_LEN";
+	case ERROR_DATA:
+		return "ERROR_DATA";
+	case ERROR_HWPID:
+		return "ERROR_HWPID";
+	case ERROR_NADR:
+		return "ERROR_NADR";
+	case ERROR_IFACE_CUSTOM_HANDLER:
+		return "ERROR_IFACE_CUSTOM_HANDLER";
+	case ERROR_MISSING_CUSTOM_DPA_HANDLER:
+		return "ERROR_MISSING_CUSTOM_DPA_HANDLER";
+	case ERROR_USER_TO:
+		return "ERROR_USER_TO";
+	case STATUS_CONFIRMATION:
+		return "STATUS_CONFIRMATION";
+	case ERROR_USER_FROM:
+	default:
+		std::ostringstream os;
+		os << std::hex << m_error;
+		return os.str();
+	}
 }

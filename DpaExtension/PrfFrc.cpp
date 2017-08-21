@@ -157,7 +157,7 @@ void PrfFrc::setUserData(const UserData& udata)
   case Cmd::SEND: {
     packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)m_frcType + m_frcOffset;
     std::copy(udata.begin(), udata.end()-1, packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData);
-    m_request.SetLength(m_request.Length() + udata.size());
+    m_request.SetLength(m_request.GetLength() + udata.size());
 
     break;
   }

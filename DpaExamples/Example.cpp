@@ -1,5 +1,5 @@
 /**
-* Copyright 2015-2017 IQRF Tech s.r.o.
+* Copyright 2017 IQRF Tech s.r.o.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #include "IqrfSpiChannel.h"
 #include "DpaHandler.h"
 #include "DpaTransactionTask.h"
-#include "PrfRaw.h"
+#include "DpaRaw.h"
 #include "PrfLeds.h"
 #include "IqrfLogging.h"
 
@@ -95,11 +95,11 @@ int main(int argc, char** argv) {
 */
 
 	// Raw DPA access
-	PrfRaw rawDpa(dpaRequest);
+	DpaRaw rawTask(dpaRequest);
 
 	// DPA transaction task
 	TRC_INF("Running DPA transaction");
-	DpaTransactionTask dpaTT1(rawDpa);
+	DpaTransactionTask dpaTT1(rawTask);
 	// default timeout waiting for response is infinite
 	// sets according to your needs and dpa timing requirements
 	dpaHandler->Timeout(500);
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 	// sets according to your needs and dpa timing requirements
 	dpaHandler->Timeout(500);
 	dpaHandler->ExecuteDpaTransaction(dpaTT2);
-	int result = dpaTT2.waitFinish();
+	result = dpaTT2.waitFinish();
 	TRC_DBG("Result from DPA transaction :" << PAR(result));
 	TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT2.getErrorStr()));
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 		TRC_DBG("DPA transaction error: " << PAR(result));
 	}
 
-	TRC_INF("Waiting 5s before next transaction");
+	TRC_INF("Waiting 5s before exit");
 	this_thread::sleep_for(chrono::seconds(5));
 
 	TRC_INF("Clean after yourself");

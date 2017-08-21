@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +17,48 @@
 
 #pragma once
 
-#include "DpaTransaction.h"
-#include "DpaTask.h"
 #include <future>
 
+#include "DpaTransaction.h"
+#include "DpaTask.h"
+
+// implements transaction
 class DpaTransactionTask : public DpaTransaction
 {
 public:
-  DpaTransactionTask(DpaTask& dpaTask);
-  DpaTransactionTask() = delete;
-  DpaTransactionTask(const DpaTransactionTask&) = delete;
-  DpaTransactionTask(DpaTransactionTask&&) = delete;
-  DpaTransactionTask& operator= (const DpaTransactionTask&) = delete;
-  DpaTransactionTask& operator= (DpaTransactionTask&&) = delete;
+	DpaTransactionTask() = delete;
+	DpaTransactionTask(DpaTask& dpaTask);
+	DpaTransactionTask(const DpaTransactionTask&) = delete;
+	DpaTransactionTask(DpaTransactionTask&&) = delete;
+	DpaTransactionTask& operator= (const DpaTransactionTask&) = delete;
+	DpaTransactionTask& operator= (DpaTransactionTask&&) = delete;
 
-  virtual ~DpaTransactionTask();
+	virtual ~DpaTransactionTask();
 
-  const DpaMessage& getMessage() const override;
-  int getTimeout() const override;
-  void processConfirmationMessage(const DpaMessage& confirmation) override;
-  void processResponseMessage(const DpaMessage& response) override;
-  void processFinish(DpaRequest::DpaRequestStatus status) override;
+	// interface
+	const DpaMessage& getMessage() const override;
+	int getTimeout() const override;
 
-  //0: success, -1: DpaHandler timeout, -2: future timeout, <n>: responseCode
-  int waitFinish();
+	void processConfirmationMessage(const DpaMessage& confirmation) override;
+	void processResponseMessage(const DpaMessage& response) override;
+	
+	// set promise object according to return state of dpa transfer
+	void processFinish(DpaTransfer::DpaTransferStatus status) override;
 
-  int getError() const;
-  std::string getErrorStr() const;
+	//0: success, -1: DpaHandler timeout, -2: future timeout, <n>: responseCode
+	int waitFinish();
+
+	// errors
+	int getError() const;
+	std::string getErrorStr() const;
 
 private:
-  DpaTask& m_dpaTask;
-  std::promise<int> m_promise;
-  std::future<int> m_future;
-  int m_error;
+	DpaTask& m_dpaTask;
 
+	//The promise object is the asynchronous provider and is expected to set a value for the shared state at some point.
+	//The future object is an asynchronous return object that can retrieve the value of the shared state, waiting for it to be ready, if necessary.
+	std::promise<int> m_promise;
+	std::future<int> m_future;
+	
+	int m_error;
 };

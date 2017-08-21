@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,41 +15,29 @@
  * limitations under the License.
  */
 
-#include "PrfRaw.h"
+#include "DpaRaw.h"
 
-const std::string PrfRaw::PRF_NAME("raw");
-
+const std::string DpaRaw::PRF_NAME("raw");
 const std::string STR_CMD_UNKNOWN("unknown");
 
-PrfRaw::PrfRaw()
-  :DpaTask(PrfRaw::PRF_NAME, 0)
-{
+DpaRaw::DpaRaw(): DpaTask(DpaRaw::PRF_NAME, 0) {}
+
+DpaRaw::DpaRaw(const DpaMessage& request): DpaTask(PRF_NAME, 0) {
+	setRequest(request);
 }
 
-PrfRaw::PrfRaw(const DpaMessage& request)
-  :DpaTask(PRF_NAME, 0)
-{
-  setRequest(request);
+DpaRaw::~DpaRaw() {}
+
+void DpaRaw::setRequest(const DpaMessage& request) {
+	m_request = request;
 }
 
-PrfRaw::~PrfRaw()
-{
-}
+//from IQRF
+void DpaRaw::parseResponse(const DpaMessage& response) {}
 
-void PrfRaw::setRequest(const DpaMessage& request)
-{
-  m_request = request;
-}
+//from Messaging
+void DpaRaw::parseCommand(const std::string& command) {}
 
-void PrfRaw::parseResponse(const DpaMessage& response)
-{
-}
-
-void PrfRaw::parseCommand(const std::string& command)
-{
-}
-
-const std::string& PrfRaw::encodeCommand() const
-{
-  return STR_CMD_UNKNOWN;
+const std::string& DpaRaw::encodeCommand() const {
+	return STR_CMD_UNKNOWN;
 }
