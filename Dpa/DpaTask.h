@@ -17,11 +17,12 @@
 
 #pragma once
 
-#include "DpaMessage.h"
 #include <string>
 #include <sstream>
 #include <memory>
 #include <chrono>
+
+#include "DpaMessage.h"
 
 class DpaTask
 {
@@ -35,15 +36,16 @@ public:
   void handleResponse(const DpaMessage& response);
 
   virtual void parseResponse(const DpaMessage& response) = 0;
-
-  virtual void parseCommand(const std::string& command) = 0;
-  virtual const std::string& encodeCommand() const = 0;
   virtual std::string encodeResponse(const std::string& errStr) { return std::string(); }
   virtual std::string encodeRequest() const { return std::string(); }
 
+  virtual void parseCommand(const std::string& command) = 0;
+  virtual const std::string& encodeCommand() const = 0;
+  
   const std::string& getPrfName() const { return m_prfName; }
   const std::string& getClid() const { return m_clid; }
   void setClid(const std::string& clid) { m_clid = clid; }
+
   uint16_t getAddress() const;
   void setAddress(uint16_t address);
   uint16_t getHwpid() const;
@@ -53,7 +55,7 @@ public:
   int getTimeout() const { return m_timeout; }
   void setTimeout(int timeout) { m_timeout = timeout; }
 
-  const DpaMessage& getRequest() const { return m_request; }
+  const DpaMessage& getRequest() const { return m_request;  }
   const DpaMessage& getConfirmation() const { return m_confirmation; }
   const DpaMessage& getResponse() const { return m_response; }
 
