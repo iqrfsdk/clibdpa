@@ -75,7 +75,7 @@ void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
     throw unexpected_peripheral("Different peripheral type than in sent message.");
   }
 
-  if ((receivedMessage.CommandCode() & ~0x80) != m_sentMessage->CommandCode()) {
+  if ((receivedMessage.PeripheralCommand() & ~0x80) != m_sentMessage->PeripheralCommand()) {
     throw unexpected_command("Different peripheral command than in sent message.");
   }
 

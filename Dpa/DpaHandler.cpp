@@ -25,14 +25,15 @@ DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kSt
   }
   m_iqrfInterface = iqrfInterface;
 
+  // default timeout -1
+  m_defaultTimeoutMs = kDefaultTimeout;
+
   // register callback for cdc or spi interface
   m_iqrfInterface->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
     ResponseMessageHandler(msg);
     return 0;
   });
 
-  // default timeout -1
-  m_defaultTimeoutMs = kDefaultTimeout;
   m_currentTransfer = new DpaTransfer();
 }
 
@@ -48,8 +49,8 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 
   try {
     TRC_DBG("<<<<<<<<<<<<<<<<<<" << std::endl <<
-      "Sent to DPA interface: " << std::endl << FORM_HEX(message.DpaPacketData(), message.Length()));
-    m_iqrfInterface->sendTo(std::basic_string<unsigned char>(message.DpaPacketData(), message.Length()));
+      "Sent to DPA interface: " << std::endl << FORM_HEX(message.DpaPacketData(), message.GetLength()));
+    m_iqrfInterface->sendTo(std::basic_string<unsigned char>(message.DpaPacketData(), message.GetLength()));
   }
   catch (std::exception& e) {
     throw std::logic_error("Message was not send.");
