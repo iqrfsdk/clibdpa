@@ -15,27 +15,41 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "DpaRaw.h"
 
-#include "DpaTask.h"
-#include "DpaMessage.h"
+const std::string DpaRaw::PRF_NAME("raw");
 
-class PrfRaw : public DpaTask
+const std::string STR_CMD_UNKNOWN("unknown");
+
+DpaRaw::DpaRaw()
+  :DpaTask(DpaRaw::PRF_NAME, 0)
 {
-public:
-  static const std::string PRF_NAME;
+}
 
-  PrfRaw();
-  PrfRaw(const DpaMessage& request);
-  virtual ~PrfRaw();
+DpaRaw::DpaRaw(const DpaMessage& request)
+  : DpaTask(PRF_NAME, 0)
+{
+  setRequest(request);
+}
 
-  //from IQRF
-  void parseResponse(const DpaMessage& response) override;
+DpaRaw::~DpaRaw()
+{
+}
 
-  //from Messaging
-  void parseCommand(const std::string& command) override;
-  const std::string& encodeCommand() const override;
+void DpaRaw::setRequest(const DpaMessage& request)
+{
+  m_request = request;
+}
 
-  void setRequest(const DpaMessage& request);
+void DpaRaw::parseResponse(const DpaMessage& response)
+{
+}
 
-};
+void DpaRaw::parseCommand(const std::string& command)
+{
+}
+
+const std::string& DpaRaw::encodeCommand() const
+{
+  return STR_CMD_UNKNOWN;
+}

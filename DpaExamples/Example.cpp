@@ -18,7 +18,7 @@
 #include "IqrfSpiChannel.h"
 #include "DpaHandler.h"
 #include "DpaTransactionTask.h"
-#include "PrfRaw.h"
+#include "DpaRaw.h"
 #include "PrfLeds.h"
 #include "IqrfLogging.h"
 
@@ -95,11 +95,11 @@ int main(int argc, char** argv) {
   */
 
   // Raw DPA access
-  PrfRaw rawDpa(dpaRequest);
+  DpaRaw rawTask(dpaRequest);
 
   // DPA transaction task
   TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT1(rawDpa);
+  DpaTransactionTask dpaTT1(rawTask);
   // default timeout waiting for response is infinite
   // sets according to your needs and dpa timing requirements
   dpaHandler->Timeout(500);
