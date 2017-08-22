@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +30,12 @@
 #include <iomanip>
 #include <thread>
 
-/**
-* Demo app for testing DPA library.
-*
-* @author Radek Kuchta, Jaroslav Kadlec
-* @author Frantisek Mikulu, Rostislav Spinar
-*/
+ /**
+ * Demo app for testing DPA library.
+ *
+ * @author Radek Kuchta, Jaroslav Kadlec
+ * @author Frantisek Mikulu, Rostislav Spinar
+ */
 
 TRC_INIT();
 
@@ -116,7 +117,7 @@ DpaLibraryDemo::~DpaLibraryDemo() {
 void DpaLibraryDemo::start() {
   try {
     m_dpaHandler = new DpaHandler(m_dpaInterface);
-	m_dpaHandler->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::unexpectedMessage,
+    m_dpaHandler->RegisterAsyncMessageHandler(std::bind(&DpaLibraryDemo::unexpectedMessage,
       this,
       std::placeholders::_1));
   }
@@ -133,19 +134,19 @@ void DpaLibraryDemo::start() {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   while (i--) {
-	pulseLedRDpaTransaction(0x00);		// Pulse with red led on coordinator
-	//pulseLedRDpaTransaction(0x01);	// Pulse with red led on node1
+    pulseLedRDpaTransaction(0x00);		// Pulse with red led on coordinator
+    //pulseLedRDpaTransaction(0x01);	// Pulse with red led on node1
 
-	readTemperatureDpaTransaction(0x00);	// Get temperature from node0
+    readTemperatureDpaTransaction(0x00);	// Get temperature from node0
     //ReadTemperatureDpaTransaction(0x01);	// Get temperature from node1
 
-	//PulseLed(0x00, kLedRed);		// Pulse with red led on coordinator
-	//PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
-	//PulseLed(0xFF, kLedRed);		// Pulse with red led using broadcast
-	//PulseLed(0xFF, kLedGreen);    // Pulse with green led using broadcast
+    //PulseLed(0x00, kLedRed);		// Pulse with red led on coordinator
+    //PulseLed(0x00, kLedGreen);    // Pulse with green led on coordinator
+    //PulseLed(0xFF, kLedRed);		// Pulse with red led using broadcast
+    //PulseLed(0xFF, kLedGreen);    // Pulse with green led using broadcast
 
-	//ReadTemperature(0x00);        // Get temperature from coordinator
-	//ReadTemperature(0x01);        // Get temperature from node1
+    //ReadTemperature(0x00);        // Get temperature from coordinator
+    //ReadTemperature(0x01);        // Get temperature from node1
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -158,16 +159,16 @@ void DpaLibraryDemo::start() {
 */
 void DpaLibraryDemo::pulseLedRDpaTransaction(uint16_t address)
 {
-	PrfLedR pulse((int)address, PrfLed::Cmd::PULSE);
-	DpaTransactionTask transaction(pulse);
+  PrfLedR pulse((int)address, PrfLed::Cmd::PULSE);
+  DpaTransactionTask transaction(pulse);
 
-	m_dpaHandler->ExecuteDpaTransaction(transaction);
-	int errorCode = transaction.waitFinish();
+  m_dpaHandler->ExecuteDpaTransaction(transaction);
+  int errorCode = transaction.waitFinish();
 
-	if (errorCode == 0)
-		std::cout << pulse.getPrfName() << " " << pulse.getAddress() << " " << pulse.encodeCommand() << std::endl;
-	else
-		std::cout << transaction.getErrorStr() << std::endl;
+  if (errorCode == 0)
+    std::cout << pulse.getPrfName() << " " << pulse.getAddress() << " " << pulse.encodeCommand() << std::endl;
+  else
+    std::cout << transaction.getErrorStr() << std::endl;
 }
 
 
@@ -177,16 +178,16 @@ void DpaLibraryDemo::pulseLedRDpaTransaction(uint16_t address)
  */
 void DpaLibraryDemo::readTemperatureDpaTransaction(uint16_t address)
 {
-	PrfThermometer thermometer((int)address, PrfThermometer::Cmd::READ);
-	DpaTransactionTask transaction(thermometer);
+  PrfThermometer thermometer((int)address, PrfThermometer::Cmd::READ);
+  DpaTransactionTask transaction(thermometer);
 
-	m_dpaHandler->ExecuteDpaTransaction(transaction);
-	int errorCode = transaction.waitFinish();
+  m_dpaHandler->ExecuteDpaTransaction(transaction);
+  int errorCode = transaction.waitFinish();
 
-	if (errorCode == 0)
-		std::cout << NAME_PAR(Temperature, thermometer.getIntTemperature()) << std::endl;
-	else
-		std::cout << "Failed to read Temperature at: " << NAME_PAR(addres, thermometer.getAddress()) << PAR(errorCode) << std::endl;
+  if (errorCode == 0)
+    std::cout << NAME_PAR(Temperature, thermometer.getIntTemperature()) << std::endl;
+  else
+    std::cout << "Failed to read Temperature at: " << NAME_PAR(addres, thermometer.getAddress()) << PAR(errorCode) << std::endl;
 }
 
 
@@ -239,10 +240,10 @@ void DpaLibraryDemo::readTemperature(uint16_t address) {
   // process the response
   if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kProcessed) {
     int16_t temperature =
-	m_dpaHandler->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
+      m_dpaHandler->CurrentRequest().ResponseMessage().DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
 
     std::cout << num++ << " Temperature: "
-    << std::dec << temperature << " oC" << std::endl;
+      << std::dec << temperature << " oC" << std::endl;
   }
 }
 
@@ -252,34 +253,34 @@ void DpaLibraryDemo::readTemperature(uint16_t address) {
  * @param Message DPA message
  */
 void DpaLibraryDemo::executeCommand(DpaMessage& message) {
-	static uint16_t sent_messages = 0;
-	static uint16_t timeouts = 0;
+  static uint16_t sent_messages = 0;
+  static uint16_t timeouts = 0;
 
-	try {
-		m_dpaHandler->SendDpaMessage(message);
-	}
-	catch (std::logic_error& le) {
-		std::cout << "Send error occured: " << le.what() << std::endl;
-		return;
-	}
+  try {
+    m_dpaHandler->SendDpaMessage(message);
+  }
+  catch (std::logic_error& le) {
+    std::cout << "Send error occured: " << le.what() << std::endl;
+    return;
+  }
 
-	++sent_messages;
+  ++sent_messages;
 
-	while (m_dpaHandler->IsDpaMessageInProgress()) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
+  while (m_dpaHandler->IsDpaMessageInProgress()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 
-	if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
-		++timeouts;
-		std::cout << message.NodeAddress()
-			<< " - Timeout ..."
-			<< sent_messages
-			<< ':'
-			<< timeouts
-			<< '\n';
-	}
+  if (m_dpaHandler->Status() == DpaRequest::DpaRequestStatus::kTimeout) {
+    ++timeouts;
+    std::cout << message.NodeAddress()
+      << " - Timeout ..."
+      << sent_messages
+      << ':'
+      << timeouts
+      << '\n';
+  }
 }
 
 void DpaLibraryDemo::unexpectedMessage(const DpaMessage& message) {
-	std::cout << "Unexpected message received.\n";
+  std::cout << "Unexpected message received.\n";
 }

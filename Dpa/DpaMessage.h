@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +22,7 @@
 #include <string>
 #include <cstdint>
 
-///< Size of buffer for message.
+ ///< Size of buffer for message.
 #define MAX_DPA_BUFFER    64
 
 class DpaMessage {
@@ -153,10 +154,10 @@ public:
   uint16_t NodeAddress() const { return dpa_packet_->DpaRequestPacket_t.NADR; }
 
   /**
- Gets peripheral type.
+   Gets peripheral type.
 
- @return	A peripheral type.
- */
+   @return	A peripheral type.
+   */
   TDpaPeripheralType PeripheralType() const { return TDpaPeripheralType(dpa_packet_->DpaRequestPacket_t.PNUM); }
 
   /**

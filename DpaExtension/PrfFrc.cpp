@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +132,7 @@ uint8_t PrfFrc::getFrcData_Byte(uint16_t addr) const
   }
   uint8_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE && addr > 0)
-    retval = m_data[addr-1];
+    retval = m_data[addr - 1];
   return retval;
 }
 
@@ -142,7 +143,7 @@ uint16_t PrfFrc::getFrcData_Byte2(uint16_t addr) const
   }
   uint16_t retval = 0;
   if (addr <= FRC_MAX_NODE_BYTE2 && addr > 0)
-    retval = *((uint16_t*)&m_data[(addr-1)*2]);
+    retval = *((uint16_t*)&m_data[(addr - 1) * 2]);
   return retval;
 }
 
@@ -156,7 +157,7 @@ void PrfFrc::setUserData(const UserData& udata)
   switch (getCmd()) {
   case Cmd::SEND: {
     packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = (uint8_t)m_frcType + m_frcOffset;
-    std::copy(udata.begin(), udata.end()-1, packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData);
+    std::copy(udata.begin(), udata.end() - 1, packet.DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.UserData);
     m_request.SetLength(m_request.Length() + udata.size());
 
     break;
@@ -202,8 +203,8 @@ void PrfFrc::parseResponse(const DpaMessage& response)
           val |= val0 & 0x01;
           val0 >>= 1;
           val1 >>= 1;
-          if (iii = 8*i + ii) //skip 0 node
-            m_data[iii-1] = val;
+          if (iii = 8 * i + ii) //skip 0 node
+            m_data[iii - 1] = val;
         }
       }
     }

@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +53,7 @@ public:
   int getTimeout() const { return m_timeout; }
   void setTimeout(int timeout) { m_timeout = timeout; }
 
-  const DpaMessage& getRequest() const { return m_request;  }
+  const DpaMessage& getRequest() const { return m_request; }
   const DpaMessage& getConfirmation() const { return m_confirmation; }
   const DpaMessage& getResponse() const { return m_response; }
 

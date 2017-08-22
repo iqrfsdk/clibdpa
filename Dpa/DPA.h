@@ -63,7 +63,7 @@
 #define	CUSTOM_HANDLER_ADDRESS_END	0x3D80
 
 // DPA API entry function
-uns8  DpaApiEntry( uns8 par1, uns8 par2, uns8 apiIndex );
+uns8  DpaApiEntry(uns8 par1, uns8 par2, uns8 apiIndex);
 
 // DPA API codes
 #define	DPA_API_RFTX_DPAPACKET				0
@@ -140,16 +140,16 @@ typedef uint16_t  uns16;
 // "foursome" at IFace structure
 typedef struct
 {
-  // Node address low byte
-  uns8	NADRlow;
-  // Node address high byte
-  uns8	NADRhigh;
-  // Peripheral number
-  uns8	PNUM;
-  // Peripheral command
-  uns8	PCMD;
-  // HWPID
-  uns16	HWPID;
+	// Node address low byte
+	uns8	NADRlow;
+	// Node address high byte
+	uns8	NADRhigh;
+	// Peripheral number
+	uns8	PNUM;
+	// Peripheral command
+	uns8	PCMD;
+	// HWPID
+	uns16	HWPID;
 } STRUCTATTR TDpaIFaceHeader;
 
 // Maximum command PCMD value (except reserved 0x3F = CMD_GET_PER_INFO)
@@ -299,86 +299,86 @@ typedef struct
 // DPA peripheral type
 typedef enum
 {
-  PERIPHERAL_TYPE_DUMMY = 0x00,
-  PERIPHERAL_TYPE_COORDINATOR = 0x01,
-  PERIPHERAL_TYPE_NODE = 0x02,
-  PERIPHERAL_TYPE_OS = 0x03,
-  PERIPHERAL_TYPE_EEPROM = 0x04,
-  PERIPHERAL_TYPE_BLOCK_EEPROM = 0x05,
-  PERIPHERAL_TYPE_RAM = 0x06,
-  PERIPHERAL_TYPE_LED = 0x07,
-  PERIPHERAL_TYPE_SPI = 0x08,
-  PERIPHERAL_TYPE_IO = 0x09,
-  PERIPHERAL_TYPE_UART = 0x0a,
-  PERIPHERAL_TYPE_THERMOMETER = 0x0b,
-  PERIPHERAL_TYPE_ADC = 0x0c,
-  PERIPHERAL_TYPE_PWM = 0x0d,
-  PERIPHERAL_TYPE_FRC = 0x0e,
-  // Starts peripheral type number interval for user peripherals
-  PERIPHERAL_TYPE_USER_AREA = 0x80
+	PERIPHERAL_TYPE_DUMMY = 0x00,
+	PERIPHERAL_TYPE_COORDINATOR = 0x01,
+	PERIPHERAL_TYPE_NODE = 0x02,
+	PERIPHERAL_TYPE_OS = 0x03,
+	PERIPHERAL_TYPE_EEPROM = 0x04,
+	PERIPHERAL_TYPE_BLOCK_EEPROM = 0x05,
+	PERIPHERAL_TYPE_RAM = 0x06,
+	PERIPHERAL_TYPE_LED = 0x07,
+	PERIPHERAL_TYPE_SPI = 0x08,
+	PERIPHERAL_TYPE_IO = 0x09,
+	PERIPHERAL_TYPE_UART = 0x0a,
+	PERIPHERAL_TYPE_THERMOMETER = 0x0b,
+	PERIPHERAL_TYPE_ADC = 0x0c,
+	PERIPHERAL_TYPE_PWM = 0x0d,
+	PERIPHERAL_TYPE_FRC = 0x0e,
+	// Starts peripheral type number interval for user peripherals
+	PERIPHERAL_TYPE_USER_AREA = 0x80
 } TDpaPeripheralType;
 
 // Peripheral extended information
 typedef enum
 {
-  PERIPHERAL_TYPE_EXTENDED_DEFAULT = 0b00,
-  PERIPHERAL_TYPE_EXTENDED_READ = 0b01,
-  PERIPHERAL_TYPE_EXTENDED_WRITE = 0b10,
-  PERIPHERAL_TYPE_EXTENDED_READ_WRITE = PERIPHERAL_TYPE_EXTENDED_READ | PERIPHERAL_TYPE_EXTENDED_WRITE
+	PERIPHERAL_TYPE_EXTENDED_DEFAULT = 0b00,
+	PERIPHERAL_TYPE_EXTENDED_READ = 0b01,
+	PERIPHERAL_TYPE_EXTENDED_WRITE = 0b10,
+	PERIPHERAL_TYPE_EXTENDED_READ_WRITE = PERIPHERAL_TYPE_EXTENDED_READ | PERIPHERAL_TYPE_EXTENDED_WRITE
 } TDpaPeripheralTypeExtended;
 
 // Response packet error codes
 typedef enum
 {
-  // No error
-  STATUS_NO_ERROR = 0,
+	// No error
+	STATUS_NO_ERROR = 0,
 
-  // General fail
-  ERROR_FAIL = 1,
-  // Incorrect PCMD
-  ERROR_PCMD = 2,
-  // Incorrect PNUM or PCMD
-  ERROR_PNUM = 3,
-  // Incorrect Address value when addressing memory type peripherals
-  ERROR_ADDR = 4,
-  // Incorrect Data length
-  ERROR_DATA_LEN = 5,
-  // Incorrect Data
-  ERROR_DATA = 6,
-  // Incorrect HWPID used
-  ERROR_HWPID = 7,
-  // Incorrect NADR
-  ERROR_NADR = 8,
-  // IFACE data consumed by Custom DPA Handler
-  ERROR_IFACE_CUSTOM_HANDLER = 9,
-  // Custom DPA Handler is missing
-  ERROR_MISSING_CUSTOM_DPA_HANDLER = 10,
+	// General fail
+	ERROR_FAIL = 1,
+	// Incorrect PCMD
+	ERROR_PCMD = 2,
+	// Incorrect PNUM or PCMD
+	ERROR_PNUM = 3,
+	// Incorrect Address value when addressing memory type peripherals
+	ERROR_ADDR = 4,
+	// Incorrect Data length
+	ERROR_DATA_LEN = 5,
+	// Incorrect Data
+	ERROR_DATA = 6,
+	// Incorrect HWPID used
+	ERROR_HWPID = 7,
+	// Incorrect NADR
+	ERROR_NADR = 8,
+	// IFACE data consumed by Custom DPA Handler
+	ERROR_IFACE_CUSTOM_HANDLER = 9,
+	// Custom DPA Handler is missing
+	ERROR_MISSING_CUSTOM_DPA_HANDLER = 10,
 
-  // Beginning of the user code error interval
-  ERROR_USER_FROM = 0x20,
-  // End of the user code error interval
-  ERROR_USER_TO = 0x3f,
+	// Beginning of the user code error interval
+	ERROR_USER_FROM = 0x20,
+	// End of the user code error interval
+	ERROR_USER_TO = 0x3f,
 
-  // Bit/flag reserved for a future use
-  STATUS_RESERVED_FLAG = 0x40,
-  // Bit to flag asynchronous response from [N]
-  STATUS_ASYNC_RESPONSE = 0x80,
-  // Error code used to mark confirmation
-  STATUS_CONFIRMATION = 0xff
+	// Bit/flag reserved for a future use
+	STATUS_RESERVED_FLAG = 0x40,
+	// Bit to flag asynchronous response from [N]
+	STATUS_ASYNC_RESPONSE = 0x80,
+	// Error code used to mark confirmation
+	STATUS_CONFIRMATION = 0xff
 } TErrorCodes;
 
 // Predefined FRC commands
 typedef enum
 {
-  FRC_Prebonding = 0x00,
-  FRC_UART_SPI_data = 0x01,
-  FRC_AcknowledgedBroadcastBits = 0x02,
+	FRC_Prebonding = 0x00,
+	FRC_UART_SPI_data = 0x01,
+	FRC_AcknowledgedBroadcastBits = 0x02,
 
-  FRC_Temperature = 0x80,
-  FRC_AcknowledgedBroadcastBytes = 0x81,
-  FRC_MemoryRead = 0x82,
-  FRC_MemoryReadPlus1 = 0x83,
-  FRC_FrcResponseTime = 0x84,
+	FRC_Temperature = 0x80,
+	FRC_AcknowledgedBroadcastBytes = 0x81,
+	FRC_MemoryRead = 0x82,
+	FRC_MemoryReadPlus1 = 0x83,
+	FRC_FrcResponseTime = 0x84,
 } TFRCommands;
 
 // Intervals of user FRC codes
@@ -391,10 +391,10 @@ typedef enum
 
 typedef enum
 {
-  // No HWPID specified
-  HWPID_Default = 0,
-  // Use this type to override HWPID check
-  HWPID_DoNotCheck = 0xFfFf
+	// No HWPID specified
+	HWPID_Default = 0,
+	// Use this type to override HWPID check
+	HWPID_DoNotCheck = 0xFfFf
 } THWPIDs;
 
 // RAM peripheral block definitions
@@ -425,13 +425,13 @@ typedef enum
 // Enumerate peripherals structure
 typedef struct
 {
-  uns16	DpaVersion;
-  uns8	UserPerNr;
-  uns8	StandardPer[PNUM_USER / 8];
-  uns16	HWPID;
-  uns16	HWPIDver;
-  uns8	Flags;
-  uns8	UserPer[( PNUM_MAX - PNUM_USER + 1 + 7 ) / 8];
+	uns16	DpaVersion;
+	uns8	UserPerNr;
+	uns8	StandardPer[PNUM_USER / 8];
+	uns16	HWPID;
+	uns16	HWPIDver;
+	uns8	Flags;
+	uns8	UserPer[(PNUM_MAX - PNUM_USER + 1 + 7) / 8];
 } STRUCTATTR TEnumPeripheralsAnswer;
 
 #define	FlagUserPer(UserPerArray,UserPerNumber)	UserPerArray[((UserPerNumber)-PNUM_USER) / 8] |= (uns8)0x01 << (((UserPerNumber)-PNUM_USER) % 8);
@@ -439,381 +439,381 @@ typedef struct
 // Get peripheral info structure (CMD_GET_PER_INFO)
 typedef struct
 {
-  uns8	PerTE;
-  uns8	PerT;
-  uns8	Par1;
-  uns8	Par2;
+	uns8	PerTE;
+	uns8	PerT;
+	uns8	Par1;
+	uns8	Par2;
 } STRUCTATTR TPeripheralInfoAnswer;
 
 // Error DPA response (PNUM_ERROR_FLAG)
 typedef struct
 {
-  uns8	ErrN;
-  uns8	PNUMoriginal;
+	uns8	ErrN;
+	uns8	PNUMoriginal;
 } STRUCTATTR TErrorAnswer;
 
 // Structure returned by CMD_COORDINATOR_ADDR_INFO
 typedef struct
 {
-  uns8	DevNr;
-  uns8	DID;
+	uns8	DevNr;
+	uns8	DID;
 } STRUCTATTR TPerCoordinatorAddrInfo_Response;
 
 // Structure for CMD_COORDINATOR_BOND_NODE
 typedef struct
 {
-  uns8	ReqAddr;
-  uns8	BondingMask;
+	uns8	ReqAddr;
+	uns8	BondingMask;
 } STRUCTATTR TPerCoordinatorBondNode_Request;
 
 // Structure returned by CMD_COORDINATOR_BOND_NODE
 typedef struct
 {
-  uns8	BondAddr;
-  uns8	DevNr;
+	uns8	BondAddr;
+	uns8	DevNr;
 } STRUCTATTR TPerCoordinatorBondNode_Response;
 
 // Structure for CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
 typedef struct
 {
-  uns8	BondAddr;
+	uns8	BondAddr;
 } STRUCTATTR TPerCoordinatorRemoveRebondBond_Request;
 
 // Structure returned by CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
 typedef struct
 {
-  uns8	DevNr;
+	uns8	DevNr;
 } STRUCTATTR TPerCoordinatorRemoveRebondBond_Response;
 
 // Structure for CMD_COORDINATOR_DISCOVERY
 typedef struct
 {
-  uns8	TxPower;
-  uns8	MaxAddr;
+	uns8	TxPower;
+	uns8	MaxAddr;
 } STRUCTATTR TPerCoordinatorDiscovery_Request;
 
 // Structure returned by CMD_COORDINATOR_DISCOVERY
 typedef struct
 {
-  uns8	DiscNr;
+	uns8	DiscNr;
 } STRUCTATTR TPerCoordinatorDiscovery_Response;
 
 // Structure for and also returned by CMD_COORDINATOR_SET_DPAPARAMS
 typedef struct
 {
-  uns8	DpaParam;
+	uns8	DpaParam;
 } STRUCTATTR TPerCoordinatorSetDpaParams_Request_Response;
 
 // Structure for and also returned by CMD_COORDINATOR_SET_HOPS
 typedef struct
 {
-  uns8	RequestHops;
-  uns8	ResponseHops;
+	uns8	RequestHops;
+	uns8	ResponseHops;
 } STRUCTATTR TPerCoordinatorSetHops_Request_Response;
 
 // Structure for CMD_COORDINATOR_DISCOVERY_DATA
 typedef struct
 {
-  uns16	Address;
+	uns16	Address;
 } STRUCTATTR TPerCoordinatorDiscoveryData_Request;
 
 // Structure returned by CMD_COORDINATOR_DISCOVERY_DATA
 typedef struct
 {
-  uns8	DiscoveryData[48];
+	uns8	DiscoveryData[48];
 } STRUCTATTR TPerCoordinatorDiscoveryData_Response;
 
 // Structure for CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
 typedef struct
 {
-  uns8	Index;
+	uns8	Index;
 } STRUCTATTR TPerCoordinatorNodeBackup_Request;
 
 // Structure returned by CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
 typedef struct
 {
-  uns8	NetworkData[49];
+	uns8	NetworkData[49];
 } STRUCTATTR TPerCoordinatorNodeBackup_Response;
 
 // Structure for CMD_COORDINATOR_RESTORE and CMD_NODE_RESTORE
 typedef struct
 {
-  uns8	NetworkData[49];
+	uns8	NetworkData[49];
 } STRUCTATTR TPerCoordinatorNodeRestore_Request;
 
 // Structure for CMD_COORDINATOR_AUTHORIZE_BOND
 typedef struct
 {
-  uns8	ReqAddr;
-  uns8	MID[4];
+	uns8	ReqAddr;
+	uns8	MID[4];
 } STRUCTATTR TPerCoordinatorAuthorizeBond_Request;
 
 // Structure returned by CMD_COORDINATOR_AUTHORIZE_BOND
 typedef struct
 {
-  uns8	BondAddr;
-  uns8	DevNr;
+	uns8	BondAddr;
+	uns8	DevNr;
 } STRUCTATTR TPerCoordinatorAuthorizeBond_Response;
 
 // Structure for CMD_COORDINATOR_BRIDGE
 typedef struct
 {
-  TDpaIFaceHeader subHeader;
-  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof( TDpaIFaceHeader )];
+	TDpaIFaceHeader subHeader;
+	uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof(TDpaIFaceHeader)];
 } STRUCTATTR TPerCoordinatorBridge_Request;
 
 // Structure returned by CMD_COORDINATOR_BRIDGE
 typedef struct
 {
-  TDpaIFaceHeader subHeader;
-  uns8	subRespCode;
-  uns8	subDpaValue;
-  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof( TDpaIFaceHeader ) - 2 * sizeof( uns8 )];
+	TDpaIFaceHeader subHeader;
+	uns8	subRespCode;
+	uns8	subDpaValue;
+	uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof(TDpaIFaceHeader) - 2 * sizeof(uns8)];
 } STRUCTATTR TPerCoordinatorBridge_Response;
 
 // Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
 typedef struct
 {
-  uns8	BondingMask;
-  uns8	Control;
-  uns8	UserData[4];
+	uns8	BondingMask;
+	uns8	Control;
+	uns8	UserData[4];
 } STRUCTATTR TPerCoordinatorNodeEnableRemoteBonding_Request;
 
 // Structure for TPerCoordinatorNodeReadRemotelyBondedMID_Response
 typedef struct
 {
-  uns8	MID[4];
-  uns8	UserData[4];
+	uns8	MID[4];
+	uns8	UserData[4];
 } STRUCTATTR TPrebondedNode;
 
 // Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
 typedef struct
 {
-  TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof( TPrebondedNode )];
+	TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof(TPrebondedNode)];
 } STRUCTATTR TPerCoordinatorNodeReadRemotelyBondedMID_Response;
 
 // Structure returned by CMD_NODE_READ
 typedef struct
 {
-  uns8  ntwADDR;
-  uns8  ntwVRN;
-  uns8  ntwZIN;
-  uns8  ntwDID;
-  uns8  ntwPVRN;
-  uns16 ntwUSERADDRESS;
-  uns16 ntwID;
-  uns8  ntwVRNFNZ;
-  uns8  ntwCFG;
-  uns8  Flags;
+	uns8  ntwADDR;
+	uns8  ntwVRN;
+	uns8  ntwZIN;
+	uns8  ntwDID;
+	uns8  ntwPVRN;
+	uns16 ntwUSERADDRESS;
+	uns16 ntwID;
+	uns8  ntwVRNFNZ;
+	uns8  ntwCFG;
+	uns8  Flags;
 } STRUCTATTR TPerNodeRead_Response;
 
 // Structure returned by CMD_OS_READ
 typedef struct
 {
-  uns8	ModuleId[4];
-  uns8	OsVersion;
-  uns8	McuType;
-  uns16	OsBuild;
-  uns8	Rssi;
-  uns8	SupplyVoltage;
-  uns8	Flags;
-  uns8	SlotLimits;
+	uns8	ModuleId[4];
+	uns8	OsVersion;
+	uns8	McuType;
+	uns16	OsBuild;
+	uns8	Rssi;
+	uns8	SupplyVoltage;
+	uns8	Flags;
+	uns8	SlotLimits;
 } STRUCTATTR TPerOSRead_Response;
 
 // Structure returned by CMD_OS_READ_CFG
 typedef struct
 {
-  uns8	Checksum;
-  uns8	Configuration[31];
-  uns8	RFPGM;
-  uns8	Undocumented[1];
+	uns8	Checksum;
+	uns8	Configuration[31];
+	uns8	RFPGM;
+	uns8	Undocumented[1];
 } STRUCTATTR TPerOSReadCfg_Response;
 
 // Structure for CMD_OS_WRITE_CFG
 typedef struct
 {
-  uns8	Checksum;
-  uns8	Configuration[31];
-  uns8	RFPGM;
+	uns8	Checksum;
+	uns8	Configuration[31];
+	uns8	RFPGM;
 } STRUCTATTR TPerOSWriteCfg_Request;
 
 // Structures for CMD_OS_WRITE_CFG_BYTE
 typedef struct
 {
-  uns8	Address;
-  uns8	Value;
-  uns8	Mask;
+	uns8	Address;
+	uns8	Value;
+	uns8	Mask;
 } STRUCTATTR TPerOSWriteCfgByteTriplet;
 
 // Structure for CMD_OS_WRITE_CFG_BYTE
 typedef struct
 {
-  TPerOSWriteCfgByteTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof( TPerOSWriteCfgByteTriplet )];
+	TPerOSWriteCfgByteTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof(TPerOSWriteCfgByteTriplet)];
 } STRUCTATTR TPerOSWriteCfgByte_Request;
 
 // Structure for CMD_OS_SET_SECURITY
 typedef struct
 {
-  uns8	Type;
-  uns8	Data[16];
+	uns8	Type;
+	uns8	Data[16];
 } STRUCTATTR TPerOSSetSecurity_Request;
 
 // Structure for CMD_OS_LOAD_CODE
 typedef struct
 {
-  uns8	Flags;
-  uns16	Address;
-  uns16	Length;
-  uns16	CheckSum;
+	uns8	Flags;
+	uns16	Address;
+	uns16	Length;
+	uns16	CheckSum;
 } STRUCTATTR TPerOSLoadCode_Request;
 
 // Structure for CMD_OS_SLEEP
 typedef struct
 {
-  uns16	Time;
-  uns8	Control;
+	uns16	Time;
+	uns8	Control;
 } STRUCTATTR TPerOSSleep_Request;
 
 // Structure for general memory request
 typedef struct
 {
-  // Address of data to write or read
-  uns8	Address;
+	// Address of data to write or read
+	uns8	Address;
 
-  union
-  {
-	// Memory read request
-	struct
+	union
 	{
-	  // Length of data to read
-	  uns8	Length;
-	} Read;
+		// Memory read request
+		struct
+		{
+			// Length of data to read
+			uns8	Length;
+		} Read;
 
-	// Size of Address field
+		// Size of Address field
 #define	MEMORY_WRITE_REQUEST_OVERHEAD	( sizeof( uns8 ) )
 
 	// Memory write request
-	struct
-	{
-	  uns8	PData[DPA_MAX_DATA_LENGTH - MEMORY_WRITE_REQUEST_OVERHEAD];
-	} Write;
+		struct
+		{
+			uns8	PData[DPA_MAX_DATA_LENGTH - MEMORY_WRITE_REQUEST_OVERHEAD];
+		} Write;
 
-  } ReadWrite;
+	} ReadWrite;
 } STRUCTATTR TPerMemoryRequest;
 
 // Structure for general extended memory request
 typedef struct
 {
-  // Address of data to write or read
-  uns16	Address;
+	// Address of data to write or read
+	uns16	Address;
 
-  union
-  {
-	// Memory read request
-	struct
+	union
 	{
-	  // Length of data to read
-	  uns8	Length;
-	} Read;
+		// Memory read request
+		struct
+		{
+			// Length of data to read
+			uns8	Length;
+		} Read;
 
-	// Size of Address field
+		// Size of Address field
 #define	XMEMORY_WRITE_REQUEST_OVERHEAD	( sizeof( uns16 ) )
 
 	// Memory write request
-	struct
-	{
-	  uns8	PData[DPA_MAX_DATA_LENGTH - XMEMORY_WRITE_REQUEST_OVERHEAD];
-	} Write;
+		struct
+		{
+			uns8	PData[DPA_MAX_DATA_LENGTH - XMEMORY_WRITE_REQUEST_OVERHEAD];
+		} Write;
 
-  } ReadWrite;
+	} ReadWrite;
 } STRUCTATTR TPerXMemoryRequest;
 
 // Structure for CMD_IO requests
 typedef struct
 {
-  uns8  Port;
-  uns8  Mask;
-  uns8  Value;
+	uns8  Port;
+	uns8  Mask;
+	uns8  Value;
 } STRUCTATTR TPerIOTriplet;
 
 typedef struct
 {
-  uns8  Header;	// == PNUM_IO_DELAY
-  uns16 Delay;
+	uns8  Header;	// == PNUM_IO_DELAY
+	uns16 Delay;
 } STRUCTATTR TPerIODelay;
 
 // Union for CMD_IO_SET and CMD_IO_DIRECTION requests
 typedef union
 {
-  TPerIOTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof( TPerIOTriplet )];
-  TPerIODelay   Delays[DPA_MAX_DATA_LENGTH / sizeof( TPerIODelay )];
+	TPerIOTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof(TPerIOTriplet)];
+	TPerIODelay   Delays[DPA_MAX_DATA_LENGTH / sizeof(TPerIODelay)];
 } STRUCTATTR TPerIoDirectionAndSet_Request;
 
 // Structure returned by CMD_THERMOMETER_READ
 typedef struct
 {
-  uns8  IntegerValue;
-  uns16 SixteenthValue;
+	uns8  IntegerValue;
+	uns16 SixteenthValue;
 } STRUCTATTR TPerThermometerRead_Response;
 
 // Structure for CMD_PWM_SET
 typedef struct
 {
-  uns8  Prescaler;
-  uns8  Period;
-  uns8  Duty;
+	uns8  Prescaler;
+	uns8  Period;
+	uns8  Duty;
 } STRUCTATTR TPerPwmSet_Request;
 
 // Structure for CMD_UART_OPEN
 typedef struct
 {
-  uns8  BaudRate;
+	uns8  BaudRate;
 } STRUCTATTR TPerUartOpen_Request;
 
 // Structure for CMD_UART_WRITE_READ and CMD_SPI_WRITE_READ
 typedef struct
 {
-  uns8  ReadTimeout;
-  uns8	WrittenData[DPA_MAX_DATA_LENGTH - sizeof( uns8 )];
+	uns8  ReadTimeout;
+	uns8	WrittenData[DPA_MAX_DATA_LENGTH - sizeof(uns8)];
 } STRUCTATTR TPerUartSpiWriteRead_Request;
 
 // Structure for CMD_FRC_SEND
 typedef struct
 {
-  uns8  FrcCommand;
-  uns8	UserData[30];
+	uns8  FrcCommand;
+	uns8	UserData[30];
 } STRUCTATTR TPerFrcSend_Request;
 
 // Structure for CMD_FRC_SEND_SELECTIVE
 typedef struct
 {
-  uns8  FrcCommand;
-  uns8	SelectedNodes[30];
-  uns8	UserData[25];
+	uns8  FrcCommand;
+	uns8	SelectedNodes[30];
+	uns8	UserData[25];
 } STRUCTATTR TPerFrcSendSelective_Request;
 
 // Structure returned by CMD_FRC_SEND and CMD_FRC_SEND_SELECTIVE
 typedef struct
 {
-  uns8  Status;
-  uns8	FrcData[DPA_MAX_DATA_LENGTH - sizeof( uns8 )];
+	uns8  Status;
+	uns8	FrcData[DPA_MAX_DATA_LENGTH - sizeof(uns8)];
 } STRUCTATTR TPerFrcSend_Response;
 
 // Structure for request and response of CMD_FRC_SET_PARAMS
 typedef struct
 {
-  uns8	FRCresponseTime;
+	uns8	FRCresponseTime;
 } STRUCTATTR TPerFrcSetParams_RequestResponse;
 
 // Interface and CMD_COORDINATOR_BRIDGE confirmation structure
 typedef struct
 {
-  // Number of hops
-  uns8  Hops;
-  // Time slot length in 10ms
-  uns8  TimeSlotLength;
-  // Number of hops for response
-  uns8  HopsResponse;
+	// Number of hops
+	uns8  Hops;
+	// Time slot length in 10ms
+	uns8  TimeSlotLength;
+	// Number of hops for response
+	uns8  HopsResponse;
 } STRUCTATTR TIFaceConfirmation;
 
 // ---------------------------------------------------------
@@ -821,149 +821,149 @@ typedef struct
 // DPA Message data structure (packet w/o NADR, PNUM, PCMD, HWPID)
 typedef union
 {
-  // General DPA request
-  struct
-  {
-	uns8	PData[DPA_MAX_DATA_LENGTH];
-  } Request;
+	// General DPA request
+	struct
+	{
+		uns8	PData[DPA_MAX_DATA_LENGTH];
+	} Request;
 
-  // General DPA response
-  struct
-  {
-	uns8	PData[DPA_MAX_DATA_LENGTH];
-  } Response;
+	// General DPA response
+	struct
+	{
+		uns8	PData[DPA_MAX_DATA_LENGTH];
+	} Response;
 
-  // Enumerate peripherals structure
-  TEnumPeripheralsAnswer EnumPeripheralsAnswer;
+	// Enumerate peripherals structure
+	TEnumPeripheralsAnswer EnumPeripheralsAnswer;
 
-  // Get peripheral info structure (CMD_GET_PER_INFO)
-  TPeripheralInfoAnswer PeripheralInfoAnswer;
+	// Get peripheral info structure (CMD_GET_PER_INFO)
+	TPeripheralInfoAnswer PeripheralInfoAnswer;
 
-  // Get peripheral info structure (CMD_GET_PER_INFO) for more peripherals
-  TPeripheralInfoAnswer PeripheralInfoAnswers[MAX_PERIPHERALS_PER_BLOCK_INFO];
+	// Get peripheral info structure (CMD_GET_PER_INFO) for more peripherals
+	TPeripheralInfoAnswer PeripheralInfoAnswers[MAX_PERIPHERALS_PER_BLOCK_INFO];
 
-  // Error DPA response (PNUM_ERROR_FLAG)
-  TErrorAnswer ErrorAnswer;
+	// Error DPA response (PNUM_ERROR_FLAG)
+	TErrorAnswer ErrorAnswer;
 
-  // Structure returned by CMD_COORDINATOR_ADDR_INFO
-  TPerCoordinatorAddrInfo_Response PerCoordinatorAddrInfo_Response;
+	// Structure returned by CMD_COORDINATOR_ADDR_INFO
+	TPerCoordinatorAddrInfo_Response PerCoordinatorAddrInfo_Response;
 
-  // Structure for CMD_COORDINATOR_BOND_NODE
-  TPerCoordinatorBondNode_Request PerCoordinatorBondNode_Request;
+	// Structure for CMD_COORDINATOR_BOND_NODE
+	TPerCoordinatorBondNode_Request PerCoordinatorBondNode_Request;
 
-  // Structure returned by CMD_COORDINATOR_BOND_NODE
-  TPerCoordinatorBondNode_Response PerCoordinatorBondNode_Response;
+	// Structure returned by CMD_COORDINATOR_BOND_NODE
+	TPerCoordinatorBondNode_Response PerCoordinatorBondNode_Response;
 
-  // Structure for CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
-  TPerCoordinatorRemoveRebondBond_Request PerCoordinatorRemoveRebondBond_Request;
+	// Structure for CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
+	TPerCoordinatorRemoveRebondBond_Request PerCoordinatorRemoveRebondBond_Request;
 
-  // Structure returned by CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
-  TPerCoordinatorRemoveRebondBond_Response PerCoordinatorRemoveRebondBond_Response;
+	// Structure returned by CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
+	TPerCoordinatorRemoveRebondBond_Response PerCoordinatorRemoveRebondBond_Response;
 
-  // Structure for CMD_COORDINATOR_DISCOVERY
-  TPerCoordinatorDiscovery_Request PerCoordinatorDiscovery_Request;
+	// Structure for CMD_COORDINATOR_DISCOVERY
+	TPerCoordinatorDiscovery_Request PerCoordinatorDiscovery_Request;
 
-  // Structure returned by CMD_COORDINATOR_DISCOVERY
-  TPerCoordinatorDiscovery_Response PerCoordinatorDiscovery_Response;
+	// Structure returned by CMD_COORDINATOR_DISCOVERY
+	TPerCoordinatorDiscovery_Response PerCoordinatorDiscovery_Response;
 
-  // Structure for and also returned by CMD_COORDINATOR_SET_DPAPARAMS
-  TPerCoordinatorSetDpaParams_Request_Response PerCoordinatorSetDpaParams_Request_Response;
+	// Structure for and also returned by CMD_COORDINATOR_SET_DPAPARAMS
+	TPerCoordinatorSetDpaParams_Request_Response PerCoordinatorSetDpaParams_Request_Response;
 
-  // Structure for and also returned by CMD_COORDINATOR_SET_HOPS
-  TPerCoordinatorSetHops_Request_Response PerCoordinatorSetHops_Request_Response;
+	// Structure for and also returned by CMD_COORDINATOR_SET_HOPS
+	TPerCoordinatorSetHops_Request_Response PerCoordinatorSetHops_Request_Response;
 
-  // Structure for CMD_COORDINATOR_DISCOVERY_DATA
-  TPerCoordinatorDiscoveryData_Request PerCoordinatorDiscoveryData_Request;
+	// Structure for CMD_COORDINATOR_DISCOVERY_DATA
+	TPerCoordinatorDiscoveryData_Request PerCoordinatorDiscoveryData_Request;
 
-  // Structure returned by CMD_COORDINATOR_DISCOVERY_DATA
-  TPerCoordinatorDiscoveryData_Response PerCoordinatorDiscoveryData_Response;
+	// Structure returned by CMD_COORDINATOR_DISCOVERY_DATA
+	TPerCoordinatorDiscoveryData_Response PerCoordinatorDiscoveryData_Response;
 
-  // Structure for CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
-  TPerCoordinatorNodeBackup_Request PerCoordinatorNodeBackup_Request;
+	// Structure for CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
+	TPerCoordinatorNodeBackup_Request PerCoordinatorNodeBackup_Request;
 
-  // Structure returned by CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
-  TPerCoordinatorNodeBackup_Response PerCoordinatorNodeBackup_Response;
+	// Structure returned by CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
+	TPerCoordinatorNodeBackup_Response PerCoordinatorNodeBackup_Response;
 
-  // Structure for CMD_COORDINATOR_RESTORE and CMD_NODE_RESTORE
-  TPerCoordinatorNodeRestore_Request PerCoordinatorNodeRestore_Request;
+	// Structure for CMD_COORDINATOR_RESTORE and CMD_NODE_RESTORE
+	TPerCoordinatorNodeRestore_Request PerCoordinatorNodeRestore_Request;
 
-  // Structure for CMD_COORDINATOR_AUTHORIZE_BOND
-  TPerCoordinatorAuthorizeBond_Request PerCoordinatorAuthorizeBond_Request;
+	// Structure for CMD_COORDINATOR_AUTHORIZE_BOND
+	TPerCoordinatorAuthorizeBond_Request PerCoordinatorAuthorizeBond_Request;
 
-  // Structure returned by CMD_COORDINATOR_AUTHORIZE_BOND
-  TPerCoordinatorAuthorizeBond_Response PerCoordinatorAuthorizeBond_Response;
+	// Structure returned by CMD_COORDINATOR_AUTHORIZE_BOND
+	TPerCoordinatorAuthorizeBond_Response PerCoordinatorAuthorizeBond_Response;
 
-  // Structure for CMD_COORDINATOR_BRIDGE
-  TPerCoordinatorBridge_Request PerCoordinatorBridge_Request;
+	// Structure for CMD_COORDINATOR_BRIDGE
+	TPerCoordinatorBridge_Request PerCoordinatorBridge_Request;
 
-  // Structure returned by CMD_COORDINATOR_BRIDGE
-  TPerCoordinatorBridge_Response PerCoordinatorBridge_Response;
+	// Structure returned by CMD_COORDINATOR_BRIDGE
+	TPerCoordinatorBridge_Response PerCoordinatorBridge_Response;
 
-  // Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
-  TPerCoordinatorNodeEnableRemoteBonding_Request PerCoordinatorNodeEnableRemoteBonding_Request;
+	// Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
+	TPerCoordinatorNodeEnableRemoteBonding_Request PerCoordinatorNodeEnableRemoteBonding_Request;
 
-  // Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
-  TPerCoordinatorNodeReadRemotelyBondedMID_Response PerCoordinatorNodeReadRemotelyBondedMID_Response;
+	// Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
+	TPerCoordinatorNodeReadRemotelyBondedMID_Response PerCoordinatorNodeReadRemotelyBondedMID_Response;
 
-  // Structure returned by CMD_NODE_READ
-  TPerNodeRead_Response PerNodeRead_Response;
+	// Structure returned by CMD_NODE_READ
+	TPerNodeRead_Response PerNodeRead_Response;
 
-  // Structure returned by CMD_OS_READ
-  TPerOSRead_Response PerOSRead_Response;
+	// Structure returned by CMD_OS_READ
+	TPerOSRead_Response PerOSRead_Response;
 
-  // Structure returned by CMD_OS_READ_CFG
-  TPerOSReadCfg_Response PerOSReadCfg_Response;
+	// Structure returned by CMD_OS_READ_CFG
+	TPerOSReadCfg_Response PerOSReadCfg_Response;
 
-  // Structure for CMD_OS_WRITE_CFG
-  TPerOSWriteCfg_Request PerOSWriteCfg_Request;
+	// Structure for CMD_OS_WRITE_CFG
+	TPerOSWriteCfg_Request PerOSWriteCfg_Request;
 
-  // Structure for CMD_OS_WRITE_CFG_BYTE
-  TPerOSWriteCfgByte_Request PerOSWriteCfgByte_Request;
+	// Structure for CMD_OS_WRITE_CFG_BYTE
+	TPerOSWriteCfgByte_Request PerOSWriteCfgByte_Request;
 
-  // Structure for CMD_OS_SET_SECURITY
-  TPerOSSetSecurity_Request PerOSSetSecurity_Request;
+	// Structure for CMD_OS_SET_SECURITY
+	TPerOSSetSecurity_Request PerOSSetSecurity_Request;
 
-  // Structure for CMD_OS_LOAD_CODE
-  TPerOSLoadCode_Request PerOSLoadCode_Request;
+	// Structure for CMD_OS_LOAD_CODE
+	TPerOSLoadCode_Request PerOSLoadCode_Request;
 
-  // Structure for CMD_OS_SLEEP
-  TPerOSSleep_Request PerOSSleep_Request;
+	// Structure for CMD_OS_SLEEP
+	TPerOSSleep_Request PerOSSleep_Request;
 
-  // Structure for general memory request
-  TPerMemoryRequest MemoryRequest;
+	// Structure for general memory request
+	TPerMemoryRequest MemoryRequest;
 
-  // Structure for general extended memory request
-  TPerXMemoryRequest XMemoryRequest;
+	// Structure for general extended memory request
+	TPerXMemoryRequest XMemoryRequest;
 
-  // Structure for CMD_IO requests
-  TPerIoDirectionAndSet_Request PerIoDirectionAndSet_Request;
+	// Structure for CMD_IO requests
+	TPerIoDirectionAndSet_Request PerIoDirectionAndSet_Request;
 
-  // Structure returned by CMD_THERMOMETER_READ
-  TPerThermometerRead_Response PerThermometerRead_Response;
+	// Structure returned by CMD_THERMOMETER_READ
+	TPerThermometerRead_Response PerThermometerRead_Response;
 
-  // Structure for CMD_PWM_SET
-  TPerPwmSet_Request PerPwmSet_Request;
+	// Structure for CMD_PWM_SET
+	TPerPwmSet_Request PerPwmSet_Request;
 
-  // Structure for CMD_UART_OPEN
-  TPerUartOpen_Request PerUartOpen_Request;
+	// Structure for CMD_UART_OPEN
+	TPerUartOpen_Request PerUartOpen_Request;
 
-  // Structure for CMD_UART_WRITE_READ and CMD_SPI_WRITE_READ
-  TPerUartSpiWriteRead_Request PerUartSpiWriteRead_Request;
+	// Structure for CMD_UART_WRITE_READ and CMD_SPI_WRITE_READ
+	TPerUartSpiWriteRead_Request PerUartSpiWriteRead_Request;
 
-  // Structure for CMD_FRC_SEND
-  TPerFrcSend_Request PerFrcSend_Request;
+	// Structure for CMD_FRC_SEND
+	TPerFrcSend_Request PerFrcSend_Request;
 
-  // Structure returned by CMD_FRC_SEND and CMD_FRC_SEND_SELECTIVE
-  TPerFrcSend_Response PerFrcSend_Response;
+	// Structure returned by CMD_FRC_SEND and CMD_FRC_SEND_SELECTIVE
+	TPerFrcSend_Response PerFrcSend_Response;
 
-  // Structure for CMD_FRC_SEND_SELECTIVE
-  TPerFrcSendSelective_Request PerFrcSendSelective_Request;
+	// Structure for CMD_FRC_SEND_SELECTIVE
+	TPerFrcSendSelective_Request PerFrcSendSelective_Request;
 
-  // Structure for request and response of CMD_FRC_SET_PARAMS
-  TPerFrcSetParams_RequestResponse PerFrcSetParams_RequestResponse;
+	// Structure for request and response of CMD_FRC_SET_PARAMS
+	TPerFrcSetParams_RequestResponse PerFrcSetParams_RequestResponse;
 
-  // Interface and CMD_COORDINATOR_BRIDGE confirmation structure
-  TIFaceConfirmation IFaceConfirmation;
+	// Interface and CMD_COORDINATOR_BRIDGE confirmation structure
+	TIFaceConfirmation IFaceConfirmation;
 } TDpaMessage;
 
 // Custom DPA Handler events
@@ -992,50 +992,50 @@ typedef union
 // Types of the diagnostic DPA Value that is returned inside DPA response 
 typedef enum
 {
-  DpaValueType_RSSI = 0,
-  DpaValueType_SupplyVoltage = 1,
-  DpaValueType_System = 2,
-  DpaValueType_User = 3
+	DpaValueType_RSSI = 0,
+	DpaValueType_SupplyVoltage = 1,
+	DpaValueType_System = 2,
+	DpaValueType_User = 3
 } TDpaValueType;
 
 // Type (color) of LED peripheral
 typedef enum
 {
-  LED_COLOR_RED = 0,
-  LED_COLOR_GREEN = 1,
-  LED_COLOR_BLUE = 2,
-  LED_COLOR_YELLOW = 3,
-  LED_COLOR_WHITE = 4,
-  LED_COLOR_UNKNOWN = 0xff
+	LED_COLOR_RED = 0,
+	LED_COLOR_GREEN = 1,
+	LED_COLOR_BLUE = 2,
+	LED_COLOR_YELLOW = 3,
+	LED_COLOR_WHITE = 4,
+	LED_COLOR_UNKNOWN = 0xff
 } TLedColor;
 
 // Baud rates
 typedef enum
 {
-  DpaBaud_1200 = 0x00,
-  DpaBaud_2400 = 0x01,
-  DpaBaud_4800 = 0x02,
-  DpaBaud_9600 = 0x03,
-  DpaBaud_19200 = 0x04,
-  DpaBaud_38400 = 0x05,
-  DpaBaud_57600 = 0x06,
-  DpaBaud_115200 = 0x07
+	DpaBaud_1200 = 0x00,
+	DpaBaud_2400 = 0x01,
+	DpaBaud_4800 = 0x02,
+	DpaBaud_9600 = 0x03,
+	DpaBaud_19200 = 0x04,
+	DpaBaud_38400 = 0x05,
+	DpaBaud_57600 = 0x06,
+	DpaBaud_115200 = 0x07
 } TBaudRates;
 
 // Useful PNUM_IO definitions
 typedef enum
 {
-  PNUM_IO_PORTA = 0x00,
-  PNUM_IO_TRISA = 0x00,
-  PNUM_IO_PORTB = 0x01,
-  PNUM_IO_TRISB = 0x01,
-  PNUM_IO_PORTC = 0x02,
-  PNUM_IO_TRISC = 0x02,
-  PNUM_IO_PORTE = 0x04,
-  PNUM_IO_TRISE = 0x04,
-  PNUM_IO_WPUB = 0x11,
-  PNUM_IO_WPUE = 0x14,
-  PNUM_IO_DELAY = 0xff
+	PNUM_IO_PORTA = 0x00,
+	PNUM_IO_TRISA = 0x00,
+	PNUM_IO_PORTB = 0x01,
+	PNUM_IO_TRISB = 0x01,
+	PNUM_IO_PORTC = 0x02,
+	PNUM_IO_TRISC = 0x02,
+	PNUM_IO_PORTE = 0x04,
+	PNUM_IO_TRISE = 0x04,
+	PNUM_IO_WPUB = 0x11,
+	PNUM_IO_WPUE = 0x14,
+	PNUM_IO_DELAY = 0xff
 } PNUM_IO_Definitions;
 
 #ifdef __CC5X__

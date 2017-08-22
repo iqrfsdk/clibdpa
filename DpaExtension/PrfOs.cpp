@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +69,7 @@ void PrfOs::parseResponse(const DpaMessage& response)
 
     {
       std::ostringstream os;
-      os << std::hex << 
+      os << std::hex <<
         std::setw(2) << (int)(resp.OsVersion >> 4) << '.';
       os.fill('0');
       os << std::setw(2) << (int)(resp.OsVersion & 0xf) << 'D';
@@ -76,7 +77,7 @@ void PrfOs::parseResponse(const DpaMessage& response)
     }
 
     m_trType = (resp.ModuleId[3] & 0x80) ? "DCTR-" : "TR-";
-    
+
     switch (resp.McuType >> 4) {
     case 0: m_trType += "52D"; break;
     case 1: m_trType += "58D-RJ"; break;
@@ -90,13 +91,13 @@ void PrfOs::parseResponse(const DpaMessage& response)
     }
 
     m_fcc = resp.McuType & 0x8;
-    int pic = resp.McuType & 0x7; 
+    int pic = resp.McuType & 0x7;
     switch (pic) {
     case 3: m_mcuType = "PIC16F886";
     case 4: m_mcuType = "PIC16F1938";
     default: m_mcuType = "UNKNOWN";
     }
-   
+
     {
       std::ostringstream os;
       os.fill('0');
@@ -104,7 +105,7 @@ void PrfOs::parseResponse(const DpaMessage& response)
       m_osBuild = os.str();
     }
   }
-  break;
+                  break;
 
   default:;
   }

@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +29,18 @@
 #include <condition_variable>
 
 class DpaHandler {
- public:
-	 enum IqrfRfCommunicationMode
-	 {
-		 kStd,
-		 kLp
-	 };
+public:
+  enum IqrfRfCommunicationMode
+  {
+    kStd,
+    kLp
+  };
 
-	 enum DpaProtocolVersion
-	{
-		k22x,
-		k30x
-	};
+  enum DpaProtocolVersion
+  {
+    k22x,
+    k30x
+  };
 
   /**
    Constructor.
@@ -81,7 +82,7 @@ class DpaHandler {
    */
   void ResponseHandler(const std::basic_string<unsigned char>& message);
 
-	DpaRequest* CreateDpaRequest(DpaTransaction* dpa_transaction) const;
+  DpaRequest* CreateDpaRequest(DpaTransaction* dpa_transaction) const;
   /**
    Sends a DPA message.
 
@@ -132,7 +133,7 @@ class DpaHandler {
   DpaProtocolVersion DpaVersion() const;
   void DpaVersion(DpaProtocolVersion new_dpa_version);
 
-	IqrfRfCommunicationMode GetRfCommunicationMode() const;
+  IqrfRfCommunicationMode GetRfCommunicationMode() const;
 
   void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
 

@@ -1,5 +1,6 @@
 /**
  * Copyright 2015-2017 MICRORISC s.r.o.
+ * Copyright 2017 IQRF Tech s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +20,17 @@
 #include <stdexcept>
 
 class unexpected_packet_type
-	: public std::logic_error
+  : public std::logic_error
 {
 public:
-	explicit unexpected_packet_type(const std::string& _Message)
-		: logic_error(_Message)
-	{
-	}
+  explicit unexpected_packet_type(const std::string& _Message)
+    : logic_error(_Message)
+  {
+  }
 
-	explicit unexpected_packet_type(const char* _Message)
-		: logic_error(_Message)
-	{
-	}
+  explicit unexpected_packet_type(const char* _Message)
+    : logic_error(_Message)
+  {
+  }
 
 };
