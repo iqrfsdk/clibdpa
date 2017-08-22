@@ -18,11 +18,9 @@
 #include "DpaMessage.h"
 #include "DpaHandler.h"
 #include "IqrfLogging.h"
-#include "Dpa30xRequest.h"
 
 DpaHandler::DpaHandler(IChannel* dpa_interface)
   : current_communication_mode_(kStd)
-  , current_dpa_version_(k30x)
 {
   if (dpa_interface == nullptr) {
     throw std::invalid_argument("dpa_interface argument can not be nullptr.");
@@ -70,14 +68,7 @@ void DpaHandler::ResponseHandler(const std::basic_string<unsigned char>& message
 DpaRequest* DpaHandler::CreateDpaRequest(DpaTransaction* dpa_transaction) const
 {
   DpaRequest* response;
-  if (current_dpa_version_ == k22x)
-  {
-    response = new DpaRequest(dpa_transaction);
-  }
-  else
-  {
-    response = new Dpa30xRequest(dpa_transaction);
-  }
+  response = new DpaRequest(dpa_transaction);
 
   if (current_communication_mode_ == kLp)
   {
@@ -210,20 +201,6 @@ void DpaHandler::Timeout(int32_t timeout_ms) {
 
 int32_t DpaHandler::Timeout() const {
   return default_timeout_ms_;
-}
-
-DpaHandler::DpaProtocolVersion DpaHandler::DpaVersion() const
-{
-  return current_dpa_version_;
-}
-
-void DpaHandler::DpaVersion(DpaProtocolVersion new_dpa_version)
-{
-  if (IsDpaMessageInProgress())
-  {
-    //TODO:  doplnit vyjimku
-  }
-  current_dpa_version_ = new_dpa_version;
 }
 
 DpaHandler::IqrfRfCommunicationMode DpaHandler::GetRfCommunicationMode() const

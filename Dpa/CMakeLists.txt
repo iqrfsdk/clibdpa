@@ -11,7 +11,6 @@ set(Dpa_SRC_FILES
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/Dpa30xRequest.cpp
 )
 
 set(Dpa_INC_FILES
@@ -27,7 +26,6 @@ set(Dpa_INC_FILES
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.h
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.h
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.h
-	${CMAKE_SOURCE_DIR}/Dpa/Dpa30xRequest.h
 )
 
 include_directories(${cutils_INCLUDE_DIRS})

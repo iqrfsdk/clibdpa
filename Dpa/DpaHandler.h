@@ -36,12 +36,6 @@ public:
     kLp
   };
 
-  enum DpaProtocolVersion
-  {
-    k22x,
-    k30x
-  };
-
   /**
    Constructor.
 
@@ -130,9 +124,6 @@ public:
    */
   int32_t Timeout() const;
 
-  DpaProtocolVersion DpaVersion() const;
-  void DpaVersion(DpaProtocolVersion new_dpa_version);
-
   IqrfRfCommunicationMode GetRfCommunicationMode() const;
 
   void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
@@ -174,6 +165,5 @@ private:
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = -1;
 
-  DpaProtocolVersion current_dpa_version_;
   IqrfRfCommunicationMode current_communication_mode_;
 };
