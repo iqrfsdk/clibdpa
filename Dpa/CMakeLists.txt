@@ -5,6 +5,9 @@ set(Dpa_SRC_FILES
 	${CMAKE_SOURCE_DIR}/Dpa/DpaHandler.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/DpaRequest.cpp
+  ${CMAKE_SOURCE_DIR}/Dpa/DpaTask.cpp
+  ${CMAKE_SOURCE_DIR}/Dpa/DpaTransactionTask.cpp
+  ${CMAKE_SOURCE_DIR}/Dpa/PrfRaw.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.cpp
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.cpp
@@ -18,6 +21,9 @@ set(Dpa_INC_FILES
 	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.h
 	${CMAKE_SOURCE_DIR}/Dpa/DpaRequest.h
 	${CMAKE_SOURCE_DIR}/Dpa/DpaTransaction.h
+  ${CMAKE_SOURCE_DIR}/Dpa/DpaTask.h
+	${CMAKE_SOURCE_DIR}/Dpa/DpaTransactionTask.h
+  ${CMAKE_SOURCE_DIR}/Dpa/PrfRaw.h
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.h
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.h
 	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.h
