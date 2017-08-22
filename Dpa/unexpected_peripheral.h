@@ -19,17 +19,9 @@
 
 #include <stdexcept>
 
-class unexpected_peripheral
-  : public std::logic_error
+class unexpected_peripheral : public std::logic_error
 {
 public:
-  explicit unexpected_peripheral(const std::string& _Message)
-    : logic_error(_Message)
-  {
-  }
-
-  explicit unexpected_peripheral(const char* _Message)
-    : logic_error(_Message)
-  {
-  }
+  explicit unexpected_peripheral(const std::string& message) : logic_error(message) {}
+  explicit unexpected_peripheral(const char* message) : logic_error(message) {}
 };
