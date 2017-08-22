@@ -37,5 +37,4 @@ public:
   const std::string& encodeCommand() const override;
 
   void setRequest(const DpaMessage& request);
-
 };

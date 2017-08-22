@@ -18,38 +18,26 @@
 #include "DpaRaw.h"
 
 const std::string DpaRaw::PRF_NAME("raw");
-
 const std::string STR_CMD_UNKNOWN("unknown");
 
-DpaRaw::DpaRaw()
-  :DpaTask(DpaRaw::PRF_NAME, 0)
-{
-}
+DpaRaw::DpaRaw() : DpaTask(DpaRaw::PRF_NAME, 0) {}
 
-DpaRaw::DpaRaw(const DpaMessage& request)
-  : DpaTask(PRF_NAME, 0)
-{
+DpaRaw::DpaRaw(const DpaMessage& request) : DpaTask(PRF_NAME, 0) {
   setRequest(request);
 }
 
-DpaRaw::~DpaRaw()
-{
-}
+DpaRaw::~DpaRaw() {}
 
-void DpaRaw::setRequest(const DpaMessage& request)
-{
+void DpaRaw::setRequest(const DpaMessage& request) {
   m_request = request;
 }
 
-void DpaRaw::parseResponse(const DpaMessage& response)
-{
-}
+//from IQRF
+void DpaRaw::parseResponse(const DpaMessage& response) {}
 
-void DpaRaw::parseCommand(const std::string& command)
-{
-}
+//from Messaging
+void DpaRaw::parseCommand(const std::string& command) {}
 
-const std::string& DpaRaw::encodeCommand() const
-{
+const std::string& DpaRaw::encodeCommand() const {
   return STR_CMD_UNKNOWN;
 }
