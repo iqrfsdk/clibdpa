@@ -51,16 +51,16 @@ void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
   m_dpaTask.handleResponse(response);
 }
 
-void DpaTransactionTask::processFinish(DpaRequest::DpaRequestStatus status)
+void DpaTransactionTask::processFinish(DpaTransfer::DpaTransferStatus status)
 {
   switch (status) {
-  case DpaRequest::DpaRequestStatus::kError:
+  case DpaTransfer::DpaTransferStatus::kError:
     m_error = -4;
     break;
-  case DpaRequest::DpaRequestStatus::kAborted:
+  case DpaTransfer::DpaTransferStatus::kAborted:
     m_error = -3;
     break;
-  case DpaRequest::DpaRequestStatus::kTimeout:
+  case DpaTransfer::DpaTransferStatus::kTimeout:
     m_error = -1;
     break;
   default:;

@@ -37,7 +37,7 @@ public:
   int getTimeout() const override;
   void processConfirmationMessage(const DpaMessage& confirmation) override;
   void processResponseMessage(const DpaMessage& response) override;
-  void processFinish(DpaRequest::DpaRequestStatus status) override;
+  void processFinish(DpaTransfer::DpaTransferStatus status) override;
 
   //0: success, -1: DpaHandler timeout, -2: future timeout, <n>: responseCode
   int waitFinish();
@@ -50,5 +50,4 @@ private:
   std::promise<int> m_promise;
   std::future<int> m_future;
   int m_error;
-
 };

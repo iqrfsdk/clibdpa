@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "DpaRequest.h"
+#include "DpaTransfer.h"
 class DpaMessage;
 
 class DpaTransaction
@@ -28,6 +28,6 @@ public:
   virtual int getTimeout() const = 0;
   virtual void processConfirmationMessage(const DpaMessage& confirmation) = 0;
   virtual void processResponseMessage(const DpaMessage& response) = 0;
-  virtual void processFinish(DpaRequest::DpaRequestStatus status) = 0;
-  bool isProcessed(DpaRequest::DpaRequestStatus status) { return status == DpaRequest::kProcessed ? true : false; }
+  virtual void processFinish(DpaTransfer::DpaTransferStatus status) = 0;
+  bool isProcessed(DpaTransfer::DpaTransferStatus status) { return status == DpaTransfer::kProcessed ? true : false; }
 };
