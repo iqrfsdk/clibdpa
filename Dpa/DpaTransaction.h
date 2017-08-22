@@ -18,16 +18,21 @@
 #pragma once
 
 #include "DpaTransfer.h"
+
 class DpaMessage;
 
+// interface
 class DpaTransaction
 {
 public:
   virtual ~DpaTransaction() {}
+
   virtual const DpaMessage& getMessage() const = 0;
   virtual int getTimeout() const = 0;
+
   virtual void processConfirmationMessage(const DpaMessage& confirmation) = 0;
   virtual void processResponseMessage(const DpaMessage& response) = 0;
   virtual void processFinish(DpaTransfer::DpaTransferStatus status) = 0;
+
   bool isProcessed(DpaTransfer::DpaTransferStatus status) { return status == DpaTransfer::kProcessed ? true : false; }
 };

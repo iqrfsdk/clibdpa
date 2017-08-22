@@ -15,38 +15,30 @@
  * limitations under the License.
  */
 
-#include "DpaTransactionTask.h"
 #include <chrono>
 
-DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask)
-  :m_dpaTask(dpaTask)
-  , m_error(0)
-{
+#include "DpaTransactionTask.h"
+
+DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask) : m_dpaTask(dpaTask), m_error(0) {
   m_future = m_promise.get_future();
 }
 
-DpaTransactionTask::~DpaTransactionTask()
-{
-}
+DpaTransactionTask::~DpaTransactionTask() {}
 
-const DpaMessage& DpaTransactionTask::getMessage() const
-{
+const DpaMessage& DpaTransactionTask::getMessage() const {
   m_dpaTask.timestampRequest();
   return m_dpaTask.getRequest();
 }
 
-int DpaTransactionTask::getTimeout() const
-{
+int DpaTransactionTask::getTimeout() const {
   return m_dpaTask.getTimeout();
 }
 
-void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation)
-{
+void DpaTransactionTask::processConfirmationMessage(const DpaMessage& confirmation) {
   m_dpaTask.handleConfirmation(confirmation);
 }
 
-void DpaTransactionTask::processResponseMessage(const DpaMessage& response)
-{
+void DpaTransactionTask::processResponseMessage(const DpaMessage& response) {
   m_error = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
   m_dpaTask.handleResponse(response);
 }
@@ -72,7 +64,8 @@ int DpaTransactionTask::waitFinish()
 {
   int timeout = m_dpaTask.getTimeout();
   if (timeout < 0) {
-    m_future.wait(); //Blocks until the result becomes available
+    // blocks until the result becomes available
+    m_future.wait();
     m_error = m_future.get();
   }
   else {
