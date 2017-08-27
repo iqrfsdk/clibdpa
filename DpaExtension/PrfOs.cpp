@@ -93,8 +93,8 @@ void PrfOs::parseResponse(const DpaMessage& response)
     m_fcc = resp.McuType & 0x8;
     int pic = resp.McuType & 0x7;
     switch (pic) {
-    case 3: m_mcuType = "PIC16F886";
-    case 4: m_mcuType = "PIC16F1938";
+    case 3: m_mcuType = "PIC16F886"; break;
+    case 4: m_mcuType = "PIC16F1938"; break;
     default: m_mcuType = "UNKNOWN";
     }
 
