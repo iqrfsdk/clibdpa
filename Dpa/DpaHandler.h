@@ -31,12 +31,6 @@
 
 class DpaHandler {
 public:
-  /** Values that represent IQRF communication modes. */
-  enum IqrfRfCommunicationMode {
-    kStd,
-    kLp
-  };
-
   /**
    Constructor.
 
@@ -136,7 +130,7 @@ public:
 
 private:
   /** Default value of timeout in ms.*/
-  const int32_t kDefaultTimeout = -1;
+  const int32_t kDefaultTimeout = 0;
   /** Holds timeout in ms. */
   int32_t m_defaultTimeoutMs;
   /** Holds the communication mode */

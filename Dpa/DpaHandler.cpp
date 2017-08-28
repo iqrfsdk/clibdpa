@@ -25,8 +25,9 @@ DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kSt
   }
   m_iqrfInterface = iqrfInterface;
 
-  // default timeout -1
+  // default timeout 0
   m_defaultTimeoutMs = kDefaultTimeout;
+  TRC_DBG("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
 
   // register callback for cdc or spi interface
   m_iqrfInterface->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
@@ -42,6 +43,8 @@ DpaHandler::~DpaHandler() {
 }
 
 void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* responseHandler) {
+
+  TRC_ENTER("");
 
   if (IsDpaMessageInProgress()) {
     throw std::logic_error("Other Dpa Message is in progress.");
@@ -61,24 +64,20 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 
   // create new holder for the reception
   m_currentTransfer = CreateDpaTransfer(responseHandler);
-  // get ready new holder by setting
+  
+  // get ready new holder by setting user timeout if sets otherwise -1
   m_currentTransfer->DefaultTimeout(m_defaultTimeoutMs);
+  TRC_DBG("Setting user timeout: " << PAR(m_defaultTimeoutMs));
+
   m_currentTransfer->ProcessSentMessage(message);
+  
+  TRC_LEAVE("");
 }
 
 // transfer with transaction
 DpaTransfer* DpaHandler::CreateDpaTransfer(DpaTransaction* dpaTransaction) const
 {
-  DpaTransfer* response;
-  response = new DpaTransfer(dpaTransaction);
-
-  if (m_currentCommunicationMode == kLp) {
-    response->SetIqrfRfMode(DpaTransfer::kLp);
-  }
-  else {
-    response->SetIqrfRfMode(DpaTransfer::kStd);
-  }
-
+  DpaTransfer* response = new DpaTransfer(dpaTransaction, GetRfCommunicationMode());
   return response;
 }
 
@@ -116,6 +115,7 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
   {
     std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
     m_conditionVariable.notify_one();
+    TRC_INF("Notify from ResponseMessageHandler: message received.");
   }
 }
 
@@ -124,6 +124,7 @@ bool DpaHandler::ProcessMessage(const DpaMessage& message) {
     m_currentTransfer->ProcessReceivedMessage(message);
   }
   catch (std::logic_error& le) {
+    TRC_ERR("Process message error...");
     return false;
   }
   return true;
@@ -171,7 +172,7 @@ int32_t DpaHandler::Timeout() const {
   return m_defaultTimeoutMs;
 }
 
-DpaHandler::IqrfRfCommunicationMode DpaHandler::GetRfCommunicationMode() const
+IqrfRfCommunicationMode DpaHandler::GetRfCommunicationMode() const
 {
   return m_currentCommunicationMode;
 }
@@ -207,13 +208,18 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   try {
     SendDpaMessage(message, &dpaTransaction);
 
+    // waits till message processed - kProcessed
     while (IsDpaTransactionInProgress(remains)) {
-      //wait for remaining time
+      //waits for remaining time or notifing
       {
+        if (remains > 0)
+          TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
+
         std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
         m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));
       }
     }
+    
     // update transfer state
     status = Status();
   }
@@ -236,6 +242,7 @@ void DpaHandler::KillDpaTransaction()
 
   std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
   m_conditionVariable.notify_one();
+  TRC_INF("Notify from KillDpaTransaction.");
 
   TRC_LEAVE("");
 }

@@ -127,7 +127,7 @@ void DpaLibraryDemo::start() {
 
   // default timeout is infinite
   m_dpaHandler->Timeout(100);
-  m_dpaHandler->SetRfCommunicationMode(DpaHandler::kStd);
+  m_dpaHandler->SetRfCommunicationMode(kStd);
 
   int16_t i = 100;
   //wait for a while, there could be some unread message in CDC

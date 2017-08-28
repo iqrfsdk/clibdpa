@@ -33,8 +33,10 @@ void asynchronousMessageHandler(const DpaMessage& message) {
 
 int main(int argc, char** argv) {
 
+  const int8_t INFINITE(-1);
+
   //TRC_START("log.txt", Level::dbg, 1000000);
-  TRC_START("", Level::dbg, 1000000);
+  TRC_START("log.txt", Level::dbg, 1000000);
   TRC_ENTER("");
 
   // COM interface
@@ -58,40 +60,51 @@ int main(int argc, char** argv) {
   // async messages
   dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
   // default iqrf communication mode is standard 
-  dpaHandler->SetRfCommunicationMode(DpaHandler::kStd);
+  dpaHandler->SetRfCommunicationMode(kLp);
+
 
   /*** 1) Generic Raw DPA access ***/
-  TRC_INF("Creating DPA request to pulse LEDR on coordinator");
+  TRC_INF("Creating DPA request to run discovery on coordinator");
   /* Option 1*/
 
-    // DPA message
+  // DPA message
   DpaMessage dpaRequest;
+
   // coordinator address
   dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
 
   // embedded peripheral
-  dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = 0x06;
-  //dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_LEDR;
+  dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = 0x00;
+  //dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
 
   // command to run
-  dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = 0x03;
-  //dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+  dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = 0x07;
+  //dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_COORDINATOR_DISCOVERY;
 
   // hwpid
   dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = 0xFFFF;
+  //dpaPacket.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+
+  // tx power for discovery
+  dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.TxPower = 0x07;
+
+  // max number of nodes to discover (0x00 - whole network)
+  dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.MaxAddr = 0x00;
 
   // set request data length
-  dpaRequest.SetLength(sizeof(TDpaIFaceHeader));
+  dpaRequest.SetLength(sizeof(TDpaIFaceHeader) + 2);
 
   /* Option 2*/
   /*
     DpaMessage::DpaPacket_t dpaPacket;
     dpaPacket.DpaRequestPacket_t.NADR = 0x00;
-    dpaPacket.DpaRequestPacket_t.PNUM = PNUM_LEDR;
-    dpaPacket.DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+    dpaPacket.DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
+    dpaPacket.DpaRequestPacket_t.PCMD = CMD_COORDINATOR_DISCOVERY;
     dpaPacket.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+    dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.TxPower = 0x07;
+    dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.MaxAddr = 0x00;
 
-    dpaRequest.DataToBuffer(dpaPacket.Buffer, sizeof(TDpaIFaceHeader));
+    dpaRequest.DataToBuffer(dpaPacket.Buffer, sizeof(TDpaIFaceHeader) + 2);
   */
 
   // Raw DPA access
@@ -100,9 +113,12 @@ int main(int argc, char** argv) {
   // DPA transaction task
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT1(rawTask);
-  // default timeout waiting for response is infinite
-  // sets according to your needs and dpa timing requirements
-  dpaHandler->Timeout(500);
+
+  // default timeout waiting for response is based on estimation from DPA confirmation 
+  // sets according to your needs and dpa timing requirements but there is no need if you want default
+  // ! discovery command needs infinite timeout since we do not know how long will run !
+  dpaHandler->Timeout(INFINITE);
+
   dpaHandler->ExecuteDpaTransaction(dpaTT1);
   int result = dpaTT1.waitFinish();
   TRC_DBG("Result from DPA transaction :" << PAR(result));
@@ -111,20 +127,19 @@ int main(int argc, char** argv) {
   if (result == 0)
     TRC_INF("Pulse LEDR done!");
 
-  TRC_INF("Waiting 5s before next transaction");
-  this_thread::sleep_for(chrono::seconds(5));
-
   /*** 2) Peripheral Ledr DPA access ***/
 
-    // PrfLedr DPA access
-  PrfLedR ledrPulseDpa(0x00, PrfLed::Cmd::PULSE);
+  // PrfLedr DPA access
+  PrfLedR ledrPulseDpa(0x0A, PrfLed::Cmd::PULSE);
 
   // DPA transaction task
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT2(ledrPulseDpa);
-  // default timeout waiting for response is infinite
-  // sets according to your needs and dpa timing requirements
-  dpaHandler->Timeout(500);
+  
+  // default timeout waiting for response is based on estimation from DPA confirmation 
+  // sets according to your needs and dpa timing requirements but there is no need if you want default
+  //dpaHandler->Timeout(500);
+
   dpaHandler->ExecuteDpaTransaction(dpaTT2);
   result = dpaTT2.waitFinish();
   TRC_DBG("Result from DPA transaction :" << PAR(result));

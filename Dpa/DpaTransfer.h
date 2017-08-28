@@ -24,30 +24,29 @@
 
 class DpaTransaction;
 
+/** Values that represent IQRF communication modes. */
+enum IqrfRfCommunicationMode {
+  kStd,
+  kLp
+};
+
 class DpaTransfer
 {
 public:
-  /** Values that represent IQRF communication modes. */
-  enum IqrfRfCommunicationMode
-  {
-    kStd,
-    kLp
-  };
-
   /** Values that represent DPA transfer state. */
   enum DpaTransferStatus
   {
     kCreated,
     ///< An enum constant representing the first message was sent.
     kSent,
-    ///< An enum constant representing the confirmation was received.
+    KSentCoordinator,
+    ///< An enum constant representing the confirmation, broadcast, response was received.
     kConfirmation,
-    kConfirmationBroadcast,
-    ///< An enum constant representing the timeout expired.
-    kTimeout,
+    kReceivedResponse,
     ///< An enum constant representing the whole transfer was processed.
     kProcessed,
-    kReceivedResponse,
+    ///< An enum constant representing the timeout expired.
+    kTimeout,
     ///< An enum constant representing the transfer was aborted.
     kAborted,
     ///< An enum constant representing the error state during sending via iqrf interface.
@@ -57,8 +56,8 @@ public:
   /** Default constructor */
   DpaTransfer();
 
-  /** Ctor with external response handler */
-  DpaTransfer(DpaTransaction* dpaTransaction);
+  /** Ctor with external response handler and IQRF communication mode */
+  DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode);
 
   /** Destructor */
   virtual ~DpaTransfer();
@@ -152,28 +151,19 @@ public:
   }
 
   /**
-  Estimated timeout calculated for confirmation message.
+  Estimated timeout calculated from received message.
 
-  @param	confirmationMessage	The confirmation DPA message.
+  @param	receivedMessage   The confirmation or response DPA message.
   @return	Estimated timeout in ms.
   */
   int32_t EstimatedTimeout(const DpaMessage& confirmationMessage);
-
-  /**
-  Set and Get IQRF communication mode.
-
-  @param	IqrfRfCommunicationMode	mode.
-  @return	IqrfRfCommunicationMode	mode.
-  */
-  void SetIqrfRfMode(IqrfRfCommunicationMode mode);
-  IqrfRfCommunicationMode GetIqrfRfMode() const;
 
 protected:
   /** An extra timeout added to timeout from a confirmation packet. */
   const int32_t m_safetyTimeoutMs = 40;
 
-  virtual int32_t EstimateStdTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response = -1);
-  virtual int32_t EstimateLpTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response = -1);
+  int32_t EstimateStdTimeout(uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength = -1);
+  int32_t EstimateLpTimeout(uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength = -1);
 
 private:
   std::mutex m_statusMutex;
@@ -188,10 +178,14 @@ private:
   DpaMessage* m_responseMessage;
   DpaTransaction* m_dpaTransaction;
 
+  int8_t m_hops;
+  int8_t m_timeslotLength;
+  int8_t m_hopsResponse;
+
   static bool IsInProgressStatus(DpaTransferStatus status);
   void SetStatus(DpaTransferStatus status);
 
-  void SetTimeoutForCurrentTransfer(int32_t estimatedTimeMs = 0);
+  void SetTimingForCurrentTransfer(int32_t estimatedTimeMs = 0);
   int32_t CheckTimeout();
 
   void ProcessConfirmationMessage(const DpaMessage& confirmationMessage);

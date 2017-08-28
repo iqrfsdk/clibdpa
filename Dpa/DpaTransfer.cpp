@@ -17,19 +17,22 @@
 
 #include "DpaTransfer.h"
 #include "DpaTransaction.h"
+
 #include "unexpected_packet_type.h"
 #include "unexpected_command.h"
 #include "unexpected_peripheral.h"
 
+#include "IqrfLogging.h"
+
 DpaTransfer::DpaTransfer()
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(0), m_timeoutMs(-1), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
+  m_expectedDurationMs(0), m_timeoutMs(0), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
 
-DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction)
+DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode)
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(0), m_timeoutMs(-1), m_currentCommunicationMode(kStd), m_dpaTransaction(dpaTransaction)
+  m_expectedDurationMs(0), m_timeoutMs(0), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
 
@@ -41,6 +44,7 @@ DpaTransfer::~DpaTransfer()
 
 void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
 {
+  TRC_ENTER("");
   if (m_status != kCreated)
   {
     throw std::logic_error("Sent message already set.");
@@ -54,12 +58,15 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
   // creating object to hold new request
   m_sentMessage = new DpaMessage(sentMessage);
 
-  // setting default timeout
-  SetTimeoutForCurrentTransfer();
+  // setting default timeout, no estimation yet
+  SetTimingForCurrentTransfer();
+  TRC_LEAVE("");
 }
 
 void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 {
+  TRC_ENTER("");
+
   if (receivedMessage.MessageDirection() != DpaMessage::kResponse
     && receivedMessage.MessageDirection() != DpaMessage::kConfirmation)
     throw unexpected_packet_type("Response is expected.");
@@ -87,6 +94,7 @@ void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
     }
 
     ProcessConfirmationMessage(receivedMessage);
+    TRC_INF("Confirmation processed.");
   }
   else {
     if (m_dpaTransaction) {
@@ -94,12 +102,14 @@ void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
     }
 
     ProcessResponseMessage(receivedMessage);
+    TRC_INF("Response processed.");
   }
+  TRC_LEAVE("");
 }
 
-void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationPacket)
+void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessage)
 {
-  if (confirmationPacket.NodeAddress() == DpaMessage::kBroadCastAddress) {
+  if (confirmationMessage.NodeAddress() == DpaMessage::kBroadCastAddress) {
     m_status = kConfirmationBroadcast;
   }
   else {
@@ -107,105 +117,241 @@ void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationPacke
   }
 
   // setting timeout based on the confirmation
-  SetTimeoutForCurrentTransfer(EstimatedTimeout(confirmationPacket));
+  SetTimingForCurrentTransfer(EstimatedTimeout(confirmationMessage));
 }
 
 void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
 {
   m_status = kReceivedResponse;
 
+  // adjust timing before allowing next request
+  SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
+
   delete m_responseMessage;
   m_responseMessage = new DpaMessage(responseMessage);
 }
 
-int32_t DpaTransfer::EstimatedTimeout(const DpaMessage& confirmationMessage)
+int32_t DpaTransfer::EstimatedTimeout(const DpaMessage& receivedMessage)
 {
-  if (confirmationMessage.MessageDirection() != DpaMessage::kConfirmation)
-    throw std::invalid_argument("Parameter is not a confirmation message.");
+  // direction
+  auto direction = receivedMessage.MessageDirection();
 
-  auto iFace = confirmationMessage.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
-
-  if (m_currentCommunicationMode == kLp) {
-    return EstimateLpTimeout(iFace.Hops, iFace.HopsResponse, iFace.TimeSlotLength);
+  // double check
+  if (direction != DpaMessage::kConfirmation && direction != DpaMessage::kResponse) {
+    throw std::invalid_argument("Parameter is not a received message type.");
   }
-  return EstimateStdTimeout(iFace.Hops, iFace.HopsResponse, iFace.TimeSlotLength);
+
+  // confirmation
+  if (direction == DpaMessage::kConfirmation) {
+    auto iFace = receivedMessage.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
+
+    // save for later use with response
+    m_hops = iFace.Hops;
+    m_timeslotLength = iFace.TimeSlotLength;
+    m_hopsResponse = iFace.HopsResponse;
+
+    // lp
+    if (m_currentCommunicationMode == kLp) {
+      return EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse);
+    }
+    // std
+    return EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse);
+  }
+
+  // response
+  if (direction == DpaMessage::kResponse) {
+    // lp
+    if (m_currentCommunicationMode == kLp) {
+      return EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse, 
+        receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
+    }
+    // std
+    return EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse, 
+      receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
+  }
 }
 
-int32_t DpaTransfer::EstimateStdTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response)
+int32_t DpaTransfer::EstimateStdTimeout(uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength)
 {
-  auto estimatedTimeoutMs = (hops + 1) * timeslot * 10;
-
+  TRC_ENTER("");
   int32_t responseTimeSlotLengthMs;
-  if (timeslot == 20) {
-    responseTimeSlotLengthMs = 200;
+
+  auto estimatedTimeoutMs = (hopsRequest + 1) * timeslotReq * 10;
+
+  // estimation from confirmation 
+  if (responseDataLength == -1) {
+    if (timeslotReq == 20) {
+      responseTimeSlotLengthMs = 200;
+    }
+    else {
+      // worst case
+      responseTimeSlotLengthMs = 60;
+    }
   }
+  // correction of the estimation from response 
   else {
-    responseTimeSlotLengthMs = 60;
+    TRC_DBG("PData length of the received response: " << PAR((int)responseDataLength));
+    if (responseDataLength >= 0 && responseDataLength < 16)
+    {
+      responseTimeSlotLengthMs = 40;
+    }
+    else if (responseDataLength >= 16 && responseDataLength <= 39)
+    {
+      responseTimeSlotLengthMs = 50;
+    }
+    else if (responseDataLength > 39)
+    {
+      responseTimeSlotLengthMs = 60;
+    }
+    TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
   }
 
   estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
+
+  TRC_DBG("Estimated STD timeout: " << PAR(estimatedTimeoutMs));
+  TRC_LEAVE("");
   return estimatedTimeoutMs;
 }
 
-int32_t DpaTransfer::EstimateLpTimeout(uint8_t hops, uint8_t hopsResponse, uint8_t timeslot, int32_t response)
+int32_t DpaTransfer::EstimateLpTimeout(uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength)
 {
-  auto estimatedTimeoutMs = (hops + 1) * timeslot * 10;
-
+  TRC_ENTER("");
   int32_t responseTimeSlotLengthMs;
-  if (timeslot == 20) {
-    responseTimeSlotLengthMs = 200;
+
+  auto estimatedTimeoutMs = (hopsRequest + 1) * timeslotReq * 10;
+
+  // estimation from confirmation 
+  if (responseDataLength == -1) {
+    if (timeslotReq == 20) {
+      responseTimeSlotLengthMs = 200;
+    }
+    else {
+      // worst case
+      responseTimeSlotLengthMs = 110;
+    }
   }
+  // correction of the estimation from response 
   else {
-    responseTimeSlotLengthMs = 110;
+    TRC_DBG("PData length of the received response: " << PAR((int)responseDataLength));
+    if (responseDataLength >= 0 && responseDataLength < 11)
+    {
+      responseTimeSlotLengthMs = 80;
+    }
+    else if (responseDataLength >= 11 && responseDataLength <= 33)
+    {
+      responseTimeSlotLengthMs = 90;
+    }
+    else if (responseDataLength >= 34 && responseDataLength <= 56)
+    {
+      responseTimeSlotLengthMs = 100;
+    }
+    else if (responseDataLength > 56)
+    {
+      responseTimeSlotLengthMs = 110;
+    }
+    TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
   }
 
   estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
+
+  TRC_DBG("Estimated LP timeout: " << PAR(estimatedTimeoutMs));
+  TRC_LEAVE("");
   return estimatedTimeoutMs;
 }
 
-void DpaTransfer::SetTimeoutForCurrentTransfer(int32_t estimatedTimeMs)
+void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
 {
-  // infinite expected time
-  if (m_status != kConfirmationBroadcast && m_timeoutMs == -1)
-  {
+  TRC_ENTER("");
+
+  // waiting forever
+  if (m_timeoutMs == -1) {
     m_expectedDurationMs = m_timeoutMs;
+    TRC_DBG("Expected duration to wait :" << PAR(m_expectedDurationMs));
     return;
   }
 
+  // adjust time to wait before allowing next request to go the iqrf network
+  if (m_status == kReceivedResponse) {
+    //adjust new timing based on length of PData in response
+    m_expectedDurationMs = estimatedTimeMs;
+    TRC_DBG("New expected duration to wait :" << PAR(m_expectedDurationMs));
+    return;
+  }
+
+  // estimation done
+  if (estimatedTimeMs >= 0) {
+    // either default timeout is 0 or user sets lower time than estimated
+    if (m_timeoutMs < estimatedTimeMs) {
+      // in both cases use estimation from confirmation
+      m_timeoutMs = estimatedTimeMs;
+    }
+    // set new duration
+    // there is also case when user sets higher than estimation then user choice is set
+    m_expectedDurationMs = m_timeoutMs;
+    TRC_DBG("Expected duration to wait :" << PAR(m_expectedDurationMs));
+  }
+
+  // start time when dpa request is sent and rerun again when confirmation is received
   m_startTime = std::chrono::system_clock::now();
-  m_expectedDurationMs = m_timeoutMs + estimatedTimeMs;
+  TRC_INF("Transfer status: started");
+
+  TRC_LEAVE("");
 }
+
+DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
+  std::lock_guard<std::mutex> lck(m_statusMutex);
+
+  // changes m_status, does not care about remains
+  // todo: refactor and rename - two functions
+  CheckTimeout();
+  return m_status;
+}
+
 
 int32_t DpaTransfer::CheckTimeout()
 {
   int32_t remains(0);
 
-  if (m_status == kProcessed || m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
-    SetStatus(kProcessed);
-    return remains;
-  }
-  else if (m_status == kAborted) {
+  if (m_status == kAborted) {
+    TRC_INF("Transfer status: aborted");
     return remains;
   }
 
-  bool timeout(false);
+  if (m_status == kCreated) {
+    TRC_INF("Transfer status: created");
+    return remains;
+  }
 
-  if (m_expectedDurationMs != -1) {
+  bool timingFinished(false);
+
+  // both cases: default (0) and infinite (-1) are out of this statement
+  if (m_expectedDurationMs > 0) {
+    // passed time from sent request
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
     remains = m_expectedDurationMs - duration.count();
+    TRC_DBG("Time to wait: " << PAR(remains));
+
     // already over?
-    timeout = remains < 0;
+    timingFinished = remains < 0;
   }
 
-  // yes over
-  if (timeout) {
-    if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse)
-      SetStatus(kProcessed);
-    else
-      SetStatus(kTimeout);
+  // not yet set and yes time is over
+  // processed or timeouted can be set only after finished timing
+  if (m_status != kProcessed && m_status != kTimeout) {
+    if (timingFinished) {
+      // and we have received confirmation for broadcast or response
+      if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
+        SetStatus(kProcessed);
+        TRC_INF("Transfer status: processed");
+      }
+      else {
+        SetStatus(kTimeout);
+        TRC_INF("Transfer status: timeout");
+      }
+    }
   }
 
-  // time to wait yet
+  // time to wait
   return remains;
 }
 
@@ -220,12 +366,19 @@ bool DpaTransfer::IsInProgress(int32_t& expectedDuration) {
   return IsInProgressStatus(m_status);
 }
 
-DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
-  std::lock_guard<std::mutex> lck(m_statusMutex);
-
-  // changes m_status
-  CheckTimeout();
-  return m_status;
+bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)
+{
+  switch (status)
+  {
+  case kSent:
+  case kConfirmation:
+  case kConfirmationBroadcast:
+  case kReceivedResponse:
+    return true;
+  // kCreated, kProcessed, kTimeout, kAbort, kError
+  default:
+    return false;
+  }
 }
 
 void DpaTransfer::Abort() {
@@ -234,29 +387,7 @@ void DpaTransfer::Abort() {
   m_status = kAborted;
 }
 
-DpaTransfer::IqrfRfCommunicationMode DpaTransfer::GetIqrfRfMode() const
-{
-  return m_currentCommunicationMode;
-}
-
-void DpaTransfer::SetIqrfRfMode(IqrfRfCommunicationMode mode)
-{
-  m_currentCommunicationMode = mode;
-}
-
 void DpaTransfer::SetStatus(DpaTransfer::DpaTransferStatus status)
 {
   m_status = status;
-}
-
-bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)
-{
-  switch (status)
-  {
-  case kSent:
-  case kConfirmation:
-    return true;
-  default:
-    return false;
-  }
 }
