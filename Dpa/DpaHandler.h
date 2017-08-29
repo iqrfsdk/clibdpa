@@ -31,6 +31,12 @@
 
 class DpaHandler {
 public:
+  //Timing constants
+  enum Timing {
+    DEFAULT_TIMING = 200,
+    INFINITE_TIMING = -1
+  };
+
   /**
    Constructor.
 
@@ -130,7 +136,7 @@ public:
 
 private:
   /** Default value of timeout in ms.*/
-  const int32_t kDefaultTimeout = 0;
+  const int32_t kDefaultTimeout = DEFAULT_TIMING;
   /** Holds timeout in ms. */
   int32_t m_defaultTimeoutMs;
   /** Holds the communication mode */

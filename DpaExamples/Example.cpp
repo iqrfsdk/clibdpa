@@ -33,8 +33,6 @@ void asynchronousMessageHandler(const DpaMessage& message) {
 
 int main(int argc, char** argv) {
 
-  const int8_t INFINITE(-1);
-
   //TRC_START("log.txt", Level::dbg, 1000000);
   TRC_START("log.txt", Level::dbg, 1000000);
   TRC_ENTER("");
@@ -114,18 +112,24 @@ int main(int argc, char** argv) {
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT1(rawTask);
 
+  // default timeout waiting for confirmation is 200ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
+  
   // ! discovery command needs infinite timeout since we do not know how long will run !
-  dpaHandler->Timeout(INFINITE);
+  dpaHandler->Timeout(DpaHandler::INFINITE_TIMING);
 
   dpaHandler->ExecuteDpaTransaction(dpaTT1);
   int result = dpaTT1.waitFinish();
-  TRC_DBG("Result from DPA transaction :" << PAR(result));
-  TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT1.getErrorStr()));
+  TRC_DBG("Result from DPA transaction: " << PAR(result));
+  TRC_DBG("Result from DPA transaction as string: " << PAR(dpaTT1.getErrorStr()));
 
-  if (result == 0)
-    TRC_INF("Discovery done!");
+  if (result == 0) {
+    // getting response data
+    DpaMessage dpaResponse = rawTask.getResponse();
+    int discoveredNodes = dpaResponse.DpaPacket().DpaResponsePacket_t.DpaMessage.Response.PData[0];
+    TRC_INF("Discovery done: " << PAR(discoveredNodes));
+  }
 
   /*** 2) Peripheral Ledr DPA access ***/
 
@@ -136,9 +140,10 @@ int main(int argc, char** argv) {
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT2(ledrPulseDpa);
   
+  // default timeout waiting for confirmation is 200ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
-  //dpaHandler->Timeout(500);
+  dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
 
   dpaHandler->ExecuteDpaTransaction(dpaTT2);
   result = dpaTT2.waitFinish();
@@ -153,8 +158,8 @@ int main(int argc, char** argv) {
     TRC_DBG("DPA transaction error: " << PAR(result));
   }
 
-  TRC_INF("Waiting 5s before exit");
-  this_thread::sleep_for(chrono::seconds(5));
+  TRC_INF("Waiting 3s before exit");
+  this_thread::sleep_for(chrono::seconds(3));
 
   TRC_INF("Clean after yourself");
   delete iqrfChannel;
