@@ -34,7 +34,7 @@ public:
   //Timing constants
   enum Timing {
     DEFAULT_TIMING = 200,
-    INFINITE_TIMING = -1
+    INFINITE_TIMING = 0
   };
 
   /**

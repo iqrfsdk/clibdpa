@@ -134,7 +134,7 @@ void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
   }
   else {
     // only if there is not infinite timeout
-    if (m_expectedDurationMs != -1) {
+    if (m_expectedDurationMs != 0) {
       m_status = kReceivedResponse;
       // adjust timing before allowing next request
       SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
@@ -283,7 +283,7 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
   TRC_ENTER("");
 
   // waiting forever
-  if (m_timeoutMs == -1) {
+  if (m_timeoutMs == 0) {
     m_expectedDurationMs = m_timeoutMs;
     TRC_DBG("Expected duration to wait :" << PAR(m_expectedDurationMs));
     return;
@@ -299,7 +299,7 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
 
   // estimation done
   if (estimatedTimeMs >= 0) {
-    // either default timeout is 0 or user sets lower time than estimated
+    // either default timeout is 200 or user sets lower time than estimated
     if (m_timeoutMs < estimatedTimeMs) {
       // in both cases use estimation from confirmation
       m_timeoutMs = estimatedTimeMs;
@@ -343,7 +343,7 @@ int32_t DpaTransfer::CheckTimeout()
 
   bool timingFinished(false);
 
-  // both cases: default (0) and infinite (-1) are out of this statement
+  // infinite (0) is out of this statement
   if (m_expectedDurationMs > 0) {
     // passed time from sent request
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
