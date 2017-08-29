@@ -133,9 +133,17 @@ void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
     m_status = kProcessed;
   }
   else {
-    m_status = kReceivedResponse;
-    // adjust timing before allowing next request
-    SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
+    // only if there is not infinite timeout
+    if (m_expectedDurationMs != -1) {
+      m_status = kReceivedResponse;
+      // adjust timing before allowing next request
+      SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
+    }
+    // infinite timeout
+    else {
+      // done, next request gets ready 
+      m_status = kProcessed;
+    }
   }
 
   delete m_responseMessage;
