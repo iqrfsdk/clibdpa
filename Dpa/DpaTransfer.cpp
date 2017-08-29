@@ -26,13 +26,13 @@
 
 DpaTransfer::DpaTransfer()
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(0), m_timeoutMs(0), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
+  m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
 
 DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode)
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(0), m_timeoutMs(0), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
+  m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
 
