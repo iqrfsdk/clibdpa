@@ -39,6 +39,7 @@ public:
     kCreated,
     ///< An enum constant representing the first message was sent.
     kSent,
+    kSentCoordinator,
     ///< An enum constant representing the confirmation, broadcast, response was received.
     kConfirmation,
     kConfirmationBroadcast,

@@ -51,7 +51,12 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
   }
 
   // current request status is set as sent
-  SetStatus(kSent);
+  if (sentMessage.NodeAddress() == COORDINATOR_ADDRESS) {
+    SetStatus(kSentCoordinator);
+  }
+  else {
+    SetStatus(kSent);
+  }
 
   // message itself is destroyed after being sent
   delete m_sentMessage;
@@ -122,10 +127,16 @@ void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessa
 
 void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
 {
-  m_status = kReceivedResponse;
-
-  // adjust timing before allowing next request
-  SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
+  // if there is a request to coordinator then after receiving response it is allowed to send another
+  if (m_status == kSentCoordinator) {
+    // done, next request gets ready 
+    m_status = kProcessed;
+  }
+  else {
+    m_status = kReceivedResponse;
+    // adjust timing before allowing next request
+    SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
+  }
 
   delete m_responseMessage;
   m_responseMessage = new DpaMessage(responseMessage);
@@ -312,13 +323,13 @@ int32_t DpaTransfer::CheckTimeout()
 {
   int32_t remains(0);
 
-  if (m_status == kAborted) {
-    TRC_INF("Transfer status: aborted");
+  if (m_status == kCreated) {
+    TRC_INF("Transfer status: created");
     return remains;
   }
 
-  if (m_status == kCreated) {
-    TRC_INF("Transfer status: created");
+  if (m_status == kAborted) {
+    TRC_INF("Transfer status: aborted");
     return remains;
   }
 
@@ -371,6 +382,7 @@ bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)
   switch (status)
   {
   case kSent:
+  case kSentCoordinator:
   case kConfirmation:
   case kConfirmationBroadcast:
   case kReceivedResponse:

@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
   TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT1.getErrorStr()));
 
   if (result == 0)
-    TRC_INF("Pulse LEDR done!");
+    TRC_INF("Discovery done!");
 
   /*** 2) Peripheral Ledr DPA access ***/
 
