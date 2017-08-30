@@ -60,6 +60,9 @@ int main(int argc, char** argv) {
   // default iqrf communication mode is standard 
   dpaHandler->SetRfCommunicationMode(kLp);
 
+  // default timeout waiting for confirmation is 200ms, no need to call it
+  // this timeout is then used for all transaction if not set otherwise for each transaction
+  dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
 
   /*** 1) Generic Raw DPA access ***/
   TRC_INF("Creating DPA request to run discovery on coordinator");
@@ -108,17 +111,17 @@ int main(int argc, char** argv) {
   // Raw DPA access
   DpaRaw rawTask(dpaRequest);
 
-  // DPA transaction task
-  TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT1(rawTask);
-
   // default timeout waiting for confirmation is 200ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
-  
-  // ! discovery command needs infinite timeout since we do not know how long will run !
-  dpaHandler->Timeout(DpaHandler::INFINITE_TIMING);
 
+  // ! discovery command needs infinite timeout since we do not know how long will run !
+  rawTask.setTimeout(DpaHandler::INFINITE_TIMING);
+
+  // DPA transaction task
+  TRC_INF("Running DPA transaction");
+  DpaTransactionTask dpaTT1(rawTask);
+  
   dpaHandler->ExecuteDpaTransaction(dpaTT1);
   int result = dpaTT1.waitFinish();
   TRC_DBG("Result from DPA transaction: " << PAR(result));
@@ -136,14 +139,16 @@ int main(int argc, char** argv) {
   // PrfLedr DPA access
   PrfLedR ledrPulseDpa(0x0A, PrfLed::Cmd::PULSE);
 
-  // DPA transaction task
-  TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT2(ledrPulseDpa);
-  
   // default timeout waiting for confirmation is 200ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
-  dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
+
+  // no need to set default here since it is already set at DpaHandler level
+  ledrPulseDpa.setTimeout(DpaHandler::DEFAULT_TIMING);
+
+  // DPA transaction task
+  TRC_INF("Running DPA transaction");
+  DpaTransactionTask dpaTT2(ledrPulseDpa);
 
   dpaHandler->ExecuteDpaTransaction(dpaTT2);
   result = dpaTT2.waitFinish();

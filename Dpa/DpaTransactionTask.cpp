@@ -45,6 +45,7 @@ void DpaTransactionTask::processResponseMessage(const DpaMessage& response) {
 
 void DpaTransactionTask::processFinish(DpaTransfer::DpaTransferStatus status)
 {
+  // set error value
   switch (status) {
   case DpaTransfer::DpaTransferStatus::kError:
     m_error = -4;
@@ -57,13 +58,18 @@ void DpaTransactionTask::processFinish(DpaTransfer::DpaTransferStatus status)
     break;
   default:;
   }
+
+  // sync with future
   m_promise.set_value(m_error);
 }
 
 int DpaTransactionTask::waitFinish()
 {
+  // getting transaction timeout
   int timeout = m_dpaTask.getTimeout();
-  if (timeout < 0) {
+
+  // infinite timeout
+  if (timeout <= 0) {
     // blocks until the result becomes available
     m_future.wait();
     m_error = m_future.get();
@@ -71,12 +77,14 @@ int DpaTransactionTask::waitFinish()
   else {
     std::chrono::milliseconds span(m_dpaTask.getTimeout() * 2);
     if (m_future.wait_for(span) == std::future_status::timeout) {
+      // future error
       m_error = -2;
     }
     else {
       m_error = m_future.get();
     }
   }
+
   return m_error;
 }
 

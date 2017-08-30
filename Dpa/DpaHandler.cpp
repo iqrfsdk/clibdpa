@@ -205,7 +205,7 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   int32_t requiredTimeout = dpaTransaction.getTimeout();
 
   // update handler timeout from task
-  if (requiredTimeout > 0)
+  if (requiredTimeout >= 0)
     Timeout(requiredTimeout);
 
   // update transfer state
