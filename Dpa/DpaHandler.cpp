@@ -68,8 +68,13 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
   // get ready new holder by setting user timeout if sets otherwise -1
   m_currentTransfer->DefaultTimeout(m_defaultTimeoutMs);
   TRC_DBG("Setting user timeout: " << PAR(m_defaultTimeoutMs));
-
-  m_currentTransfer->ProcessSentMessage(message);
+  
+  try {
+    m_currentTransfer->ProcessSentMessage(message);
+  }
+  catch(std::logic_error& le) {
+    CATCH_EX("while sending msg", std::logic_error, le);
+  }
   
   TRC_LEAVE("");
 }
@@ -107,6 +112,7 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
     return;
   }
 
+  // message processing
   if (!ProcessMessage(receivedMessage)) {
     ProcessAsynchronousMessage(receivedMessage);
   }
@@ -124,7 +130,7 @@ bool DpaHandler::ProcessMessage(const DpaMessage& message) {
     m_currentTransfer->ProcessReceivedMessage(message);
   }
   catch (std::logic_error& le) {
-    TRC_ERR("Process message error...");
+    TRC_ERR("Process received message error..." << PAR(le.what()));
     return false;
   }
   return true;

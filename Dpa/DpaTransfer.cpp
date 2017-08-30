@@ -45,6 +45,7 @@ DpaTransfer::~DpaTransfer()
 void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
 {
   TRC_ENTER("");
+
   if (m_status != kCreated)
   {
     throw std::logic_error("Sent message already set.");
@@ -65,6 +66,7 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
 
   // setting default timeout, no estimation yet
   SetTimingForCurrentTransfer();
+  
   TRC_LEAVE("");
 }
 
@@ -75,7 +77,7 @@ void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
   if (receivedMessage.MessageDirection() != DpaMessage::kResponse
     && receivedMessage.MessageDirection() != DpaMessage::kConfirmation)
     throw unexpected_packet_type("Response is expected.");
-
+  
   std::lock_guard<std::mutex> lck(m_statusMutex);
 
   // checks
@@ -325,7 +327,6 @@ DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
   CheckTimeout();
   return m_status;
 }
-
 
 int32_t DpaTransfer::CheckTimeout()
 {
