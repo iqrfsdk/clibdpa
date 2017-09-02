@@ -20,7 +20,8 @@
 #include "IqrfLogging.h"
 
 DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kStd) {
-  if (m_iqrfInterface == nullptr) {
+
+  if (iqrfInterface == nullptr) {
     throw std::invalid_argument("DPA interface argument can not be nullptr.");
   }
   m_iqrfInterface = iqrfInterface;

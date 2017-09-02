@@ -31,7 +31,7 @@ popd
 
 #launch cmake to generate build environment
 pushd ${builddir}
-cmake -G "Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} -Dcutils_DIR:PATH=${cutils} ${currentdir}
+cmake -G "Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} -Dcutils_DIR:PATH=${cutils} ${currentdir} -DCMAKE_BUILD_TYPE=Debug
 popd
 
 #build from generated build environment
