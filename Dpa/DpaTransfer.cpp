@@ -320,11 +320,14 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
 }
 
 DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
+  TRC_ENTER("");
   std::lock_guard<std::mutex> lck(m_statusMutex);
 
   // changes m_status, does not care about remains
   // todo: refactor and rename - two functions
   CheckTimeout();
+
+  TRC_LEAVE("");
   return m_status;
 }
 
@@ -380,10 +383,12 @@ bool DpaTransfer::IsInProgress() {
 }
 
 bool DpaTransfer::IsInProgress(int32_t& expectedDuration) {
+  TRC_ENTER("");
   std::lock_guard<std::mutex> lck(m_statusMutex);
 
   expectedDuration = CheckTimeout();
   return IsInProgressStatus(m_status);
+  TRC_LEAVE("");
 }
 
 bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)
