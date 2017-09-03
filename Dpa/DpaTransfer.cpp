@@ -26,13 +26,13 @@
 
 DpaTransfer::DpaTransfer()
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
+  m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
 
 DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode)
   : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
+  m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
 
@@ -301,7 +301,7 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
 
   // estimation done
   if (estimatedTimeMs >= 0) {
-    // either default timeout is 200 or user sets lower time than estimated
+    // either default timeout is 400 or user sets lower time than estimated
     if (m_timeoutMs < estimatedTimeMs) {
       // in both cases use estimation from confirmation
       m_timeoutMs = estimatedTimeMs;

@@ -33,7 +33,7 @@ class DpaHandler {
 public:
   //Timing constants
   enum Timing {
-    DEFAULT_TIMING = 200,
+    DEFAULT_TIMING = 400,
     INFINITE_TIMING = 0
   };
 
