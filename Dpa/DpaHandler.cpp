@@ -115,7 +115,8 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
 
   // message processing
   if (!ProcessMessage(receivedMessage)) {
-    ProcessAsynchronousMessage(receivedMessage);
+    // TODO: anything else to do here regarding transfer state?
+    TRC_ERR("Received message has not been processed!");
   }
 
   // notification about reception
@@ -128,10 +129,14 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
 
 bool DpaHandler::ProcessMessage(const DpaMessage& message) {
   try {
-    m_currentTransfer->ProcessReceivedMessage(message);
+    // transfer msg
+    if (!m_currentTransfer->ProcessReceivedMessage(message)) {
+      // async msg
+      ProcessAsynchronousMessage(message);
+    }
   }
   catch (std::logic_error& le) {
-    TRC_ERR("Process received message error..." << PAR(le.what()));
+    CATCH_EX("Process received message error...", std::logic_error, le);
     return false;
   }
   return true;
@@ -149,7 +154,7 @@ void DpaHandler::RegisterAsyncMessageHandler(std::function<void(const DpaMessage
   m_asyncMessageMutex.unlock();
 }
 
-void DpaHandler::ProcessAsynchronousMessage(DpaMessage& message) {
+void DpaHandler::ProcessAsynchronousMessage(const DpaMessage& message) {
   m_asyncMessageMutex.lock();
 
   if (m_asyncMessageHandler) {
@@ -184,14 +189,15 @@ IqrfRfCommunicationMode DpaHandler::GetRfCommunicationMode() const
   return m_currentCommunicationMode;
 }
 
-void DpaHandler::SetRfCommunicationMode(IqrfRfCommunicationMode mode)
+bool DpaHandler::SetRfCommunicationMode(IqrfRfCommunicationMode mode)
 {
   if (IsDpaMessageInProgress())
   {
-    //TODO: add exception
+    TRC_ERR("Transfer in progress, RF mode has not been changed!");
+    return false;
   }
-
   m_currentCommunicationMode = mode;
+  return true;
 }
 
 // main execution 

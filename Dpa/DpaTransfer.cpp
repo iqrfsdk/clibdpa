@@ -70,48 +70,57 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
   TRC_LEAVE("");
 }
 
-void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
+bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 {
   TRC_ENTER("");
-
-  if (receivedMessage.MessageDirection() != DpaMessage::kResponse
-    && receivedMessage.MessageDirection() != DpaMessage::kConfirmation)
-    throw unexpected_packet_type("Response is expected.");
-  
-  std::lock_guard<std::mutex> lck(m_statusMutex);
-
-  // checks
-  if (!IsInProgressStatus(m_status)) {
-    throw unexpected_packet_type("Request has not been sent, yet.");
-  }
-
-  if (receivedMessage.PeripheralType() != m_sentMessage->PeripheralType()) {
-    throw unexpected_peripheral("Different peripheral type than in sent message.");
-  }
-
-  if ((receivedMessage.PeripheralCommand() & ~0x80) != m_sentMessage->PeripheralCommand()) {
-    throw unexpected_command("Different peripheral command than in sent message.");
-  }
-
   // direction
   auto messageDirection = receivedMessage.MessageDirection();
+
+  // is transfer in progress?
+  if (!IsInProgressStatus(m_status)) {
+    // no
+    TRC_INF("No transfer started, space for async message processing." << PAR(m_status));
+    return false;
+  }
+  // yes
+  else {
+    // no request is expected
+    if (messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation)
+      throw unexpected_packet_type("Response is expected.");
+    // same as sent request
+    if (receivedMessage.PeripheralType() != m_sentMessage->PeripheralType()) {
+      throw unexpected_peripheral("Different peripheral type than in sent message.");
+    }
+    // same as sent request
+    if ((receivedMessage.PeripheralCommand() & ~0x80) != m_sentMessage->PeripheralCommand()) {
+      throw unexpected_command("Different peripheral command than in sent message.");
+    }
+  }
+
   if (messageDirection == DpaMessage::kConfirmation) {
     if (m_dpaTransaction) {
       m_dpaTransaction->processConfirmationMessage(receivedMessage);
     }
-
-    ProcessConfirmationMessage(receivedMessage);
+    {
+      // change in transfer status
+      std::lock_guard<std::mutex> lck(m_statusMutex);
+      ProcessConfirmationMessage(receivedMessage);
+    }
     TRC_INF("Confirmation processed.");
   }
   else {
     if (m_dpaTransaction) {
       m_dpaTransaction->processResponseMessage(receivedMessage);
     }
-
-    ProcessResponseMessage(receivedMessage);
+    {
+      // change in transfer status
+      std::lock_guard<std::mutex> lck(m_statusMutex);
+      ProcessResponseMessage(receivedMessage);
+    }
     TRC_INF("Response processed.");
   }
   TRC_LEAVE("");
+  return true;
 }
 
 void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessage)
@@ -383,12 +392,10 @@ bool DpaTransfer::IsInProgress() {
 }
 
 bool DpaTransfer::IsInProgress(int32_t& expectedDuration) {
-  TRC_ENTER("");
   std::lock_guard<std::mutex> lck(m_statusMutex);
 
   expectedDuration = CheckTimeout();
   return IsInProgressStatus(m_status);
-  TRC_LEAVE("");
 }
 
 bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)

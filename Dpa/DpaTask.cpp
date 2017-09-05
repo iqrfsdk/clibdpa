@@ -78,7 +78,6 @@ void DpaTask::handleConfirmation(const DpaMessage& confirmation)
 
 void DpaTask::handleResponse(const DpaMessage& response)
 {
-	//TODO save timestamp
 	m_response_ts = std::chrono::system_clock::now();
 	m_response = response;
 

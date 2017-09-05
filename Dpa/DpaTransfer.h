@@ -81,8 +81,9 @@ public:
    @exception	unexpected_command	  	Thrown when a message is not the response for command from sent message.
 
    @param	received_message	Received message.
+   @return success or failure if any exception rised
    */
-  void ProcessReceivedMessage(const DpaMessage& receivedMessage);
+  bool ProcessReceivedMessage(const DpaMessage& receivedMessage);
 
   /**
    Gets a sent message.

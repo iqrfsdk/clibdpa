@@ -122,7 +122,7 @@ public:
   @param	IqrfRfCommunicationMode	mode.
   @return	IqrfRfCommunicationMode	mode.
   */
-  void SetRfCommunicationMode(IqrfRfCommunicationMode mode);
+  bool SetRfCommunicationMode(IqrfRfCommunicationMode mode);
   IqrfRfCommunicationMode GetRfCommunicationMode() const;
 
   /**
@@ -171,5 +171,5 @@ private:
 
    @param [in,out]	message	the message.
    */
-  void ProcessAsynchronousMessage(DpaMessage& message);
+  void ProcessAsynchronousMessage(const DpaMessage& message);
 };

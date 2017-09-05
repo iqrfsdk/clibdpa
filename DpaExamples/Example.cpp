@@ -20,6 +20,7 @@
 #include "DpaTransactionTask.h"
 #include "DpaRaw.h"
 #include "PrfLeds.h"
+#include "PrfFrc.h"
 #include "IqrfLogging.h"
 
 using namespace std;
@@ -28,12 +29,12 @@ using namespace iqrf;
 TRC_INIT();
 
 void asynchronousMessageHandler(const DpaMessage& message) {
-  TRC_INF("Asynchronous message recevied");
+  TRC_INF("Received as async msg: " << endl 
+    << FORM_HEX((unsigned char *)message.DpaPacketData(), message.GetLength()));
 }
 
 int main(int argc, char** argv) {
 
-  //TRC_START("log.txt", Level::dbg, 1000000);
   TRC_START("log.txt", Level::dbg, 1000000);
   TRC_ENTER("");
 
@@ -45,27 +46,43 @@ int main(int argc, char** argv) {
   TRC_DBG("Communication interface :" << PAR(portNameWinCdc));
 
   // IQRF channel
-  TRC_INF("Creating IQRF channel");
   IChannel *iqrfChannel;
-  iqrfChannel = new IqrfCdcChannel(portNameWinCdc);
-  //iqrfchannel = new IqrfSpiChannel(portNameLinuxSpi);
+
+  try {
+    TRC_INF("Creating IQRF interface");
+    iqrfChannel = new IqrfCdcChannel(portNameWinCdc);
+    //iqrfchannel = new IqrfSpiChannel(portNameLinuxSpi);
+  }
+  catch (std::exception &e) {
+    CATCH_EX("Cannot create IqrfInterface: ", std::exception, e);
+    return 1;
+  }
 
   // DPA handler
-  TRC_INF("Creating DPA handler");
   DpaHandler *dpaHandler;
-  dpaHandler = new DpaHandler(iqrfChannel);
 
-  // async messages
-  dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
-  // default iqrf communication mode is standard 
-  dpaHandler->SetRfCommunicationMode(kLp);
+  try {
+    TRC_INF("Creating DPA handler");
+    dpaHandler = new DpaHandler(iqrfChannel);
 
-  // default timeout waiting for confirmation is 200ms, no need to call it
-  // this timeout is then used for all transaction if not set otherwise for each transaction
-  dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
+    // async messages
+    dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
+    // default iqrf communication mode is standard 
+    dpaHandler->SetRfCommunicationMode(kLp);
+
+    // default timeout waiting for confirmation is 400ms, no need to call it
+    // this timeout is then used for all transaction if not set otherwise for each transaction
+    dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
+  }
+  catch (std::exception &e) {
+    CATCH_EX("Cannot create DpaHandler Interface: ", std::exception, e);
+    delete iqrfChannel;
+    return 2;
+  }
 
   /*** 1) Generic Raw DPA access ***/
   TRC_INF("Creating DPA request to run discovery on coordinator");
+  cout << "Creating DPA request to run discovery on coordinator" << endl;
   /* Option 1*/
 
   // DPA message
@@ -111,7 +128,7 @@ int main(int argc, char** argv) {
   // Raw DPA access
   DpaRaw rawTask(dpaRequest);
 
-  // default timeout waiting for confirmation is 200ms
+  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
 
@@ -121,8 +138,21 @@ int main(int argc, char** argv) {
   // DPA transaction task
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT1(rawTask);
-  
-  dpaHandler->ExecuteDpaTransaction(dpaTT1);
+
+  if (dpaHandler) {
+    try {
+      dpaHandler->ExecuteDpaTransaction(dpaTT1);
+    }
+    catch (std::exception& e) {
+      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
+      dpaTT1.processFinish(DpaTransfer::kError);
+    }
+  }
+  else {
+    TRC_ERR("Dpa interface is not working");
+    dpaTT1.processFinish(DpaTransfer::kError);
+  }
+
   int result = dpaTT1.waitFinish();
   TRC_DBG("Result from DPA transaction: " << PAR(result));
   TRC_DBG("Result from DPA transaction as string: " << PAR(dpaTT1.getErrorStr()));
@@ -135,11 +165,14 @@ int main(int argc, char** argv) {
   }
 
   /*** 2) Peripheral Ledr DPA access ***/
+  
+  TRC_INF("Creating DPA request to pulse LEDR on all nodes");
+  cout << "Creating DPA request to pulse LEDR on all nodes" << endl;
 
   // PrfLedr DPA access
-  PrfLedR ledrPulseDpa(0x0A, PrfLed::Cmd::PULSE);
+  PrfLedR ledrPulseDpa(0xFF, PrfLed::Cmd::PULSE);
 
-  // default timeout waiting for confirmation is 200ms
+  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
   // default timeout waiting for response is based on estimation from DPA confirmation 
   // sets according to your needs and dpa timing requirements but there is no need if you want default
 
@@ -150,7 +183,20 @@ int main(int argc, char** argv) {
   TRC_INF("Running DPA transaction");
   DpaTransactionTask dpaTT2(ledrPulseDpa);
 
-  dpaHandler->ExecuteDpaTransaction(dpaTT2);
+  if (dpaHandler) {
+    try {
+      dpaHandler->ExecuteDpaTransaction(dpaTT2);
+    }
+    catch (std::exception& e) {
+      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
+      dpaTT2.processFinish(DpaTransfer::kError);
+    }
+  }
+  else {
+    TRC_ERR("Dpa interface is not working");
+    dpaTT2.processFinish(DpaTransfer::kError);
+  }
+
   result = dpaTT2.waitFinish();
   TRC_DBG("Result from DPA transaction :" << PAR(result));
   TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT2.getErrorStr()));
@@ -163,8 +209,57 @@ int main(int argc, char** argv) {
     TRC_DBG("DPA transaction error: " << PAR(result));
   }
 
-  TRC_INF("Waiting 3s before exit");
-  this_thread::sleep_for(chrono::seconds(3));
+  /*** 3) Peripheral FRC DPA access ***/
+
+  TRC_INF("Creating DPA request to send FRC to all nodes");
+  cout << "Creating DPA request to send FRC to all nodes" << endl;
+
+  // PrfFrc DPA access
+  PrfFrc frcDpa(PrfFrc::Cmd::SEND, PrfFrc::FrcCmd::Temperature);
+
+  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
+  // default timeout waiting for response is based on estimation from DPA confirmation 
+  // sets according to your needs and dpa timing requirements but there is no need if you want default
+
+  // FRC requires its own timing, consult iqrf os guide to set it correctly according to your IQRF network
+  frcDpa.setTimeout(5000);
+
+  // DPA transaction task
+  TRC_INF("Running DPA transaction");
+  DpaTransactionTask dpaTT3(frcDpa);
+
+  if (dpaHandler) {
+    try {
+      dpaHandler->ExecuteDpaTransaction(dpaTT3);
+    }
+    catch (std::exception& e) {
+      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
+      dpaTT3.processFinish(DpaTransfer::kError);
+    }
+  }
+  else {
+    TRC_ERR("DPA interface is not working");
+    dpaTT3.processFinish(DpaTransfer::kError);
+  }
+
+  result = dpaTT3.waitFinish();
+  TRC_DBG("Result from DPA transaction :" << PAR(result));
+  TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT3.getErrorStr()));
+
+  if (result == 0) {
+    TRC_INF("FRC done!");
+    TRC_DBG("DPA transaction :" << NAME_PAR(frcDpa.getPrfName(), frcDpa.getAddress()) << PAR(frcDpa.encodeCommand()));
+  }
+  else {
+    TRC_DBG("DPA transaction error: " << PAR(result));
+  }
+
+  TRC_INF("Waiting 30s before exit");
+  cout << "Waiting 30s before exit" << endl;
+  TRC_INF("Space to test asynchronous messages from IQRF");
+  cout << "Space to test asynchronous messages from IQRF" << endl;
+
+  this_thread::sleep_for(chrono::seconds(30));
 
   TRC_INF("Clean after yourself");
   delete iqrfChannel;
@@ -172,4 +267,6 @@ int main(int argc, char** argv) {
 
   TRC_LEAVE("");
   TRC_STOP();
+
+  return 0;
 }
