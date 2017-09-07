@@ -100,6 +100,9 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
   if (message.length() == 0)
     return;
 
+  // signal that message is received, but not yet processed
+  m_currentTransfer->MessageReceived();
+
   TRC_DBG(">>>>>>>>>>>>>>>>>>" << std::endl <<
     "Received from IQRF interface: " << std::endl << FORM_HEX(message.data(), message.length()));
 

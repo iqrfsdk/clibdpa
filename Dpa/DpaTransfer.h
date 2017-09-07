@@ -160,6 +160,11 @@ public:
   */
   int32_t EstimatedTimeout(const DpaMessage& confirmationMessage);
 
+  /**
+  Signal that message is already received and waits for processing
+  */
+  void MessageReceived();
+
 protected:
   /** An extra timeout added to timeout from a confirmation packet. */
   const int32_t m_safetyTimeoutMs = 40;
@@ -183,6 +188,8 @@ private:
   int8_t m_hops;
   int8_t m_timeslotLength;
   int8_t m_hopsResponse;
+
+  bool m_messageToBeProcessed;
 
   static bool IsInProgressStatus(DpaTransferStatus status);
   void SetStatus(DpaTransferStatus status);

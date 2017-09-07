@@ -25,13 +25,13 @@
 #include "IqrfLogging.h"
 
 DpaTransfer::DpaTransfer()
-  : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
+  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
   m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
 
 DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode)
-  : m_status(kCreated), m_sentMessage(nullptr), m_responseMessage(nullptr),
+  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
   m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
@@ -70,6 +70,15 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
   TRC_LEAVE("");
 }
 
+void DpaTransfer::MessageReceived() {
+  TRC_ENTER("");
+  {
+    // there were delays sometime before processing causing timeout and not processing response at all
+    m_messageToBeProcessed = true;
+  }
+  TRC_LEAVE("");
+}
+
 bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 {
   TRC_ENTER("");
@@ -80,19 +89,29 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
   if (!IsInProgressStatus(m_status)) {
     // no
     TRC_INF("No transfer started, space for async message processing." << PAR(m_status));
+    
+    // clear flag, rest is done in async handler
+    m_messageToBeProcessed = false;
     return false;
   }
   // yes
   else {
     // no request is expected
-    if (messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation)
+    if (messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation) {
+      // clear flag after processing
+      m_messageToBeProcessed = false;
       throw unexpected_packet_type("Response is expected.");
+    }
     // same as sent request
     if (receivedMessage.PeripheralType() != m_sentMessage->PeripheralType()) {
+      // clear flag after processing
+      m_messageToBeProcessed = false;
       throw unexpected_peripheral("Different peripheral type than in sent message.");
     }
     // same as sent request
     if ((receivedMessage.PeripheralCommand() & ~0x80) != m_sentMessage->PeripheralCommand()) {
+      // clear flag after processing
+      m_messageToBeProcessed = false;
       throw unexpected_command("Different peripheral command than in sent message.");
     }
   }
@@ -101,24 +120,21 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
     if (m_dpaTransaction) {
       m_dpaTransaction->processConfirmationMessage(receivedMessage);
     }
-    {
-      // change in transfer status
-      std::lock_guard<std::mutex> lck(m_statusMutex);
-      ProcessConfirmationMessage(receivedMessage);
-    }
+
+    ProcessConfirmationMessage(receivedMessage);
     TRC_INF("Confirmation processed.");
   }
   else {
     if (m_dpaTransaction) {
       m_dpaTransaction->processResponseMessage(receivedMessage);
     }
-    {
-      // change in transfer status
-      std::lock_guard<std::mutex> lck(m_statusMutex);
-      ProcessResponseMessage(receivedMessage);
-    }
+
+    ProcessResponseMessage(receivedMessage);
     TRC_INF("Response processed.");
   }
+
+  // clear flag after processing
+  m_messageToBeProcessed = false;
   TRC_LEAVE("");
   return true;
 }
@@ -126,10 +142,10 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessage)
 {
   if (confirmationMessage.NodeAddress() == DpaMessage::kBroadCastAddress) {
-    m_status = kConfirmationBroadcast;
+    SetStatus(kConfirmationBroadcast);
   }
   else {
-    m_status = kConfirmation;
+    SetStatus(kConfirmation);
   }
 
   // setting timeout based on the confirmation
@@ -141,19 +157,19 @@ void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
   // if there is a request to coordinator then after receiving response it is allowed to send another
   if (m_status == kSentCoordinator) {
     // done, next request gets ready 
-    m_status = kProcessed;
+    SetStatus(kProcessed);
   }
   else {
     // only if there is not infinite timeout
     if (m_expectedDurationMs != 0) {
-      m_status = kReceivedResponse;
+      SetStatus(kReceivedResponse);
       // adjust timing before allowing next request
       SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
     }
     // infinite timeout
     else {
       // done, next request gets ready 
-      m_status = kProcessed;
+      SetStatus(kProcessed);
     }
   }
 
@@ -330,13 +346,10 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
 
 DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
   TRC_ENTER("");
-  
-  {
-    std::lock_guard<std::mutex> lck(m_statusMutex);
-    // changes m_status, does not care about remains
-    // todo: refactor and rename - two functions
-    CheckTimeout();
-  }
+
+  // changes m_status, does not care about remains
+  // todo: refactor and rename - two functions
+  CheckTimeout();
 
   TRC_LEAVE("");
   return m_status;
@@ -373,14 +386,18 @@ int32_t DpaTransfer::CheckTimeout()
   // processed or timeouted can be set only after finished timing
   if (m_status != kProcessed && m_status != kTimeout) {
     if (timingFinished) {
-      // and we have received confirmation for broadcast or response
-      if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
-        SetStatus(kProcessed);
-        TRC_INF("Transfer status: processed");
-      }
-      else {
-        SetStatus(kTimeout);
-        TRC_INF("Transfer status: timeout");
+      // double check that there is no message yet to be processed
+      // this allows not to exit transfer before actual processing
+      if (!m_messageToBeProcessed) {
+        // and we have received confirmation for broadcast or response
+        if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
+          SetStatus(kProcessed);
+          TRC_INF("Transfer status: processed");
+        }
+        else {
+          SetStatus(kTimeout);
+          TRC_INF("Transfer status: timeout");
+        }
       }
     }
   }
@@ -394,16 +411,11 @@ bool DpaTransfer::IsInProgress() {
 }
 
 bool DpaTransfer::IsInProgress(int32_t& expectedDuration) {
-  {
-    std::lock_guard<std::mutex> lck(m_statusMutex);
-    expectedDuration = CheckTimeout();
-  }
-
+  expectedDuration = CheckTimeout();
   return IsInProgressStatus(m_status);
 }
 
-bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status)
-{
+bool DpaTransfer::IsInProgressStatus(DpaTransferStatus status) {
   switch (status)
   {
   case kSent:
@@ -425,5 +437,10 @@ void DpaTransfer::Abort() {
 
 void DpaTransfer::SetStatus(DpaTransfer::DpaTransferStatus status)
 {
-  m_status = status;
+  TRC_ENTER("");
+  {
+    std::lock_guard<std::mutex> lck(m_statusMutex);
+    m_status = status;
+  }
+  TRC_LEAVE("");
 }
