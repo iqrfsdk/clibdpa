@@ -28,12 +28,16 @@ DpaRaw::DpaRaw(const DpaMessage& request) : DpaTask(PRF_NAME, 0) {
 
 DpaRaw::~DpaRaw() {}
 
-void DpaRaw::setRequest(const DpaMessage& request) {
+void DpaRaw::setRequest(const DpaMessage& request)
+{
   m_request = request;
 }
 
 //from IQRF
-void DpaRaw::parseResponse(const DpaMessage& response) {}
+void DpaRaw::parseResponse(const DpaMessage& response)
+{
+  m_response = response;
+}
 
 //from Messaging
 void DpaRaw::parseCommand(const std::string& command) {}

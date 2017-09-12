@@ -88,3 +88,8 @@ void DpaTask::timestampRequest()
 {
 	m_request_ts = std::chrono::system_clock::now();
 }
+
+void DpaTask::timestampResponse()
+{
+  m_response_ts = std::chrono::system_clock::now();
+}

@@ -63,13 +63,14 @@ public:
   const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const { return m_confirmation_ts; }
   const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const { return m_response_ts; }
   void timestampRequest();
+  void timestampResponse();
 
 protected:
   DpaMessage m_request;
+  DpaMessage m_response;
 
 private:
   DpaMessage m_confirmation;
-  DpaMessage m_response;
   std::string m_prfName;
   std::string m_clid; //client ID
   int m_timeout = -1;
