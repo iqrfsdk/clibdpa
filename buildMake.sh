@@ -1,6 +1,7 @@
 #!/bin/bash
 # Script for building clibdpa on Linux machine
 
+set -e
 project=clibdpa
 
 #expected build dir structure
@@ -10,6 +11,22 @@ currentdir=$PWD
 builddir=./${buildexp}
 
 mkdir -p ${builddir}
+
+#debug
+if [ ! -z $1 ]
+then
+# user selected
+        if [ $1 == "Debug" ]
+        then
+                debug=-DCMAKE_BUILD_TYPE=$1
+        else
+                debug=-DCMAKE_BUILD_TYPE="Debug"
+        fi
+else
+# release by default
+        debug=""
+fi
+echo ${debug}
 
 #get path to clibcdc libs
 clibcdc=../clibcdc/${buildexp}
@@ -31,7 +48,7 @@ popd
 
 #launch cmake to generate build environment
 pushd ${builddir}
-cmake -G "Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} -Dcutils_DIR:PATH=${cutils} ${currentdir} -DCMAKE_BUILD_TYPE=Debug
+cmake -G "Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} -Dcutils_DIR:PATH=${cutils} ${currentdir} ${debug}
 popd
 
 #build from generated build environment
