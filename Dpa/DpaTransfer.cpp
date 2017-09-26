@@ -103,6 +103,12 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
       throw unexpected_packet_type("Response is expected.");
     }
     // same as sent request
+    if (receivedMessage.NodeAddress() != m_sentMessage->NodeAddress()) {
+      // clear flag after processing
+      m_messageToBeProcessed = false;
+      throw unexpected_peripheral("Different node address than in sent message.");
+    }
+    // same as sent request
     if (receivedMessage.PeripheralType() != m_sentMessage->PeripheralType()) {
       // clear flag after processing
       m_messageToBeProcessed = false;
