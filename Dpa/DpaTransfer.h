@@ -81,9 +81,8 @@ public:
    @exception	unexpected_command	  	Thrown when a message is not the response for command from sent message.
 
    @param	received_message	Received message.
-   @return success or failure if any exception rised
    */
-  bool ProcessReceivedMessage(const DpaMessage& receivedMessage);
+  void ProcessReceivedMessage(const DpaMessage& receivedMessage);
 
   /**
    Gets a sent message.
@@ -162,8 +161,10 @@ public:
 
   /**
   Signal that message is already received and waits for processing
+  In this case pending transaction skips timeout as it may be awaited message
+  It can be reset during preprocessing. Note this is workaround solution a
   */
-  void MessageReceived();
+  void MessageReceived(bool flg);
 
 protected:
   /** An extra timeout added to timeout from a confirmation packet. */

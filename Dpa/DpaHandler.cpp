@@ -101,7 +101,7 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
     return;
 
   // signal that message is received, but not yet processed
-  m_currentTransfer->MessageReceived();
+  m_currentTransfer->MessageReceived(true);
 
   TRC_DBG(">>>>>>>>>>>>>>>>>>" << std::endl <<
     "Received from IQRF interface: " << std::endl << FORM_HEX(message.data(), message.length()));
@@ -112,37 +112,53 @@ void DpaHandler::ResponseMessageHandler(const std::basic_string<unsigned char>& 
     receivedMessage.FillFromResponse(message.data(), message.length());
   }
   catch (std::exception& e) {
+    m_currentTransfer->MessageReceived(false);
     CATCH_EX("in processing msg", std::exception, e);
     return;
   }
+  
+  //TODO remove - just stupid simulation of async msg
+  //{
+  //  if (receivedMessage.MessageDirection() == DpaMessage::MessageType::kResponse) {
+  //    static int cnt = 0;
+  //    cnt++;
+  //    if ((cnt % 4) == 0) {
+  //      auto rc = receivedMessage.DpaPacket().DpaResponsePacket_t.ResponseCode;
+  //      rc |= STATUS_ASYNC_RESPONSE;
+  //      receivedMessage.DpaPacket().DpaResponsePacket_t.ResponseCode = rc;
+  //    }
+  //  }
+  //}
 
-  // message processing
-  if (!ProcessMessage(receivedMessage)) {
-    // TODO: anything else to do here regarding transfer state?
-    TRC_ERR("Received message has not been processed!");
+  auto messageDirection = receivedMessage.MessageDirection();
+  if (messageDirection == DpaMessage::MessageType::kRequest) {
+    //Always Async
+    m_currentTransfer->MessageReceived(false);
+    ProcessAsynchronousMessage(message);
+    return;
   }
-
-  // notification about reception
-  {
-    std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
-    m_conditionVariable.notify_one();
-    TRC_INF("Notify from ResponseMessageHandler: message received.");
+  else if (messageDirection == DpaMessage::MessageType::kResponse && 
+    receivedMessage.DpaPacket().DpaResponsePacket_t.ResponseCode & STATUS_ASYNC_RESPONSE) {
+    // async msg
+    m_currentTransfer->MessageReceived(false);
+    ProcessAsynchronousMessage(message);
+    return;
   }
-}
-
-bool DpaHandler::ProcessMessage(const DpaMessage& message) {
-  try {
-    // transfer msg
-    if (!m_currentTransfer->ProcessReceivedMessage(message)) {
-      // async msg
-      ProcessAsynchronousMessage(message);
+  else {
+    try {
+      // transfer msg
+      m_currentTransfer->ProcessReceivedMessage(message);
+      // notification about reception
+      {
+        std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
+        m_conditionVariable.notify_one();
+        TRC_INF("Notify from ResponseMessageHandler: message received.");
+      }
+    }
+    catch (std::logic_error& le) {
+      CATCH_EX("Process received message error...", std::logic_error, le);
     }
   }
-  catch (std::logic_error& le) {
-    CATCH_EX("Process received message error...", std::logic_error, le);
-    return false;
-  }
-  return true;
 }
 
 DpaTransfer::DpaTransferStatus DpaHandler::Status() const {
@@ -228,8 +244,11 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
     while (IsDpaTransactionInProgress(remains)) {
       //waits for remaining time or notifing
       {
-        if (remains > 0)
+        if (remains > 0) {
           TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
+        }
+        else 
+          TRC_DBG("Conditional wait - time is out: " << PAR(remains));
 
         std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
         m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));
