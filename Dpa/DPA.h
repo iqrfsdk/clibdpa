@@ -1,12 +1,14 @@
 // *********************************************************************
 //   General public DPA header file                                    *
 // *********************************************************************
+// Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.201 $
-// Date:    $Date: 2017/03/13 09:58:43 $
+// Version: $Revision: 1.208 $
+// Date:    $Date: 2017/08/09 12:24:46 $
 //
 // Revision history:
+//   2017/08/14  Release for DPA 3.01
 //   2017/03/13  Release for DPA 3.00
 //   2016/09/12  Release for DPA 2.28
 //   2016/04/14  Release for DPA 2.27
@@ -32,7 +34,7 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER		0x0300
+#define	DPA_VERSION_MASTER		0x0301
 
 #ifdef __CC5X__
 // Compiled only at CC5X
@@ -63,7 +65,7 @@
 #define	CUSTOM_HANDLER_ADDRESS_END	0x3D80
 
 // DPA API entry function
-uns8  DpaApiEntry(uns8 par1, uns8 par2, uns8 apiIndex);
+uns8  DpaApiEntry( uns8 par1, uns8 par2, uns8 apiIndex );
 
 // DPA API codes
 #define	DPA_API_RFTX_DPAPACKET				0
@@ -86,6 +88,8 @@ uns8  DpaApiEntry(uns8 par1, uns8 par2, uns8 apiIndex);
 // Define CC5X types
 typedef uint8_t	  uns8;
 typedef uint16_t  uns16;
+typedef int8_t int8;
+typedef int16_t int16;
 
 // Fake buffer sizes
 #define	sizeofBufferAUX 64
@@ -107,7 +111,7 @@ typedef uint16_t  uns16;
 // Indexes of configuration bytes used by DpaApiReadConfigByte( index )
 // Checksum
 #define	CFGIND_CHECKSUM			0x00
-// Standard peripherals
+// Embedded peripherals
 #define	CFGIND_DPA_PERIPHERALS	0x01
 // DPA configuration flags
 #define	CFGIND_DPA_FLAGS		0x05
@@ -220,7 +224,7 @@ typedef struct
 // Special peripheral used for enumeration
 #define	PNUM_ENUMERATION	0xFF
 
-// DPA Commands for predefined peripherals
+// DPA Commands for embedded peripherals
 #define	CMD_COORDINATOR_ADDR_INFO  0
 #define	CMD_COORDINATOR_DISCOVERED_DEVICES 1
 #define	CMD_COORDINATOR_BONDED_DEVICES 2
@@ -259,6 +263,7 @@ typedef struct
 #define	CMD_OS_RESTART 8
 #define	CMD_OS_WRITE_CFG_BYTE 9
 #define	CMD_OS_LOAD_CODE 10
+#define	CMD_OS_SELECTIVE_BATCH 11
 #define	CMD_OS_WRITE_CFG 15
 
 #define	CMD_RAM_READ 0
@@ -288,6 +293,7 @@ typedef struct
 #define	CMD_UART_OPEN 0
 #define	CMD_UART_CLOSE 1
 #define	CMD_UART_WRITE_READ 2
+#define	CMD_UART_CLEAR_WRITE_READ 3
 
 #define	CMD_FRC_SEND 0
 #define	CMD_FRC_EXTRARESULT 1
@@ -367,7 +373,7 @@ typedef enum
   STATUS_CONFIRMATION = 0xff
 } TErrorCodes;
 
-// Predefined FRC commands
+// Embedded FRC commands
 typedef enum
 {
   FRC_Prebonding = 0x00,
@@ -427,14 +433,14 @@ typedef struct
 {
   uns16	DpaVersion;
   uns8	UserPerNr;
-  uns8	StandardPer[PNUM_USER / 8];
+  uns8	EmbeddedPers[PNUM_USER / 8];
   uns16	HWPID;
   uns16	HWPIDver;
   uns8	Flags;
-  uns8	UserPer[(PNUM_MAX - PNUM_USER + 1 + 7) / 8];
+  uns8	UserPer[( PNUM_MAX - PNUM_USER + 1 + 7 ) / 8];
 } STRUCTATTR TEnumPeripheralsAnswer;
 
-#define	FlagUserPer(UserPerArray,UserPerNumber)	UserPerArray[((UserPerNumber)-PNUM_USER) / 8] |= (uns8)0x01 << (((UserPerNumber)-PNUM_USER) % 8);
+#define	FlagUserPer(UserPersArray,UserPerNumber)	UserPersArray[((UserPerNumber)-PNUM_USER) / 8] |= (uns8)0x01 << (((UserPerNumber)-PNUM_USER) % 8);
 
 // Get peripheral info structure (CMD_GET_PER_INFO)
 typedef struct
@@ -559,7 +565,7 @@ typedef struct
 typedef struct
 {
   TDpaIFaceHeader subHeader;
-  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof(TDpaIFaceHeader)];
+  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof( TDpaIFaceHeader )];
 } STRUCTATTR TPerCoordinatorBridge_Request;
 
 // Structure returned by CMD_COORDINATOR_BRIDGE
@@ -568,7 +574,7 @@ typedef struct
   TDpaIFaceHeader subHeader;
   uns8	subRespCode;
   uns8	subDpaValue;
-  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof(TDpaIFaceHeader) - 2 * sizeof(uns8)];
+  uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof( TDpaIFaceHeader ) - 2 * sizeof( uns8 )];
 } STRUCTATTR TPerCoordinatorBridge_Response;
 
 // Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
@@ -589,7 +595,7 @@ typedef struct
 // Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
 typedef struct
 {
-  TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof(TPrebondedNode)];
+  TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof( TPrebondedNode )];
 } STRUCTATTR TPerCoordinatorNodeReadRemotelyBondedMID_Response;
 
 // Structure returned by CMD_NODE_READ
@@ -648,7 +654,7 @@ typedef struct
 // Structure for CMD_OS_WRITE_CFG_BYTE
 typedef struct
 {
-  TPerOSWriteCfgByteTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof(TPerOSWriteCfgByteTriplet)];
+  TPerOSWriteCfgByteTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof( TPerOSWriteCfgByteTriplet )];
 } STRUCTATTR TPerOSWriteCfgByte_Request;
 
 // Structure for CMD_OS_SET_SECURITY
@@ -673,6 +679,13 @@ typedef struct
   uns16	Time;
   uns8	Control;
 } STRUCTATTR TPerOSSleep_Request;
+
+// Structure for CMD_OS_SELECTIVE_BATCH
+typedef struct
+{
+  uns8	SelectedNodes[30];
+  uns8	Requests[DPA_MAX_DATA_LENGTH - 30];
+} STRUCTATTR TPerOSSelectiveBatch_Request;
 
 // Structure for general memory request
 typedef struct
@@ -745,15 +758,15 @@ typedef struct
 // Union for CMD_IO_SET and CMD_IO_DIRECTION requests
 typedef union
 {
-  TPerIOTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof(TPerIOTriplet)];
-  TPerIODelay   Delays[DPA_MAX_DATA_LENGTH / sizeof(TPerIODelay)];
+  TPerIOTriplet Triplets[DPA_MAX_DATA_LENGTH / sizeof( TPerIOTriplet )];
+  TPerIODelay   Delays[DPA_MAX_DATA_LENGTH / sizeof( TPerIODelay )];
 } STRUCTATTR TPerIoDirectionAndSet_Request;
 
 // Structure returned by CMD_THERMOMETER_READ
 typedef struct
 {
-  uns8  IntegerValue;
-  uns16 SixteenthValue;
+  int8  IntegerValue;
+  int16 SixteenthValue;
 } STRUCTATTR TPerThermometerRead_Response;
 
 // Structure for CMD_PWM_SET
@@ -770,11 +783,11 @@ typedef struct
   uns8  BaudRate;
 } STRUCTATTR TPerUartOpen_Request;
 
-// Structure for CMD_UART_WRITE_READ and CMD_SPI_WRITE_READ
+// Structure for CMD_UART_[CLEAR_]WRITE_READ and CMD_SPI_WRITE_READ
 typedef struct
 {
   uns8  ReadTimeout;
-  uns8	WrittenData[DPA_MAX_DATA_LENGTH - sizeof(uns8)];
+  uns8	WrittenData[DPA_MAX_DATA_LENGTH - sizeof( uns8 )];
 } STRUCTATTR TPerUartSpiWriteRead_Request;
 
 // Structure for CMD_FRC_SEND
@@ -796,7 +809,7 @@ typedef struct
 typedef struct
 {
   uns8  Status;
-  uns8	FrcData[DPA_MAX_DATA_LENGTH - sizeof(uns8)];
+  uns8	FrcData[DPA_MAX_DATA_LENGTH - sizeof( uns8 )];
 } STRUCTATTR TPerFrcSend_Response;
 
 // Structure for request and response of CMD_FRC_SET_PARAMS
@@ -929,6 +942,9 @@ typedef union
   // Structure for CMD_OS_SLEEP
   TPerOSSleep_Request PerOSSleep_Request;
 
+  // Structure for CMD_OS_SELECTIVE_BATCH
+  TPerOSSelectiveBatch_Request PerOSSelectiveBatch_Request;
+
   // Structure for general memory request
   TPerMemoryRequest MemoryRequest;
 
@@ -947,7 +963,7 @@ typedef union
   // Structure for CMD_UART_OPEN
   TPerUartOpen_Request PerUartOpen_Request;
 
-  // Structure for CMD_UART_WRITE_READ and CMD_SPI_WRITE_READ
+  // Structure for CMD_UART_[CLEAR_]WRITE_READ and CMD_SPI_WRITE_READ
   TPerUartSpiWriteRead_Request PerUartSpiWriteRead_Request;
 
   // Structure for CMD_FRC_SEND
@@ -986,8 +1002,9 @@ typedef union
 #define	DpaEvent_AuthorizePreBonding	  16
 #define	DpaEvent_UserDpaValue			  17
 #define	DpaEvent_FrcResponseTime		  18
+#define	DpaEvent_BondingButton			  19
 
-#define	DpaEvent_LAST					  DpaEvent_FrcResponseTime
+#define	DpaEvent_LAST					  DpaEvent_BondingButton
 
 // Types of the diagnostic DPA Value that is returned inside DPA response 
 typedef enum
@@ -1019,7 +1036,8 @@ typedef enum
   DpaBaud_19200 = 0x04,
   DpaBaud_38400 = 0x05,
   DpaBaud_57600 = 0x06,
-  DpaBaud_115200 = 0x07
+  DpaBaud_115200 = 0x07,
+  DpaBaud_230400 = 0x08
 } TBaudRates;
 
 // Useful PNUM_IO definitions
@@ -1057,7 +1075,7 @@ bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH];
 // Return actual DPA user routine event
 #define	GetDpaEvent()	userReg0
 
-// To test for enum peripherals request
+// To test for enumeration peripherals request
 #define IsDpaEnumPeripheralsRequestNoSize() ( _PNUM == PNUM_ENUMERATION && _PCMD == CMD_GET_PER_INFO )
 
 #if PARAM_CHECK_LEVEL >= 2
@@ -1073,6 +1091,15 @@ bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH];
 #define IsDpaPeripheralInfoRequest()  ( IsDpaPeripheralInfoRequestNoSize() && _DpaDataLength == 0 )
 #else
 #define IsDpaPeripheralInfoRequest()  IsDpaPeripheralInfoRequestNoSize()
+#endif
+
+// Optimized macro for both testing enumeration peripherals ELSE peripherals information. See examples
+#define	IfDpaEnumPeripherals_Else_PeripheralInfo_Else_PeripheralRequestNoSize() if ( _PCMD == CMD_GET_PER_INFO ) if ( _PNUM == PNUM_ENUMERATION )
+
+#if PARAM_CHECK_LEVEL >= 2
+#define IfDpaEnumPeripherals_Else_PeripheralInfo_Else_PeripheralRequest() if ( _DpaDataLength == 0 && _PCMD == CMD_GET_PER_INFO ) if ( _PNUM == PNUM_ENUMERATION )
+#else
+#define	IfDpaEnumPeripherals_Else_PeripheralInfo_Else_PeripheralRequest() IfDpaEnumPeripherals_Else_PeripheralInfo_Else_PeripheralRequestNoSize()
 #endif
 
 // Stores DPA Params inside DPA request/response
