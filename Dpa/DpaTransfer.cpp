@@ -70,16 +70,12 @@ void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
   TRC_LEAVE("");
 }
 
-void DpaTransfer::MessageReceived() {
-  TRC_ENTER("");
-  {
-    // there were delays sometime before processing causing timeout and not processing response at all
-    m_messageToBeProcessed = true;
-  }
-  TRC_LEAVE("");
+void DpaTransfer::MessageReceived(bool flg) {
+  // there were delays sometime before processing causing timeout and not processing response at all
+  m_messageToBeProcessed = flg;
 }
 
-bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
+void DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 {
   TRC_ENTER("");
   // direction
@@ -87,12 +83,8 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
 
   // is transfer in progress?
   if (!IsInProgressStatus(m_status)) {
-    // no
-    TRC_INF("No transfer started, space for async message processing." << PAR(m_status));
-    
-    // clear flag, rest is done in async handler
     m_messageToBeProcessed = false;
-    return false;
+    return;
   }
   // yes
   else {
@@ -101,6 +93,12 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
       // clear flag after processing
       m_messageToBeProcessed = false;
       throw unexpected_packet_type("Response is expected.");
+    }
+    // same as sent request
+    if (receivedMessage.NodeAddress() != m_sentMessage->NodeAddress()) {
+      // clear flag after processing
+      m_messageToBeProcessed = false;
+      throw unexpected_peripheral("Different node address than in sent message.");
     }
     // same as sent request
     if (receivedMessage.PeripheralType() != m_sentMessage->PeripheralType()) {
@@ -136,7 +134,6 @@ bool DpaTransfer::ProcessReceivedMessage(const DpaMessage& receivedMessage)
   // clear flag after processing
   m_messageToBeProcessed = false;
   TRC_LEAVE("");
-  return true;
 }
 
 void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessage)
@@ -351,7 +348,7 @@ DpaTransfer::DpaTransferStatus DpaTransfer::ProcessStatus() {
   // todo: refactor and rename - two functions
   CheckTimeout();
 
-  TRC_LEAVE("");
+  TRC_LEAVE(PAR(m_status));
   return m_status;
 }
 
