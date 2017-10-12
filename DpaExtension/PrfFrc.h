@@ -67,9 +67,11 @@ public:
   PrfFrc(Cmd command, FrcCmd frcCmd, UserData udata = { 0, 0 });
   virtual ~PrfFrc();
 
+  // parse response data
   void parseResponse(const DpaMessage& response) override;
-
+  // from string setting PCMD
   void parseCommand(const std::string& command) override;
+  // from PCMD to string
   const std::string& encodeCommand() const override;
 
   Cmd getCmd() const;
@@ -102,5 +104,4 @@ private:
   uint8_t m_status = 0;
 
   uint8_t m_data[FRC_MAX_NODE_BIT2] = { 0 };
-
 };

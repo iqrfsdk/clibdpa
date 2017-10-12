@@ -18,8 +18,8 @@
 #include "PrfLeds.h"
 #include "IqrfLogging.h"
 
-const std::string  PrfLedG::PRF_NAME("std-per-ledg");
-const std::string  PrfLedR::PRF_NAME("std-per-ledr");
+const std::string PrfLedG::PRF_NAME("emb-per-ledg");
+const std::string PrfLedR::PRF_NAME("emb-per-ledr");
 
 const std::string STR_CMD_LED_SET_OFF("off");
 const std::string STR_CMD_LED_SET_ON("on");

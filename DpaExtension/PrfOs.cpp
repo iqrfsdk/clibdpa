@@ -18,9 +18,10 @@
 #include "PrfOs.h"
 #include "IqrfLogging.h"
 
-const std::string PrfOs::PRF_NAME("std-per-os");
+// periphery
+const std::string PrfOs::PRF_NAME("emd-per-os");
 
-// Commands
+// commands
 const std::string STR_CMD_READ("read");
 const std::string STR_CMD_RESET("reset");
 const std::string STR_CMD_READ_CFG("read_cfg");
@@ -55,24 +56,29 @@ void PrfOs::parseResponse(const DpaMessage& response)
 
   case Cmd::READ: {
     TPerOSRead_Response resp = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerOSRead_Response;
+
     {
       std::ostringstream os;
       os.fill('0');
 
       os << std::hex <<
-        std::setw(2) << (int)resp.ModuleId[3] <<
-        std::setw(2) << (int)resp.ModuleId[2] <<
-        std::setw(2) << (int)resp.ModuleId[1] <<
-        std::setw(2) << (int)resp.ModuleId[0];
+            std::setw(2) << (int)resp.ModuleId[3] <<
+            std::setw(2) << (int)resp.ModuleId[2] <<
+            std::setw(2) << (int)resp.ModuleId[1] <<
+            std::setw(2) << (int)resp.ModuleId[0];
+      
       m_moduleId = os.str();
     }
 
     {
       std::ostringstream os;
+
       os << std::hex <<
-        std::setw(2) << (int)(resp.OsVersion >> 4) << '.';
+            std::setw(2) << (int)(resp.OsVersion >> 4) << '.';
+      
       os.fill('0');
       os << std::setw(2) << (int)(resp.OsVersion & 0xf) << 'D';
+      
       m_osVersion = os.str();
     }
 
@@ -91,6 +97,7 @@ void PrfOs::parseResponse(const DpaMessage& response)
     }
 
     m_fcc = resp.McuType & 0x8;
+
     int pic = resp.McuType & 0x7;
     switch (pic) {
     case 3: m_mcuType = "PIC16F886"; break;
@@ -101,11 +108,12 @@ void PrfOs::parseResponse(const DpaMessage& response)
     {
       std::ostringstream os;
       os.fill('0');
+
       os << std::hex << std::setw(4) << (int)resp.OsBuild;
       m_osBuild = os.str();
     }
   }
-                  break;
+  break;
 
   default:;
   }
@@ -114,9 +122,12 @@ void PrfOs::parseResponse(const DpaMessage& response)
 void PrfOs::sleep(const std::chrono::seconds& sec, uint8_t ctrl)
 {
   setCmd(Cmd::SLEEP);
+
   ctrl &= 0x0F; //reset milis flag
+  
   milis2097 ms2097 = duration_cast<milis2097>(sec);
   uint16_t tm = (uint16_t)ms2097.count();
+  
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Time = tm;
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Control = ctrl;
   m_request.SetLength(sizeof(TDpaIFaceHeader) + 3);
@@ -125,10 +136,13 @@ void PrfOs::sleep(const std::chrono::seconds& sec, uint8_t ctrl)
 void PrfOs::sleep(const std::chrono::milliseconds& milis, uint8_t ctrl)
 {
   setCmd(Cmd::SLEEP);
+  
   ctrl &= 0x0F; //reset other flags
   ctrl |= 0x10; //set milis flags
+
   micros32768 mc32768 = duration_cast<micros32768>(milis);
   uint16_t tm = (uint16_t)mc32768.count();
+  
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Time = tm;
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Control = ctrl;
   m_request.SetLength(sizeof(TDpaIFaceHeader) + 3);
@@ -137,6 +151,7 @@ void PrfOs::sleep(const std::chrono::milliseconds& milis, uint8_t ctrl)
 void PrfOs::calibration()
 {
   setCmd(Cmd::SLEEP);
+
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Time = 0;
   m_request.DpaPacket().DpaRequestPacket_t.DpaMessage.PerOSSleep_Request.Control = (uint8_t)TimeControl::RUN_CALIB;
 }

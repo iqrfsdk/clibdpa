@@ -18,15 +18,15 @@
 #include "PrfIo.h"
 #include "IqrfLogging.h"
 
+// periphery
+const std::string PrfIo::PRF_NAME("emd-per-io");
 
-const std::string PrfIo::PRF_NAME("std-per-io");
-
-// Commands
+// commands
 const std::string STR_CMD_DIRECTION("direction");
 const std::string STR_CMD_SET("set");
 const std::string STR_CMD_GET("get");
 
-// Port names
+// port names
 const std::string STR_PORTA("porta");
 const std::string STR_PORTB("portb");
 const std::string STR_PORTC("portc");
@@ -54,9 +54,11 @@ PrfIo::~PrfIo()
 void PrfIo::parseResponse(const DpaMessage& response)
 {
   const uint8_t* p = response.DpaPacket().DpaResponsePacket_t.DpaMessage.Response.PData;
+
   if (getPcmd() == (uint8_t)Cmd::GET) {
     int sz = response.GetLength() - sizeof(TDpaIFaceHeader) - 2; // - (ResponseCode + DpaValue)
     int i = 0;
+
     while (true) {
       //TODO better IO support? Why it does not reply with [port,value]?
       m_PORTA = p[i];
@@ -93,6 +95,7 @@ void PrfIo::directionCommand(DirectionAndSet directions)
     trip.Mask = std::get<1>(d);
     trip.Value = std::get<2>(d);
   }
+
   m_request.SetLength(sizeof(TDpaIFaceHeader) + sizeof(TPerIOTriplet) * maxSize);
 }
 

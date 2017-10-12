@@ -55,8 +55,11 @@ public:
   PrfIo(uint16_t address);
   virtual ~PrfIo();
 
+  // parse response data
   void parseResponse(const DpaMessage& response) override;
+  // from string setting PCMD
   void parseCommand(const std::string& command) override;
+  // from PCMD to string
   const std::string& encodeCommand() const override;
 
   //cmd methods
@@ -94,5 +97,4 @@ private:
   uint8_t m_PORTE = 0;
   uint8_t m_WPUB = 0;
   uint8_t m_WPUE = 0;
-
 };

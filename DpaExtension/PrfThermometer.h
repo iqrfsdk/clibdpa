@@ -32,17 +32,21 @@ public:
   PrfThermometer(uint16_t address, Cmd command);
   virtual ~PrfThermometer();
 
+  // parse response data
   void parseResponse(const DpaMessage& response) override;
+  // from string setting PCMD
   void parseCommand(const std::string& command) override;
+  // from PCMD to string
   const std::string& encodeCommand() const override;
 
+  Cmd getCmd() const;
+  void setCmd(Cmd cmd);
+
+  // multiple returns types
   int getIntTemperature() const { return m_intTemperature; }
   float getFloatTemperature() const { return m_floatTemperature; }
   uint8_t getRaw8Temperature() const { return m_8Temperature; }
   uint16_t getRaw16Temperature() const { return m_16Temperature; }
-
-  Cmd getCmd() const;
-  void setCmd(Cmd cmd);
 
 private:
   Cmd m_cmd = Cmd::READ;

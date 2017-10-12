@@ -50,14 +50,17 @@ public:
   PrfOs(uint16_t address);
   virtual ~PrfOs();
 
+  // parse response data
   void parseResponse(const DpaMessage& response) override;
+  // from string setting PCMD
   void parseCommand(const std::string& command) override;
+  // from PCMD to string
   const std::string& encodeCommand() const override;
 
+  // periphery commands
   void sleep(const std::chrono::seconds& sec, uint8_t ctrl = 0);
   void sleep(const std::chrono::milliseconds& milis, uint8_t ctrl = 0);
   void calibration();
-
   void read();
 
   const std::string& getModuleId() { return m_moduleId; }
@@ -67,6 +70,7 @@ public:
   const std::string& getOsBuild() { return m_osBuild; }
 
   Cmd getCmd() const;
+
 private:
   typedef std::chrono::duration<unsigned long, std::ratio<2097, 1000>> milis2097;
   typedef std::chrono::duration<unsigned long, std::ratio<32768, 1000000>> micros32768;
@@ -83,5 +87,4 @@ private:
   bool m_fcc = false;
   std::string m_mcuType;
   std::string m_osBuild;
-  //TODO
 };

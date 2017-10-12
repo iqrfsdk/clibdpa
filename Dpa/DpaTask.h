@@ -72,7 +72,7 @@ protected:
 private:
   DpaMessage m_confirmation;
   std::string m_prfName;
-  std::string m_clid; //client ID
+  std::string m_clid;
   int m_timeout = -1;
 
   std::chrono::time_point<std::chrono::system_clock> m_request_ts;

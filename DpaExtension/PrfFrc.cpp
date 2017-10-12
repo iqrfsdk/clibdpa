@@ -18,7 +18,7 @@
 #include "PrfFrc.h"
 #include "IqrfLogging.h"
 
-const std::string PrfFrc::PRF_NAME("std-per-frc");
+const std::string PrfFrc::PRF_NAME("emd-per-frc");
 
 // Commands
 const std::string STR_CMD_SEND("send");

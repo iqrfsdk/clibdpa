@@ -34,16 +34,19 @@ public:
   PrfLed(const std::string& prfName, uint8_t colour, uint16_t address, Cmd command);
   virtual ~PrfLed();
 
+  // parse response data
   void parseResponse(const DpaMessage& response) override;
-
+  // from string setting PCMD
   void parseCommand(const std::string& command) override;
+  // from PCMD to string
   const std::string& encodeCommand() const override;
-
-  int getLedState() const { return m_ledState; } // -1 uknown, 0 off, 1 on
-  uint8_t getColour() const;
 
   Cmd getCmd() const;
   void setCmd(Cmd cmd);
+
+  // return types
+  int getLedState() const { return m_ledState; } // -1 unknown, 0 off, 1 on
+  uint8_t getColour() const;
 
 protected:
   Cmd m_cmd = Cmd::SET_OFF;
@@ -53,7 +56,7 @@ protected:
 class PrfLedG : public PrfLed
 {
 public:
-  static const std::string  PRF_NAME;
+  static const std::string PRF_NAME;
 
   PrfLedG()
     :PrfLed(PRF_NAME, PNUM_LEDG)
@@ -70,7 +73,7 @@ public:
 class PrfLedR : public PrfLed
 {
 public:
-  static const std::string  PRF_NAME;
+  static const std::string PRF_NAME;
 
   PrfLedR()
     :PrfLed(PRF_NAME, PNUM_LEDR)

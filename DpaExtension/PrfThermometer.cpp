@@ -18,8 +18,10 @@
 #include "PrfThermometer.h"
 #include "IqrfLogging.h"
 
-const std::string PrfThermometer::PRF_NAME("std-per-thermometer");
+// periphery
+const std::string PrfThermometer::PRF_NAME("emd-per-thermometer");
 
+// command
 const std::string STR_CMD_THERMOMETER_READ("read");
 
 PrfThermometer::PrfThermometer()
@@ -41,7 +43,8 @@ void PrfThermometer::parseResponse(const DpaMessage& response)
   m_8Temperature = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.IntegerValue;
   m_16Temperature = response.DpaPacket().DpaResponsePacket_t.DpaMessage.PerThermometerRead_Response.SixteenthValue;
 
-  if (m_8Temperature & 0x80) { //negative value //TODO verify where is SIGN
+  // negative value
+  if (m_8Temperature & 0x80) { //TODO verify where is SIGN
     m_intTemperature = m_8Temperature & 0x7F;
     m_intTemperature = -m_intTemperature;
   }
@@ -49,12 +52,14 @@ void PrfThermometer::parseResponse(const DpaMessage& response)
     m_intTemperature = m_8Temperature;
 
   int tempi;
-  if (m_16Temperature & 0x8000) { //negative value //TODO verify where is SIGN
+  // negative value
+  if (m_16Temperature & 0x8000) { //TODO verify where is SIGN
     tempi = m_16Temperature & 0x7FFF;
     tempi = -tempi;
   }
   else
     tempi = m_16Temperature;
+  
   m_floatTemperature = tempi * 0.0625; // *1/16
 }
 
