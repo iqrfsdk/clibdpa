@@ -217,6 +217,19 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   // dpa task timeout
   int32_t requiredTimeout = dpaTransaction.getTimeout();
 
+  if (requiredTimeout < MINIMAL_TIMING) {
+    //it is allowed just for Coordinator Discovery
+    if (dpaTransaction.getMessage().DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
+      dpaTransaction.getMessage().DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
+      // force setting minimal timing as only Discovery can have infinite timeout
+      TRC_WAR("Explicit: " << PAR(requiredTimeout) << "forced to: " << PAR(MINIMAL_TIMING));
+      requiredTimeout = MINIMAL_TIMING;
+    }
+    else {
+      TRC_WAR(PAR(requiredTimeout) << "allowed for DISCOVERY message");
+    }
+  }
+
   // update handler timeout from task
   if (requiredTimeout >= 0)
     Timeout(requiredTimeout);
