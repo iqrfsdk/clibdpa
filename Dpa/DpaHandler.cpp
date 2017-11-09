@@ -28,7 +28,7 @@ DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kSt
 
   // default timeout 400ms
   m_defaultTimeoutMs = kDefaultTimeout;
-  TRC_DBG("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
+  TRC_INF("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
 
   // register callback for cdc or spi interface
   m_iqrfInterface->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
@@ -68,7 +68,7 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
   
   // get ready new holder by setting user timeout if sets otherwise -1
   m_currentTransfer->DefaultTimeout(m_defaultTimeoutMs);
-  TRC_DBG("Setting user timeout: " << PAR(m_defaultTimeoutMs));
+  TRC_INF("Setting default user timeout: " << PAR(m_defaultTimeoutMs));
   
   try {
     m_currentTransfer->ProcessSentMessage(message);
@@ -247,8 +247,10 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
         if (remains > 0) {
           TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
         }
-        else 
-          TRC_DBG("Conditional wait - time is out: " << PAR(remains));
+        else {
+          // polutes tracer file if DISCOVERY is run 
+          //TRC_DBG("Conditional wait - time is out: " << PAR(remains));
+        }
 
         std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
         m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));

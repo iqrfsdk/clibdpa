@@ -18,6 +18,7 @@
 #include <chrono>
 
 #include "DpaTransactionTask.h"
+#include "IqrfLogging.h"
 
 DpaTransactionTask::DpaTransactionTask(DpaTask& dpaTask) : m_dpaTask(dpaTask), m_error(0) {
   m_future = m_promise.get_future();
@@ -78,6 +79,7 @@ int DpaTransactionTask::waitFinish()
     std::chrono::milliseconds span(m_dpaTask.getTimeout() * 2);
     if (m_future.wait_for(span) == std::future_status::timeout) {
       // future error
+      TRC_ERR("Transaction task future timeout.");
       m_error = -2;
     }
     else {
