@@ -160,15 +160,13 @@ void DpaLibraryDemo::start() {
 void DpaLibraryDemo::pulseLedRDpaTransaction(uint16_t address)
 {
   PrfLedR pulse((int)address, PrfLed::Cmd::PULSE);
-  DpaTransactionTask transaction(pulse);
 
-  m_dpaHandler->ExecuteDpaTransaction(transaction);
-  int errorCode = transaction.waitFinish();
-
-  if (errorCode == 0)
-    std::cout << pulse.getPrfName() << " " << pulse.getAddress() << " " << pulse.encodeCommand() << std::endl;
-  else
-    std::cout << transaction.getErrorStr() << std::endl;
+  DpaTransactionResult result = m_dpaHandler->ExecuteAsTransaction(pulse);
+  if (result.getErrorCode() == 0) {
+	  std::cout << pulse.getPrfName() << " " << pulse.getAddress() << " " << pulse.encodeCommand() << std::endl;
+  } else {
+	  std::cout << "error: " << result.getErrorString() << std::endl;
+  }
 }
 
 

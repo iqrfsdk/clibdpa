@@ -24,10 +24,12 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "DpaTask.h"
 #include "DpaTransfer.h"
 #include "DpaTransaction.h"
 #include "DpaMessage.h"
 #include "IChannel.h"
+#include "DpaTransactionResult.h"
 
 class DpaHandler {
 public:
@@ -134,6 +136,16 @@ public:
   void ExecuteDpaTransaction(DpaTransaction& dpaTransaction);
   void KillDpaTransaction();
 
+  /**
+  Executes specified DPA task as a transaction.
+  The method blocks until received response or timeout.
+
+  @param [in, out] DPA task to be executed
+  @return result of the executed transaction
+  */
+  DpaTransactionResult ExecuteAsTransaction(DpaTask& dpaTask);
+
+
 private:
   /** Default value of timeout in ms.*/
   const int32_t kDefaultTimeout = DEFAULT_TIMING;
@@ -172,4 +184,7 @@ private:
    @param [in,out]	message	the message.
    */
   void ProcessAsynchronousMessage(const DpaMessage& message);
+
+  /** Returns DPA transaction result - according to specified transfer status. */
+  DpaTransactionResult getDpaTransactionResult(DpaTransfer::DpaTransferStatus status);
 };

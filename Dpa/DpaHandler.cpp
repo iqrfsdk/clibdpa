@@ -268,3 +268,66 @@ void DpaHandler::KillDpaTransaction()
 
   TRC_LEAVE("");
 }
+
+// returns DPA transaction result - according to specified transfer status
+DpaTransactionResult DpaHandler::getDpaTransactionResult(DpaTransfer::DpaTransferStatus status) {
+  switch (status) {
+    case DpaTransfer::DpaTransferStatus::kError:
+	  return -4;
+	case DpaTransfer::DpaTransferStatus::kAborted:
+	  return -3;
+	case DpaTransfer::DpaTransferStatus::kTimeout:
+	  return -1;
+	default:
+	  return 0;
+  }
+}
+
+DpaTransactionResult DpaHandler::ExecuteAsTransaction(DpaTask& dpaTask) {
+  const DpaMessage& request = dpaTask.getRequest();
+
+  int32_t remains(0);
+
+  // dpa handler timeout
+  int32_t defaultTimeout = Timeout();
+	
+  // dpa task timeout
+  int32_t requiredTimeout = dpaTask.getTimeout();
+
+  // update handler timeout from task
+  if (requiredTimeout >= 0) {
+	Timeout(requiredTimeout);
+  }
+
+  // update transfer state
+  DpaTransfer::DpaTransferStatus status(DpaTransfer::kCreated);
+
+  try {
+	SendDpaMessage(request, NULL);
+
+	// waits till message processed - kProcessed
+	while (IsDpaTransactionInProgress(remains)) {
+	  //waits for remaining time or notifing
+	  {
+		if (remains > 0) {
+			TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
+		}
+		else {
+		  TRC_DBG("Conditional wait - time is out: " << PAR(remains));
+		}
+		std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
+		m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));
+	  }
+	}
+
+	// update transfer state
+	status = Status();
+  } catch (std::exception& e) {
+	TRC_WAR("Send error occured: " << e.what());
+	status = DpaTransfer::DpaTransferStatus::kError;
+  }
+
+  Timeout(defaultTimeout);
+
+  return getDpaTransactionResult(status);
+}
