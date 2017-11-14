@@ -217,6 +217,11 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   // dpa task timeout
   int32_t requiredTimeout = dpaTransaction.getTimeout();
 
+  if (requiredTimeout < 0) {
+    requiredTimeout = DEFAULT_TIMING;
+    TRC_DBG("Using default timeout: " << PAR(DEFAULT_TIMING));
+  }
+
   if (requiredTimeout < MINIMAL_TIMING) {
     //it is allowed just for Coordinator Discovery
     if (dpaTransaction.getMessage().DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
