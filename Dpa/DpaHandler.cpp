@@ -26,7 +26,7 @@ DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kSt
   }
   m_iqrfInterface = iqrfInterface;
 
-  // default timeout 400ms
+  // default timeout 200ms
   m_defaultTimeoutMs = kDefaultTimeout;
   TRC_INF("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
 
