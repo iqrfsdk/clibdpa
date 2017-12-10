@@ -58,7 +58,7 @@ public:
   DpaTransfer();
 
   /** Ctor with external response handler and IQRF communication mode */
-  DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode);
+  DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode, int32_t timeout);
 
   /** Destructor */
   virtual ~DpaTransfer();

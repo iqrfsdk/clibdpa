@@ -144,7 +144,7 @@ private:
   IqrfRfCommunicationMode m_currentCommunicationMode;
 
   /** The current transfer. */
-  DpaTransfer* m_currentTransfer;
+  DpaTransfer* m_currentTransfer = nullptr;
   /** The IQRF communication interface. */
   IChannel* m_iqrfInterface;
 

@@ -62,6 +62,7 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 
   // delete holder of the current dpa request - msg already sent
   delete m_currentTransfer;
+  m_currentTransfer = nullptr;
 
   // create new holder for the reception
   m_currentTransfer = CreateDpaTransfer(responseHandler);
@@ -83,7 +84,7 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 // transfer with transaction
 DpaTransfer* DpaHandler::CreateDpaTransfer(DpaTransaction* dpaTransaction) const
 {
-  DpaTransfer* response = new DpaTransfer(dpaTransaction, GetRfCommunicationMode());
+  DpaTransfer* response = new DpaTransfer(dpaTransaction, GetRfCommunicationMode(), m_defaultTimeoutMs);
   return response;
 }
 
@@ -218,8 +219,8 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   int32_t requiredTimeout = dpaTransaction.getTimeout();
 
   if (requiredTimeout < 0) {
-    requiredTimeout = DEFAULT_TIMING;
-    TRC_DBG("Using default timeout: " << PAR(DEFAULT_TIMING));
+    requiredTimeout = defaultTimeout;
+    TRC_DBG("Using default timeout: " << PAR(defaultTimeout));
   }
 
   if (requiredTimeout < MINIMAL_TIMING) {
