@@ -22,7 +22,7 @@ import sys
 import subprocess
 import os
 
-ARGS = argparse.ArgumentParser(description="Cross-platform clibspi builder.")
+ARGS = argparse.ArgumentParser(description="Cross-platform clibdpa builder.")
 ARGS.add_argument("-g", "--gen", action="store", dest="gen",
                   required=True, type=str, help="Platform generator.")
 ARGS.add_argument("-d", "--debug", action="store", dest="debug",
@@ -103,9 +103,15 @@ def build(generator, build_dir, debug, dep_cdc, dep_spi, dep_cutils):
     os.chdir(build_dir)
 
     if sys.platform.startswith("win"):
-        send_command("cmake -G " + "\"" + generator + "\"" + " -Dclibcdc_DIR:PATH=" + dep_cdc + " -Dclibspi_DIR:PATH=" + dep_spi + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir)
+        send_command("cmake -G " + "\"" + generator + "\"" 
+                                 + " -Dclibcdc_DIR:PATH=" + dep_cdc 
+                                 + " -Dclibspi_DIR:PATH=" + dep_spi 
+                                 + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir)
     else:
-        send_command("cmake -G " + "\"" + generator + "\"" + " -Dclibcdc_DIR:PATH=" + dep_cdc + " -Dclibspi_DIR:PATH=" + dep_spi + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir + " " + debug)
+        send_command("cmake -G " + "\"" + generator + "\"" 
+                                 + " -Dclibcdc_DIR:PATH=" + dep_cdc 
+                                 + " -Dclibspi_DIR:PATH=" + dep_spi 
+                                 + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir + " " + debug)
 
     os.chdir(current_dir)
     send_command("cmake --build " + build_dir)
