@@ -26,13 +26,13 @@
 
 DpaTransfer::DpaTransfer()
   : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
+  m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
 
-DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode)
+DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode, int32_t timeout)
   : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
-  m_expectedDurationMs(400), m_timeoutMs(400), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
+  m_expectedDurationMs(timeout), m_timeoutMs(timeout), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
 
@@ -251,7 +251,7 @@ int32_t DpaTransfer::EstimateStdTimeout(uint8_t hopsRequest, uint8_t timeslotReq
 
   estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
 
-  TRC_DBG("Estimated STD timeout: " << PAR(estimatedTimeoutMs));
+  TRC_INF("Estimated STD timeout: " << PAR(estimatedTimeoutMs));
   TRC_LEAVE("");
   return estimatedTimeoutMs;
 }
@@ -297,7 +297,7 @@ int32_t DpaTransfer::EstimateLpTimeout(uint8_t hopsRequest, uint8_t timeslotReq,
 
   estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
 
-  TRC_DBG("Estimated LP timeout: " << PAR(estimatedTimeoutMs));
+  TRC_INF("Estimated LP timeout: " << PAR(estimatedTimeoutMs));
   TRC_LEAVE("");
   return estimatedTimeoutMs;
 }
@@ -309,7 +309,7 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
   // waiting forever
   if (m_timeoutMs == 0) {
     m_expectedDurationMs = m_timeoutMs;
-    TRC_DBG("Expected duration to wait :" << PAR(m_expectedDurationMs));
+    TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
     return;
   }
 
@@ -317,13 +317,13 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
   if (m_status == kReceivedResponse) {
     //adjust new timing based on length of PData in response
     m_expectedDurationMs = estimatedTimeMs;
-    TRC_DBG("New expected duration to wait :" << PAR(m_expectedDurationMs));
+    TRC_INF("New expected duration to wait :" << PAR(m_expectedDurationMs));
     return;
   }
 
   // estimation done
   if (estimatedTimeMs >= 0) {
-    // either default timeout is 400 or user sets lower time than estimated
+    // either default timeout is 200 or user sets lower time than estimated
     if (m_timeoutMs < estimatedTimeMs) {
       // in both cases use estimation from confirmation
       m_timeoutMs = estimatedTimeMs;
@@ -331,7 +331,7 @@ void DpaTransfer::SetTimingForCurrentTransfer(int32_t estimatedTimeMs)
     // set new duration
     // there is also case when user sets higher than estimation then user choice is set
     m_expectedDurationMs = m_timeoutMs;
-    TRC_DBG("Expected duration to wait :" << PAR(m_expectedDurationMs));
+    TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
   }
 
   // start time when dpa request is sent and rerun again when confirmation is received
@@ -373,7 +373,7 @@ int32_t DpaTransfer::CheckTimeout()
     // passed time from sent request
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
     remains = m_expectedDurationMs - duration.count();
-    TRC_DBG("Time to wait: " << PAR(remains));
+    TRC_INF("Time to wait: " << PAR(remains));
 
     // already over?
     timingFinished = remains < 0;

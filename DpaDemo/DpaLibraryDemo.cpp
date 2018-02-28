@@ -62,7 +62,13 @@ int main(int argc, char** argv)
 
   if (found != std::string::npos) {
     try {
-      dpaInterface = new IqrfSpiChannel(port_name);
+      spi_iqrf_config_struct cfg(IqrfSpiChannel::SPI_IQRF_CFG_DEFAULT);
+      memset(cfg.spiDev, 0, sizeof(cfg.spiDev));
+      auto sz = port_name.size();
+      if (sz > sizeof(cfg.spiDev)) sz = sizeof(cfg.spiDev);
+      std::copy(port_name.c_str(), port_name.c_str() + sz, cfg.spiDev);
+
+      dpaInterface = new IqrfSpiChannel(cfg);
     }
     catch (SpiChannelException& e) {
       std::cout << e.what() << std::endl;

@@ -26,9 +26,9 @@ DpaHandler::DpaHandler(IChannel* iqrfInterface) : m_currentCommunicationMode(kSt
   }
   m_iqrfInterface = iqrfInterface;
 
-  // default timeout 400ms
+  // default timeout 200ms
   m_defaultTimeoutMs = kDefaultTimeout;
-  TRC_DBG("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
+  TRC_INF("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
 
   // register callback for cdc or spi interface
   m_iqrfInterface->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
@@ -62,13 +62,14 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 
   // delete holder of the current dpa request - msg already sent
   delete m_currentTransfer;
+  m_currentTransfer = nullptr;
 
   // create new holder for the reception
   m_currentTransfer = CreateDpaTransfer(responseHandler);
   
   // get ready new holder by setting user timeout if sets otherwise -1
   m_currentTransfer->DefaultTimeout(m_defaultTimeoutMs);
-  TRC_DBG("Setting user timeout: " << PAR(m_defaultTimeoutMs));
+  TRC_INF("Setting default user timeout: " << PAR(m_defaultTimeoutMs));
   
   try {
     m_currentTransfer->ProcessSentMessage(message);
@@ -83,7 +84,7 @@ void DpaHandler::SendDpaMessage(const DpaMessage& message, DpaTransaction* respo
 // transfer with transaction
 DpaTransfer* DpaHandler::CreateDpaTransfer(DpaTransaction* dpaTransaction) const
 {
-  DpaTransfer* response = new DpaTransfer(dpaTransaction, GetRfCommunicationMode());
+  DpaTransfer* response = new DpaTransfer(dpaTransaction, GetRfCommunicationMode(), m_defaultTimeoutMs);
   return response;
 }
 
@@ -217,6 +218,24 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
   // dpa task timeout
   int32_t requiredTimeout = dpaTransaction.getTimeout();
 
+  if (requiredTimeout < 0) {
+    requiredTimeout = defaultTimeout;
+    TRC_DBG("Using default timeout: " << PAR(defaultTimeout));
+  }
+
+  if (requiredTimeout < MINIMAL_TIMING) {
+    //it is allowed just for Coordinator Discovery
+    if (dpaTransaction.getMessage().DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
+      dpaTransaction.getMessage().DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
+      // force setting minimal timing as only Discovery can have infinite timeout
+      TRC_WAR("Explicit: " << PAR(requiredTimeout) << "forced to: " << PAR(MINIMAL_TIMING));
+      requiredTimeout = MINIMAL_TIMING;
+    }
+    else {
+      TRC_WAR(PAR(requiredTimeout) << "allowed for DISCOVERY message");
+    }
+  }
+
   // update handler timeout from task
   if (requiredTimeout >= 0)
     Timeout(requiredTimeout);
@@ -234,8 +253,10 @@ void DpaHandler::ExecuteDpaTransaction(DpaTransaction& dpaTransaction)
         if (remains > 0) {
           TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
         }
-        else 
-          TRC_DBG("Conditional wait - time is out: " << PAR(remains));
+        else {
+          // polutes tracer file if DISCOVERY is run 
+          //TRC_DBG("Conditional wait - time is out: " << PAR(remains));
+        }
 
         std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
         m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));

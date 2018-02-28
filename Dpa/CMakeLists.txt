@@ -1,42 +1,12 @@
 project(Dpa)
 
-# Specify source and header files.
-set(Dpa_SRC_FILES
-	${CMAKE_SOURCE_DIR}/Dpa/DpaHandler.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTransfer.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTask.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTransactionTask.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/DpaRaw.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.cpp
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.cpp
-)
+file(GLOB_RECURSE _HDRFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+file(GLOB_RECURSE _SRCFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-set(Dpa_INC_FILES
-	${CMAKE_SOURCE_DIR}/Dpa/DPA.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaWrapper.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaHandler.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaMessage.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTransfer.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTransaction.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTask.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaTransactionTask.h
-	${CMAKE_SOURCE_DIR}/Dpa/DpaRaw.h
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_command.h
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_packet_type.h
-	${CMAKE_SOURCE_DIR}/Dpa/unexpected_peripheral.h
-)
+source_group("Header Files" FILES ${_HDRFILES})
+source_group("Source Files" FILES ${_SRCFILES})
 
 include_directories(${cutils_INCLUDE_DIRS})
-include_directories(${CMAKE_SOURCE_DIR}/Dpa)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")
-
-add_library(${PROJECT_NAME}
-	STATIC
-	${Dpa_SRC_FILES}
-	${Dpa_INC_FILES}
-)
-
-#install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+add_library(${PROJECT_NAME} STATIC ${_HDRFILES} ${_SRCFILES})

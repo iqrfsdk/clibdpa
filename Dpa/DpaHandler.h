@@ -35,7 +35,8 @@ class DpaHandler {
 public:
   //Timing constants
   enum Timing {
-    DEFAULT_TIMING = 400,
+    DEFAULT_TIMING = 200,
+    MINIMAL_TIMING = 200,
     INFINITE_TIMING = 0
   };
 
@@ -155,7 +156,7 @@ private:
   IqrfRfCommunicationMode m_currentCommunicationMode;
 
   /** The current transfer. */
-  DpaTransfer* m_currentTransfer;
+  DpaTransfer* m_currentTransfer = nullptr;
   /** The IQRF communication interface. */
   IChannel* m_iqrfInterface;
 
