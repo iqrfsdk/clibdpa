@@ -17,19 +17,11 @@
 
 #pragma once
 
-#include <memory>
-#include <queue>
-#include <functional>
-#include <cstdint>
-#include <mutex>
-#include <condition_variable>
-
-//#include "DpaTask.h"
-//#include "DpaTransfer.h"
-//#include "DpaTransaction.h"
 #include "DpaMessage.h"
 #include "IChannel.h"
-//#include "DpaTransactionResult.h"
+#include <memory>
+#include <functional>
+#include <chrono>
 
 class IDpaTransactionResult2
 {
@@ -65,8 +57,8 @@ class IDpaHandler2
 {
 public:
   enum RfMode {
-    Std,
-    Lp
+    kStd,
+    kLp
   };
 
   /// Asynchronous DPA message handler functional type
