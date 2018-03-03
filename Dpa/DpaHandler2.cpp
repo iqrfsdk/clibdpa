@@ -189,7 +189,9 @@ public:
     //DpaTransfer
     ,m_status(kCreated)
     ,m_messageToBeProcessed(false)
-    ,m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(IDpaHandler2::RfMode::kStd)
+    ,m_expectedDurationMs(200)
+    ,m_defaultTimeoutMs(200)
+    ,m_currentCommunicationMode(IDpaHandler2::RfMode::kStd)
   {
   }
 
@@ -200,46 +202,16 @@ public:
   std::unique_ptr<IDpaTransactionResult2> get(uint32_t timeout) override
   {
     m_future = m_promise.get_future();
-    m_timeout = timeout;
-    int errorCode = 0;
+    
+    m_requiredTimeoutMs = timeout;
 
-    // infinite timeout
-    if (timeout <= 0) {
-      // blocks until the result becomes available
-      m_future.wait();
-      errorCode = m_future.get();
-    }
-    else {
-      std::chrono::milliseconds span(timeout * 2);
-      if (m_future.wait_for(span) == std::future_status::timeout) {
-        // future error
-        TRC_ERR("Transaction task future timeout.");
-        errorCode = -2;
-      }
-      else {
-        errorCode = m_future.get();
-      }
-    }
-
-    m_dpaTransactionResultPtr->setErrorCode(errorCode);
-    //TODO move?
-    //std::unique_ptr<IDpaTransactionResult2> result(new DpaTransactionResult2(m_dpaTransactionResult));
-    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
-    return result;
-  }
-
-  void execute()
-  {
+    // check and correct timeout here before blocking:
     const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
-
-    int32_t remains(0);
-    //TODO timeout magic
-    int32_t defaultTimeout = m_timeout;
-    int32_t requiredTimeout = m_timeout;
+    int32_t requiredTimeout = m_requiredTimeoutMs;
 
     if (requiredTimeout < 0) {
-      requiredTimeout = defaultTimeout;
-      TRC_DBG("Using default timeout: " << PAR(defaultTimeout));
+      requiredTimeout = m_defaultTimeoutMs;
+      TRC_DBG("Invalid: " << PAR(m_requiredTimeoutMs) " => Using: " << PAR(m_defaultTimeoutMs));
     }
 
     if (requiredTimeout < DpaHandler2::MINIMAL_TIMING) {
@@ -254,18 +226,55 @@ public:
         TRC_WAR(PAR(requiredTimeout) << "allowed for DISCOVERY message");
       }
     }
+    //TODO propagate requiredTimeout to former m_defaultTimeoutMS
 
-    // update transfer state
-    DpaTransfer2Status status(kCreated);
+    int errorCode = 0;
+
+    // infinite timeout
+    if (requiredTimeout <= 0) {
+      // blocks until the result becomes available
+      m_future.wait();
+      errorCode = m_future.get();
+    }
+    else {
+      //TODO handle iqrf BUSY or queue full
+      std::chrono::milliseconds span(requiredTimeout * 2);
+      if (m_future.wait_for(span) == std::future_status::timeout) {
+        // future error
+        TRC_ERR("Transaction task future timeout.");
+        errorCode = -2;
+      }
+      else {
+        errorCode = m_future.get();
+      }
+    }
+
+    m_dpaTransactionResultPtr->setErrorCode(errorCode);
+
+    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
+    return result;
+  }
+
+  void execute()
+  {
+    const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
+
+    int32_t remains(0);
 
     try {
-      //m_currTransfer.DefaultTimeout(m_timeout);
-      DefaultTimeout(m_timeout);
+      //send message
       m_sender(message);
-      //m_currTransfer.ProcessSentMessage(message);
-      ProcessSentMessage(message);
+      // current request status is set as sent
+      if (message.NodeAddress() == COORDINATOR_ADDRESS) {
+        m_status = kSentCoordinator;
+      }
+      else {
+        m_status = kSent;
+      }
 
-      //while (m_currTransfer.IsInProgress(remains)) {
+      // setting default timeout, no estimation yet
+      SetTimingForCurrentTransfer();
+
       while (IsInProgress(remains)) {
         //waits for remaining time or notifing
         {
@@ -283,19 +292,15 @@ public:
       }
 
       // update transfer state
-      //status = m_currTransfer.ProcessStatus();
-      status = ProcessStatus();
+      CheckTimeout();
     }
     catch (std::exception& e) {
       TRC_WAR("Send error occured: " << e.what());
-      status = DpaTransfer2Status::kError;
+      m_status = kError;
     }
 
-    // reset timeout
-    m_timeout = defaultTimeout;
-    
     // set error value
-    switch (status) {
+    switch (m_status) {
     case DpaTransfer2Status::kError:
       m_dpaTransactionResultPtr->setErrorCode(-4);
       break;
@@ -320,45 +325,12 @@ private:
   std::promise<int> m_promise;
   std::future<int> m_future;
   SendDpaMessageFunc m_sender;
-  int m_timeout = 0;
   std::mutex m_conditionVariableMutex;
   std::condition_variable m_conditionVariable;
 
 //*******************************************************************
 //DpaTransfer2
 //*******************************************************************
-  int32_t DefaultTimeout() const
-  {
-    return m_timeoutMs;
-  }
-
-  void DefaultTimeout(int32_t timeoutMs)
-  {
-    this->m_timeoutMs = timeoutMs;
-  }
-
-  void ProcessSentMessage(const DpaMessage& sentMessage)
-  {
-    TRC_ENTER("");
-
-    if (m_status != kCreated)
-    {
-      throw std::logic_error("Sent message already set.");
-    }
-
-    // current request status is set as sent
-    if (sentMessage.NodeAddress() == COORDINATOR_ADDRESS) {
-      SetStatus(kSentCoordinator);
-    }
-    else {
-      SetStatus(kSent);
-    }
-
-    // setting default timeout, no estimation yet
-    SetTimingForCurrentTransfer();
-
-    TRC_LEAVE("");
-  }
 
   void MessageReceived(bool flg) {
     // there were delays sometime before processing causing timeout and not processing response at all
@@ -373,7 +345,7 @@ public:
     auto messageDirection = receivedMessage.MessageDirection();
 
     // is transfer in progress?
-    if (!IsInProgressStatus(m_status)) {
+    if (!IsInProgressStatus()) {
       m_messageToBeProcessed = false;
       return;
     }
@@ -407,11 +379,39 @@ public:
     }
 
     if (messageDirection == DpaMessage::kConfirmation) {
-      ProcessConfirmationMessage(receivedMessage);
+      if (receivedMessage.NodeAddress() == DpaMessage::kBroadCastAddress) {
+        m_status = kConfirmationBroadcast;
+      }
+      else {
+        m_status = kConfirmation;
+      }
+      m_dpaTransactionResultPtr->setConfirmation(receivedMessage);
+
+      // setting timeout based on the confirmation
+      SetTimingForCurrentTransfer(EstimatedTimeout(receivedMessage));
       TRC_INF("Confirmation processed.");
     }
     else {
-      ProcessResponseMessage(receivedMessage);
+      // if there is a request to coordinator then after receiving response it is allowed to send another
+      if (m_status == kSentCoordinator) {
+        // done, next request gets ready 
+        m_status = kProcessed;
+      }
+      else {
+        // only if there is not infinite timeout
+        if (m_expectedDurationMs != 0) {
+          m_status = kReceivedResponse;
+          // adjust timing before allowing next request
+          SetTimingForCurrentTransfer(EstimatedTimeout(receivedMessage));
+        }
+        // infinite timeout
+        else {
+          // done, next request gets ready 
+          m_status = kProcessed;
+        }
+      }
+
+      m_dpaTransactionResultPtr->setResponse(receivedMessage);
       TRC_INF("Response processed.");
     }
 
@@ -421,45 +421,6 @@ public:
   }
 
 private:
-  void ProcessConfirmationMessage(const DpaMessage& confirmationMessage)
-  {
-    if (confirmationMessage.NodeAddress() == DpaMessage::kBroadCastAddress) {
-      SetStatus(kConfirmationBroadcast);
-    }
-    else {
-      SetStatus(kConfirmation);
-    }
-
-    m_dpaTransactionResultPtr->setConfirmation(confirmationMessage);
-
-    // setting timeout based on the confirmation
-    SetTimingForCurrentTransfer(EstimatedTimeout(confirmationMessage));
-  }
-
-  void ProcessResponseMessage(const DpaMessage& responseMessage)
-  {
-    // if there is a request to coordinator then after receiving response it is allowed to send another
-    if (m_status == kSentCoordinator) {
-      // done, next request gets ready 
-      SetStatus(kProcessed);
-    }
-    else {
-      // only if there is not infinite timeout
-      if (m_expectedDurationMs != 0) {
-        SetStatus(kReceivedResponse);
-        // adjust timing before allowing next request
-        SetTimingForCurrentTransfer(EstimatedTimeout(responseMessage));
-      }
-      // infinite timeout
-      else {
-        // done, next request gets ready 
-        SetStatus(kProcessed);
-      }
-    }
-
-    m_dpaTransactionResultPtr->setResponse(responseMessage);
-  }
-
   int32_t EstimatedTimeout(const DpaMessage& receivedMessage)
   {
     // direction
@@ -593,8 +554,8 @@ private:
     TRC_ENTER("");
 
     // waiting forever
-    if (m_timeoutMs == 0) {
-      m_expectedDurationMs = m_timeoutMs;
+    if (m_defaultTimeoutMs == 0) {
+      m_expectedDurationMs = m_defaultTimeoutMs;
       TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
       return;
     }
@@ -610,13 +571,13 @@ private:
     // estimation done
     if (estimatedTimeMs >= 0) {
       // either default timeout is 200 or user sets lower time than estimated
-      if (m_timeoutMs < estimatedTimeMs) {
+      if (m_defaultTimeoutMs < estimatedTimeMs) {
         // in both cases use estimation from confirmation
-        m_timeoutMs = estimatedTimeMs;
+        m_defaultTimeoutMs = estimatedTimeMs;
       }
       // set new duration
       // there is also case when user sets higher than estimation then user choice is set
-      m_expectedDurationMs = m_timeoutMs;
+      m_expectedDurationMs = m_defaultTimeoutMs;
       TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
     }
 
@@ -625,17 +586,6 @@ private:
     TRC_INF("Transfer status: started");
 
     TRC_LEAVE("");
-  }
-
-  DpaTransfer2Status ProcessStatus() {
-    TRC_ENTER("");
-
-    // changes m_status, does not care about remains
-    // todo: refactor and rename - two functions
-    CheckTimeout();
-
-    TRC_LEAVE(PAR(m_status));
-    return m_status;
   }
 
   int32_t CheckTimeout()
@@ -674,11 +624,11 @@ private:
         if (!m_messageToBeProcessed) {
           // and we have received confirmation for broadcast or response
           if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
-            SetStatus(kProcessed);
+            m_status = kProcessed;
             TRC_INF("Transfer status: processed");
           }
           else {
-            SetStatus(kTimeout);
+            m_status = kTimeout;
             TRC_INF("Transfer status: timeout");
           }
         }
@@ -689,17 +639,14 @@ private:
     return remains;
   }
 
-  bool IsInProgress() {
-    return IsInProgressStatus(ProcessStatus());
-  }
-
   bool IsInProgress(int32_t& expectedDuration) {
     expectedDuration = CheckTimeout();
-    return IsInProgressStatus(m_status);
+    return IsInProgressStatus();
   }
 
-  bool IsInProgressStatus(DpaTransfer2Status status) {
-    switch (status)
+  bool IsInProgressStatus()
+  {
+    switch (m_status)
     {
     case kSent:
     case kSentCoordinator:
@@ -714,34 +661,20 @@ private:
   }
 
   void Abort() {
-    std::lock_guard<std::mutex> lck(m_statusMutex);
     m_status = kAborted;
   }
-
-  void SetStatus(DpaTransfer2Status status)
-  {
-    TRC_ENTER("");
-    {
-      std::lock_guard<std::mutex> lck(m_statusMutex);
-      m_status = status;
-    }
-    TRC_LEAVE("");
-  }
-
 
 private: //DpaTransfer2
   /** An extra timeout added to timeout from a confirmation packet. */
   const int32_t m_safetyTimeoutMs = 40;
-
-  std::mutex m_statusMutex;
   IDpaHandler2::RfMode m_currentCommunicationMode;
 
   std::chrono::system_clock::time_point m_startTime;
-  int32_t m_timeoutMs;
+  int32_t m_defaultTimeoutMs;
+  int32_t m_requiredTimeoutMs;
   int32_t m_expectedDurationMs;
 
-  DpaTransfer2Status m_status;
-  //DpaMessage* m_sentMessage = nullptr;
+  std::atomic<DpaTransfer2Status> m_status;
 
   int8_t m_hops;
   int8_t m_timeslotLength;
@@ -769,10 +702,6 @@ public:
       throw std::invalid_argument("DPA interface argument can not be nullptr.");
     }
     m_iqrfInterface = iqrfInterface;
-
-    // default timeout 200ms
-    //m_defaultTimeoutMs = kDefaultTimeout;
-    //TRC_INF("Ctor default user timeout: " << PAR(m_defaultTimeoutMs));
 
     // register callback for cdc or spi interface
     m_iqrfInterface->registerReceiveFromHandler([&](const std::basic_string<unsigned char>& msg) -> int {
