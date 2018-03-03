@@ -24,12 +24,12 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "DpaTask.h"
-#include "DpaTransfer.h"
-#include "DpaTransaction.h"
+//#include "DpaTask.h"
+//#include "DpaTransfer.h"
+//#include "DpaTransaction.h"
 #include "DpaMessage.h"
 #include "IChannel.h"
-#include "DpaTransactionResult.h"
+//#include "DpaTransactionResult.h"
 
 class IDpaTransactionResult2
 {
