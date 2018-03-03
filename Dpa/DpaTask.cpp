@@ -84,12 +84,17 @@ void DpaTask::handleResponse(const DpaMessage& response)
 	parseResponse(m_response);
 }
 
-void DpaTask::timestampRequest()
+void DpaTask::timestampRequest(const std::chrono::time_point<std::chrono::system_clock>& ts)
 {
-	m_request_ts = std::chrono::system_clock::now();
+	m_request_ts = ts;
 }
 
-void DpaTask::timestampResponse()
+void DpaTask::timestampConfirmation(const std::chrono::time_point<std::chrono::system_clock>& ts)
 {
-  m_response_ts = std::chrono::system_clock::now();
+  m_confirmation_ts = ts;
+}
+
+void DpaTask::timestampResponse(const std::chrono::time_point<std::chrono::system_clock>& ts)
+{
+  m_response_ts = ts;
 }

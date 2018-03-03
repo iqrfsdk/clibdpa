@@ -34,16 +34,24 @@
 class IDpaTransactionResult2
 {
 public:
-  virtual ~IDpaTransactionResult2() {};
-  virtual int getTransactionResult() const = 0;
-  virtual int getDpaResult() const = 0;
-  virtual const std::string& getResultString() const = 0;
+  /**
+  * Returns code of error.
+  * 0: success, -1: DpaHandler timeout, -2: future timeout, <n>: response code
+  */
+  virtual int getErrorCode() const = 0;
+
+  /**
+  * Returns string, which describes error in more detail.
+  */
+  virtual std::string getErrorString() const = 0;
+
   virtual const DpaMessage& getRequest() const = 0;
   virtual const DpaMessage& getConfirmation() const = 0;
   virtual const DpaMessage& getResponse() const = 0;
   virtual const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const = 0;
   virtual const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const = 0;
   virtual const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const = 0;
+  virtual ~IDpaTransactionResult2() {};
 };
 
 class IDpaTransaction2

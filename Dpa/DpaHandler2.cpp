@@ -23,6 +23,8 @@
 #include <future>
 
 /////////////////////////////////////
+// class DpaTransactionResult2
+/////////////////////////////////////
 class DpaTransactionResult2 : public IDpaTransactionResult2
 {
 public:
@@ -37,20 +39,54 @@ public:
     m_request = request;
   }
 
-  int getTransactionResult() const override
+  int getErrorCode() const override
   {
-    return m_transactionResult;
+    return m_errorCode;
   }
 
-  int getDpaResult() const override
+  std::string getErrorString() const override
   {
-    return m_dpaResult;
-  }
-
-  const std::string& getResultString() const override
-  {
-    static std::string ret("not implemented yet");
-    return ret;
+    switch (m_errorCode) {
+    case -4:
+      return "ERROR_IFACE";
+    case -3:
+      return "ERROR_ABORTED";
+    case -2:
+      return "ERROR_PROMISE_TIMEOUT";
+    case -1:
+      return "ERROR_TIMEOUT";
+    case STATUS_NO_ERROR:
+      return "STATUS_NO_ERROR";
+    case ERROR_FAIL:
+      return "ERROR_FAIL";
+    case ERROR_PCMD:
+      return "ERROR_PCMD";
+    case ERROR_PNUM:
+      return "ERROR_PNUM";
+    case ERROR_ADDR:
+      return "ERROR_ADDR";
+    case ERROR_DATA_LEN:
+      return "ERROR_DATA_LEN";
+    case ERROR_DATA:
+      return "ERROR_DATA";
+    case ERROR_HWPID:
+      return "ERROR_HWPID";
+    case ERROR_NADR:
+      return "ERROR_NADR";
+    case ERROR_IFACE_CUSTOM_HANDLER:
+      return "ERROR_IFACE_CUSTOM_HANDLER";
+    case ERROR_MISSING_CUSTOM_DPA_HANDLER:
+      return "ERROR_MISSING_CUSTOM_DPA_HANDLER";
+    case ERROR_USER_TO:
+      return "ERROR_USER_TO";
+    case STATUS_CONFIRMATION:
+      return "STATUS_CONFIRMATION";
+    case ERROR_USER_FROM:
+    default:
+      std::ostringstream os;
+      os << std::hex << m_errorCode;
+      return os.str();
+    }
   }
 
   const DpaMessage& getRequest() const override
@@ -97,6 +133,11 @@ public:
     m_response = response;
   }
 
+  void setErrorCode(int errorCode)
+  {
+    m_errorCode = errorCode;
+  }
+
 private:
   DpaMessage m_request;
   DpaMessage m_response;
@@ -104,10 +145,11 @@ private:
   std::chrono::time_point<std::chrono::system_clock> m_request_ts;
   std::chrono::time_point<std::chrono::system_clock> m_confirmation_ts;
   std::chrono::time_point<std::chrono::system_clock> m_response_ts;
-  int m_transactionResult = 0;
-  int m_dpaResult = 0;
+  int m_errorCode = 0;
 };
 
+/////////////////////////////////////
+// class DpaTransaction2
 /////////////////////////////////////
 class DpaTransaction2 : public IDpaTransaction2
 {
@@ -117,7 +159,7 @@ public:
 
   DpaTransaction2(const DpaMessage& request, SendDpaMessageFunc sender)
     :m_sender(sender)
-    ,m_request(request)
+    ,m_dpaTransactionResultPtr(new DpaTransactionResult2(request))
   {
   }
 
@@ -125,38 +167,36 @@ public:
   {
     m_future = m_promise.get_future();
     m_timeout = timeout;
-    int m_error = 0;
+    int errorCode = 0;
 
     // infinite timeout
     if (timeout <= 0) {
       // blocks until the result becomes available
       m_future.wait();
-      m_error = m_future.get();
+      errorCode = m_future.get();
     }
     else {
       std::chrono::milliseconds span(timeout * 2);
       if (m_future.wait_for(span) == std::future_status::timeout) {
         // future error
         TRC_ERR("Transaction task future timeout.");
-        m_error = -2;
+        errorCode = -2;
       }
       else {
-        m_error = m_future.get();
+        errorCode = m_future.get();
       }
     }
 
+    m_dpaTransactionResultPtr->setErrorCode(errorCode);
     //TODO move?
-    std::unique_ptr<IDpaTransactionResult2> result(new DpaTransactionResult2(m_dpaTransactionResult));
+    //std::unique_ptr<IDpaTransactionResult2> result(new DpaTransactionResult2(m_dpaTransactionResult));
+    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
     return result;
   }
 
-  //virtual void processConfirmationMessage(const DpaMessage& confirmation) = 0;
-  //virtual void processResponseMessage(const DpaMessage& response) = 0;
-  //virtual void processFinish(DpaTransfer::DpaTransferStatus status) = 0;
-
   void execute()
   {
-    const DpaMessage& message = m_request;
+    const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
 
     int32_t remains(0);
     //TODO timeout magic
@@ -189,10 +229,6 @@ public:
       m_sender(message);
       m_currTransfer.ProcessSentMessage(message);
 
-      // waits till message processed - kProcessed
-      //int expectedDuration = 0;
-      //return m_currentTransfer.IsInProgress(expectedDuration);
-
       while (m_currTransfer.IsInProgress(remains)) {
         //waits for remaining time or notifing
         {
@@ -217,9 +253,29 @@ public:
       status = DpaTransfer::DpaTransferStatus::kError;
     }
 
-    //Timeout(defaultTimeout);
+    // reset timeout
     m_timeout = defaultTimeout;
-    processFinish(status);
+    
+    // set error value
+    switch (status) {
+    case DpaTransfer::DpaTransferStatus::kError:
+      m_dpaTransactionResultPtr->setErrorCode(-4);
+      break;
+    case DpaTransfer::DpaTransferStatus::kAborted:
+      m_dpaTransactionResultPtr->setErrorCode(-3);
+      break;
+    case DpaTransfer::DpaTransferStatus::kTimeout:
+      m_dpaTransactionResultPtr->setErrorCode(-1);
+      break;
+    default:;
+    }
+
+    // get confirmation, response to result
+    m_dpaTransactionResultPtr->setConfirmation(m_currTransfer.ConfirmationMessage());
+    m_dpaTransactionResultPtr->setResponse(m_currTransfer.ResponseMessage());
+
+    // sync with future
+    m_promise.set_value(m_dpaTransactionResultPtr->getErrorCode());
   }
 
   void ProcessReceivedMessage(const DpaMessage& request)
@@ -228,29 +284,7 @@ public:
   }
 
 private:
-  void processFinish(DpaTransfer::DpaTransferStatus status)
-  {
-    // set error value
-    //switch (status) {
-    //case DpaTransfer::DpaTransferStatus::kError:
-    //  m_error = -4;
-    //  break;
-    //case DpaTransfer::DpaTransferStatus::kAborted:
-    //  m_error = -3;
-    //  break;
-    //case DpaTransfer::DpaTransferStatus::kTimeout:
-    //  m_error = -1;
-    //  break;
-    //default:;
-    //}
-
-    // sync with future
-    //m_promise.set_value(m_error);
-    m_promise.set_value(0);
-  }
-
-  DpaTransactionResult2 m_dpaTransactionResult;
-  DpaMessage m_request;
+  std::unique_ptr<DpaTransactionResult2> m_dpaTransactionResultPtr;
 
   //The promise object is the asynchronous provider and is expected to set a value for the shared state at some point.
   //The future object is an asynchronous return object that can retrieve the value of the shared state, waiting for it to be ready, if necessary.
@@ -263,7 +297,8 @@ private:
   std::condition_variable m_conditionVariable;
 };
 
-
+/////////////////////////////////////
+// class DpaTransaction2::Imp
 /////////////////////////////////////
 class DpaHandler2::Imp
 {
@@ -437,7 +472,9 @@ private:
   TaskQueue<std::shared_ptr<DpaTransaction2>>* m_dpaTransactionQueue = nullptr;
 };
 
-/////////////////////////////
+/////////////////////////////////////
+// class DpaTransaction2
+/////////////////////////////////////
 DpaHandler2::DpaHandler2(IChannel* iqrfInterface)
 {
   m_imp = new Imp(iqrfInterface);

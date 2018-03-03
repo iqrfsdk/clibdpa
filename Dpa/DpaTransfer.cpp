@@ -25,7 +25,7 @@
 #include "IqrfLogging.h"
 
 DpaTransfer::DpaTransfer()
-  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
+  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr),
   m_expectedDurationMs(200), m_timeoutMs(200), m_currentCommunicationMode(kStd), m_dpaTransaction(nullptr)
 {
 }
@@ -39,7 +39,6 @@ DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode
 DpaTransfer::~DpaTransfer()
 {
   delete m_sentMessage;
-  delete m_responseMessage;
 }
 
 void DpaTransfer::ProcessSentMessage(const DpaMessage& sentMessage)
@@ -145,6 +144,8 @@ void DpaTransfer::ProcessConfirmationMessage(const DpaMessage& confirmationMessa
     SetStatus(kConfirmation);
   }
 
+  m_confirmationMessage = confirmationMessage;
+
   // setting timeout based on the confirmation
   SetTimingForCurrentTransfer(EstimatedTimeout(confirmationMessage));
 }
@@ -170,8 +171,7 @@ void DpaTransfer::ProcessResponseMessage(const DpaMessage& responseMessage)
     }
   }
 
-  delete m_responseMessage;
-  m_responseMessage = new DpaMessage(responseMessage);
+  m_responseMessage = responseMessage;
 }
 
 int32_t DpaTransfer::EstimatedTimeout(const DpaMessage& receivedMessage)

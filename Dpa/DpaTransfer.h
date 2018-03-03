@@ -101,7 +101,11 @@ public:
    */
   const DpaMessage& ResponseMessage() const
   {
-    return *m_responseMessage;
+    return m_responseMessage;
+  }
+  const DpaMessage& ConfirmationMessage() const
+  {
+    return m_confirmationMessage;
   }
 
   /**
@@ -182,9 +186,10 @@ private:
   int32_t m_expectedDurationMs;
 
   DpaTransferStatus m_status;
-  DpaMessage* m_sentMessage;
-  DpaMessage* m_responseMessage;
-  DpaTransaction* m_dpaTransaction;
+  DpaMessage* m_sentMessage = nullptr;
+  DpaMessage m_responseMessage;
+  DpaMessage m_confirmationMessage;
+  DpaTransaction* m_dpaTransaction = nullptr;
 
   int8_t m_hops;
   int8_t m_timeslotLength;

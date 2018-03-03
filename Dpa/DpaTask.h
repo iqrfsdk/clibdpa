@@ -62,8 +62,9 @@ public:
   const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const { return m_request_ts; }
   const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const { return m_confirmation_ts; }
   const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const { return m_response_ts; }
-  void timestampRequest();
-  void timestampResponse();
+  void timestampRequest(const std::chrono::time_point<std::chrono::system_clock>& ts = std::chrono::system_clock::now());
+  void timestampConfirmation(const std::chrono::time_point<std::chrono::system_clock>& ts = std::chrono::system_clock::now());
+  void timestampResponse(const std::chrono::time_point<std::chrono::system_clock>& ts = std::chrono::system_clock::now());
 
 protected:
   DpaMessage m_request;
