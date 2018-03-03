@@ -332,11 +332,6 @@ private:
 //DpaTransfer2
 //*******************************************************************
 
-  void MessageReceived(bool flg) {
-    // there were delays sometime before processing causing timeout and not processing response at all
-    m_messageToBeProcessed = flg;
-  }
-
 public:
   void ProcessReceivedMessage(const DpaMessage& receivedMessage)
   {
@@ -345,6 +340,7 @@ public:
     auto messageDirection = receivedMessage.MessageDirection();
 
     // is transfer in progress?
+    //TODO is it valid here?
     if (!IsInProgressStatus()) {
       m_messageToBeProcessed = false;
       return;
@@ -413,6 +409,13 @@ public:
 
       m_dpaTransactionResultPtr->setResponse(receivedMessage);
       TRC_INF("Response processed.");
+    }
+
+    // notification about reception
+    {
+      std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
+      m_conditionVariable.notify_one();
+      //TRC_INF("Notify from ResponseMessageHandler: message received.");
     }
 
     // clear flag after processing
@@ -761,14 +764,7 @@ public:
     }
     else {
       try {
-        // transfer msg
         m_pendingTransaction->ProcessReceivedMessage(message);
-        // notification about reception
-        //{
-        //  std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
-        //  m_conditionVariable.notify_one();
-        //  TRC_INF("Notify from ResponseMessageHandler: message received.");
-        //}
       }
       catch (std::logic_error& le) {
         CATCH_EX("Process received message error...", std::logic_error, le);
