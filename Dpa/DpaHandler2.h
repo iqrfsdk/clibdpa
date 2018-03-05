@@ -26,6 +26,30 @@
 class IDpaTransactionResult2
 {
 public:
+  enum ErrorCode {
+    // transaction handling
+    TRN_ERROR_IFACE_BUSY = -5,
+    TRN_ERROR_IFACE = -4,
+    TRN_ERROR_ABORTED = -3,
+    TRN_ERROR_IFACE_QUEUE_FULL = -2,
+    TRN_ERROR_TIMEOUT = -1,
+    TRN_OK = STATUS_NO_ERROR,
+    // DPA response erors
+    TRN_ERROR_FAIL = ERROR_FAIL,
+    TRN_ERROR_PCMD = ERROR_PCMD,
+    TRN_ERROR_PNUM = ERROR_PNUM,
+    TRN_ERROR_ADDR = ERROR_ADDR,
+    TRN_ERROR_DATA_LEN = ERROR_DATA_LEN,
+    TRN_ERROR_DATA = ERROR_DATA,
+    TRN_ERROR_HWPID = ERROR_HWPID,
+    TRN_ERROR_NADR = ERROR_NADR,
+    TRN_ERROR_IFACE_CUSTOM_HANDLER = ERROR_IFACE_CUSTOM_HANDLER,
+    TRN_ERROR_MISSING_CUSTOM_DPA_HANDLER = ERROR_MISSING_CUSTOM_DPA_HANDLER,
+    TRN_ERROR_USER_TO = ERROR_USER_TO,
+    TRN_STATUS_CONFIRMATION = STATUS_CONFIRMATION,
+    TRN_ERROR_USER_FROM = ERROR_USER_FROM
+  };
+
   /**
   * Returns code of error.
   * 0: success, -1: DpaHandler timeout, -2: future timeout, <n>: response code
@@ -50,7 +74,8 @@ class IDpaTransaction2
 {
 public:
   virtual ~IDpaTransaction2() {}
-  virtual std::unique_ptr<IDpaTransactionResult2> get(uint32_t timeout) = 0;
+  /// 0 > timout - use default, 0 == timout - use infinit, 0 < timeout - user value
+  virtual std::unique_ptr<IDpaTransactionResult2> get(int32_t timeout = -1) = 0;
 };
 
 class IDpaHandler2
@@ -78,12 +103,6 @@ public:
 
 class DpaHandler2 : public IDpaHandler2 {
 public:
-  //Timing constants
-  enum Timing {
-    DEFAULT_TIMING = 200,
-    MINIMAL_TIMING = 200,
-    INFINITE_TIMING = 0
-  };
   DpaHandler2(IChannel* iqrfInterface);
   ~DpaHandler2();
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request) override;

@@ -26,41 +26,31 @@
 
 #include <future>
  
-
-/** Values that represent DPA transfer state. */
-enum DpaTransfer2Status
-{
-  kCreated,
-  ///< An enum constant representing the first message was sent.
-  kSent,
-  kSentCoordinator,
-  ///< An enum constant representing the confirmation, broadcast, response was received.
-  kConfirmation,
-  kConfirmationBroadcast,
-  kReceivedResponse,
-  ///< An enum constant representing the whole transfer was processed.
-  kProcessed,
-  ///< An enum constant representing the timeout expired.
-  kTimeout,
-  ///< An enum constant representing the transfer was aborted.
-  kAborted,
-  ///< An enum constant representing the error state during sending via iqrf interface.
-  kError
-};
-
 /////////////////////////////////////
 // class DpaTransactionResult2
 /////////////////////////////////////
 class DpaTransactionResult2 : public IDpaTransactionResult2
 {
-public:
-  DpaTransactionResult2()
-  {
-  }
+private:
+  /// original request creating the transaction
+  DpaMessage m_request;
+  /// received  confirmation
+  DpaMessage m_confirmation;
+  /// received  response
+  DpaMessage m_response;
+  /// request timestamp
+  std::chrono::time_point<std::chrono::system_clock> m_request_ts;
+  /// confirmation timestamp
+  std::chrono::time_point<std::chrono::system_clock> m_confirmation_ts;
+  /// response timestamp
+  std::chrono::time_point<std::chrono::system_clock> m_response_ts;
+  /// overall error code
+  int m_errorCode = 0;
 
+public:
+  DpaTransactionResult2() = delete;
   DpaTransactionResult2(const DpaMessage& request)
   {
-    //TODO if not request?
     m_request_ts = std::chrono::system_clock::now();
     m_request = request;
   }
@@ -73,44 +63,46 @@ public:
   std::string getErrorString() const override
   {
     switch (m_errorCode) {
-    case -4:
+    case TRN_ERROR_IFACE_QUEUE_FULL:
+      return "ERROR_IFACE_QUEUE_FULL";
+    case TRN_ERROR_IFACE:
       return "ERROR_IFACE";
-    case -3:
+    case TRN_ERROR_ABORTED:
       return "ERROR_ABORTED";
-    case -2:
-      return "ERROR_PROMISE_TIMEOUT";
-    case -1:
+    case TRN_ERROR_IFACE_BUSY:
+      return "ERROR_IFACE_BUSY";
+    case TRN_ERROR_TIMEOUT:
       return "ERROR_TIMEOUT";
-    case STATUS_NO_ERROR:
-      return "STATUS_NO_ERROR";
-    case ERROR_FAIL:
+    case TRN_OK:
+      return "OK";
+    case TRN_ERROR_FAIL:
       return "ERROR_FAIL";
-    case ERROR_PCMD:
+    case TRN_ERROR_PCMD:
       return "ERROR_PCMD";
-    case ERROR_PNUM:
+    case TRN_ERROR_PNUM:
       return "ERROR_PNUM";
-    case ERROR_ADDR:
+    case TRN_ERROR_ADDR:
       return "ERROR_ADDR";
-    case ERROR_DATA_LEN:
+    case TRN_ERROR_DATA_LEN:
       return "ERROR_DATA_LEN";
-    case ERROR_DATA:
+    case TRN_ERROR_DATA:
       return "ERROR_DATA";
-    case ERROR_HWPID:
+    case TRN_ERROR_HWPID:
       return "ERROR_HWPID";
-    case ERROR_NADR:
+    case TRN_ERROR_NADR:
       return "ERROR_NADR";
-    case ERROR_IFACE_CUSTOM_HANDLER:
+    case TRN_ERROR_IFACE_CUSTOM_HANDLER:
       return "ERROR_IFACE_CUSTOM_HANDLER";
-    case ERROR_MISSING_CUSTOM_DPA_HANDLER:
+    case TRN_ERROR_MISSING_CUSTOM_DPA_HANDLER:
       return "ERROR_MISSING_CUSTOM_DPA_HANDLER";
-    case ERROR_USER_TO:
+    case TRN_ERROR_USER_TO:
       return "ERROR_USER_TO";
-    case STATUS_CONFIRMATION:
+    case TRN_STATUS_CONFIRMATION:
       return "STATUS_CONFIRMATION";
-    case ERROR_USER_FROM:
+    case TRN_ERROR_USER_FROM:
     default:
       std::ostringstream os;
-      os << std::hex << m_errorCode;
+      os << "TRN_ERROR_USER_" << std::hex << m_errorCode;
       return os.str();
     }
   }
@@ -147,14 +139,12 @@ public:
 
   void setConfirmation(const DpaMessage& confirmation)
   {
-    //TODO if not confirmation?
     m_confirmation_ts = std::chrono::system_clock::now();
     m_confirmation = confirmation;
   }
 
   void setResponse(const DpaMessage& response)
   {
-    //TODO if not response?
     m_response_ts = std::chrono::system_clock::now();
     m_response = response;
   }
@@ -163,15 +153,6 @@ public:
   {
     m_errorCode = errorCode;
   }
-
-private:
-  DpaMessage m_request;
-  DpaMessage m_response;
-  DpaMessage m_confirmation;
-  std::chrono::time_point<std::chrono::system_clock> m_request_ts;
-  std::chrono::time_point<std::chrono::system_clock> m_confirmation_ts;
-  std::chrono::time_point<std::chrono::system_clock> m_response_ts;
-  int m_errorCode = 0;
 };
 
 /////////////////////////////////////
@@ -180,230 +161,347 @@ private:
 class DpaTransaction2 : public IDpaTransaction2
 {
 public:
-  /// Asynchronous DPA message handler functional type
+  /// type of functor to send the request message towards the coordinator
   typedef std::function<void(const DpaMessage& dpaMessage)> SendDpaMessageFunc;
 
-  DpaTransaction2(const DpaMessage& request, SendDpaMessageFunc sender)
+private:
+  //// Values that represent transaction state.
+  enum DpaTransfer2State
+  {
+    /// init state
+    kCreated,
+    /// request was sent.
+    kSent,
+    /// request with coordinator address was sent.
+    kSentCoordinator,
+    /// confirmation was received.
+    kConfirmation,
+    /// confirmation broadcast was received.
+    kConfirmationBroadcast,
+    /// response was received wait for expected time
+    kReceivedResponse,
+    /// transaction was processed.
+    kProcessed,
+    /// timeout expired.
+    kTimeout,
+    /// transaction forced to abort.
+    kAborted,
+    /// error state during sending via iqrf interface.
+    kError,
+    /// iqrf interface queue is full
+    kQueueFull
+  };
+
+private:
+  /// Default timeout
+  static const int DEFAULT_TIMEOUT = 200;
+  /// Minimal timeout used if required by user is too low
+  static const int MINIMAL_TIMEOUT = 200;
+  /// Zero value used to indicate infinit timeout in special cases (discovery)
+  static const int INFINITE_TIMEOUT = 0;
+  /// An extra timeout added to timeout from a confirmation packet.
+  static const int32_t SAFETY_TIMEOUT_MS = 40;
+
+  /// Result object tobe returned when the transaction finishes
+  std::unique_ptr<DpaTransactionResult2> m_dpaTransactionResultPtr;
+
+  /// future/promise pair bounding the transaction life (can be used just once)
+  std::future<int> m_future;
+  std::promise<int> m_promise;
+
+  /// functor to send the request message towards the coordinator
+  SendDpaMessageFunc m_sender;
+
+  /// condition used to wait for confirmation and response messages from coordinator
+  std::mutex m_conditionVariableMutex;
+  std::condition_variable m_conditionVariable;
+
+  /// actual communication mode
+  IDpaHandler2::RfMode m_currentCommunicationMode;
+
+  //TODO these values shall be protected to be thread safe
+  std::chrono::system_clock::time_point m_startTime;
+  uint32_t m_userTimeoutMs = DEFAULT_TIMEOUT; //required by user
+  uint32_t m_expectedDurationMs = INFINITE_TIMEOUT;
+
+  /// transaction state
+  std::atomic<DpaTransfer2State> m_state = kCreated;
+
+  /// iqrf structure info to estimate transaction processing time
+  int8_t m_hops;
+  int8_t m_timeslotLength;
+  int8_t m_hopsResponse;
+
+public:
+  DpaTransaction2(const DpaMessage& request, IDpaHandler2::RfMode mode, SendDpaMessageFunc sender)
     :m_sender(sender)
     ,m_dpaTransactionResultPtr(new DpaTransactionResult2(request))
-    //DpaTransfer
-    ,m_status(kCreated)
-    ,m_messageToBeProcessed(false)
-    ,m_expectedDurationMs(200)
-    ,m_defaultTimeoutMs(200)
-    ,m_currentCommunicationMode(IDpaHandler2::RfMode::kStd)
+    ,m_currentCommunicationMode(mode)
   {
+    // init future object
+    m_future = m_promise.get_future();
   }
 
   virtual ~DpaTransaction2()
   {
   }
 
-  std::unique_ptr<IDpaTransactionResult2> get(uint32_t timeout) override
+  std::unique_ptr<IDpaTransactionResult2> get(int32_t timeout) override
   {
-    m_future = m_promise.get_future();
-    
-    m_requiredTimeoutMs = timeout;
+    const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
+    int32_t requiredTimeout = timeout;
 
     // check and correct timeout here before blocking:
-    const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
-    int32_t requiredTimeout = m_requiredTimeoutMs;
-
     if (requiredTimeout < 0) {
-      requiredTimeout = m_defaultTimeoutMs;
-      TRC_DBG("Invalid: " << PAR(m_requiredTimeoutMs) " => Using: " << PAR(m_defaultTimeoutMs));
+      // default timeout
+      timeout = DEFAULT_TIMEOUT;
     }
-
-    if (requiredTimeout < DpaHandler2::MINIMAL_TIMING) {
-      //it is allowed just for Coordinator Discovery
+    else if (requiredTimeout == INFINITE_TIMEOUT) {
+      // it is allowed just for Coordinator Discovery
       if (message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
         message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
         // force setting minimal timing as only Discovery can have infinite timeout
-        TRC_WAR("Explicit: " << PAR(requiredTimeout) << "forced to: " << PAR(DpaHandler2::MINIMAL_TIMING));
-        requiredTimeout = DpaHandler2::MINIMAL_TIMING;
+        TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
+        requiredTimeout = MINIMAL_TIMEOUT;
       }
       else {
-        TRC_WAR(PAR(requiredTimeout) << "allowed for DISCOVERY message");
+        TRC_WAR(PAR(requiredTimeout) << " allowed for DISCOVERY message");
       }
     }
-    //TODO propagate requiredTimeout to former m_defaultTimeoutMS
+    else if (requiredTimeout < MINIMAL_TIMEOUT) {
+      TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
+      requiredTimeout = MINIMAL_TIMEOUT;
+    }
+    m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
 
+    // error code to be stored in result
     int errorCode = 0;
 
-    // infinite timeout
-    if (requiredTimeout <= 0) {
-      // blocks until the result becomes available
+    if (m_userTimeoutMs == INFINITE_TIMEOUT) {
+      // infinite timeout blocks until the result becomes available
       m_future.wait();
       errorCode = m_future.get();
     }
     else {
-      //TODO handle iqrf BUSY or queue full
-      std::chrono::milliseconds span(requiredTimeout * 2);
-      if (m_future.wait_for(span) == std::future_status::timeout) {
-        // future error
-        TRC_ERR("Transaction task future timeout.");
-        errorCode = -2;
+      // TODO it shall be handle differently if estimation is longer then user time
+      if (m_future.wait_for(std::chrono::milliseconds(m_userTimeoutMs)) == std::future_status::timeout) {
+        //TODO handle iqrf BUSY or queue full
+        // future timeout 
+        TRC_WAR("Transaction timeout.");
+        errorCode = IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY;
       }
       else {
         errorCode = m_future.get();
       }
     }
+    m_dpaTransactionResultPtr->setErrorCode(errorCode); // update error code in result
 
-    m_dpaTransactionResultPtr->setErrorCode(errorCode);
-
+    // return result and move ownership 
     std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
     return result;
   }
 
-  void execute()
+  // Transaction is started via this method. It is called from DpaHandler queue worker thread
+  // If the function is not invoked in time required by user, the transaction future expires
+  // and this situation is reported via transaction result error code (coordinator busy or queue full)
+  void execute(bool queued)
   {
     const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
+    int errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;
 
-    int32_t remains(0);
-
-    try {
-      //send message
-      m_sender(message);
-      // current request status is set as sent
+    if (queued) {
+      // init transaction state
       if (message.NodeAddress() == COORDINATOR_ADDRESS) {
-        m_status = kSentCoordinator;
+        m_state = kSentCoordinator;
       }
       else {
-        m_status = kSent;
+        m_state = kSent;
       }
 
-      // setting default timeout, no estimation yet
-      SetTimingForCurrentTransfer();
+      // send message toward coordinator via send functor
+      try {
+        m_sender(message);
+      }
+      catch (std::exception& e) {
+        TRC_WAR("Send error occured: " << e.what());
+        m_state = kError;
+      }
 
-      while (IsInProgress(remains)) {
-        //waits for remaining time or notifing
-        {
-          if (remains > 0) {
-            TRC_DBG("Conditional wait - time to wait yet: " << PAR(remains));
-          }
-          else {
-            // polutes tracer file if DISCOVERY is run 
-            //TRC_DBG("Conditional wait - time is out: " << PAR(remains));
-          }
+      // start transaction timer
+      m_startTime = std::chrono::system_clock::now();
+    }
+    else {
+      //transaction is not handled 
+      m_state = kQueueFull;
+    }
 
-          std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
-          m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));
+    int32_t remains = 0;
+    bool expired = false;
+
+    do {
+      //int32_t remains = 0;
+
+      if (INFINITE_TIMEOUT != m_userTimeoutMs && m_expectedDurationMs > 0) {
+        // passed time from sent request
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
+        remains = m_expectedDurationMs - duration.count();
+        expired = remains <= 0;
+      }
+
+      switch (m_state)
+      {
+      case kSent:
+      case kSentCoordinator:
+      case kConfirmation:
+        if (expired) {
+          m_state = kTimeout;
+          errorCode = DpaTransactionResult2::TRN_ERROR_TIMEOUT;
         }
+        break;
+      case kConfirmationBroadcast:
+        if (expired) {
+          m_state = kProcessed;
+          errorCode = STATUS_NO_ERROR;
+        }
+        break;
+      case kReceivedResponse:
+        if (expired) {
+          m_state = kProcessed;
+          errorCode = STATUS_NO_ERROR;
+        }
+        break;
+      case kProcessed:
+        errorCode = STATUS_NO_ERROR;
+        break;
+      case kTimeout:
+        errorCode = DpaTransactionResult2::TRN_ERROR_TIMEOUT;
+        break;
+      case kAborted:
+        errorCode = DpaTransactionResult2::TRN_ERROR_ABORTED;
+        break;
+      case kError:
+        errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;
+        break;
+      case kQueueFull:
+        errorCode = IDpaTransactionResult2::TRN_ERROR_IFACE_QUEUE_FULL;
+        break;
+      default:
+        errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;
       }
 
-      // update transfer state
-      CheckTimeout();
-    }
-    catch (std::exception& e) {
-      TRC_WAR("Send error occured: " << e.what());
-      m_status = kError;
-    }
+      // transaction doesn't finish yet so wait for remaining expected time
+      if (!expired) {
+        std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
+        m_conditionVariable.wait_for(lck, std::chrono::milliseconds(remains));
+      }
 
-    // set error value
-    switch (m_status) {
-    case DpaTransfer2Status::kError:
-      m_dpaTransactionResultPtr->setErrorCode(-4);
-      break;
-    case DpaTransfer2Status::kAborted:
-      m_dpaTransactionResultPtr->setErrorCode(-3);
-      break;
-    case DpaTransfer2Status::kTimeout:
-      m_dpaTransactionResultPtr->setErrorCode(-1);
-      break;
-    default:;
-    }
+    } while (!expired);
 
     // sync with future
-    m_promise.set_value(m_dpaTransactionResultPtr->getErrorCode());
+    m_promise.set_value(errorCode);
   }
 
-private:
-  std::unique_ptr<DpaTransactionResult2> m_dpaTransactionResultPtr;
-
-  //The promise object is the asynchronous provider and is expected to set a value for the shared state at some point.
-  //The future object is an asynchronous return object that can retrieve the value of the shared state, waiting for it to be ready, if necessary.
-  std::promise<int> m_promise;
-  std::future<int> m_future;
-  SendDpaMessageFunc m_sender;
-  std::mutex m_conditionVariableMutex;
-  std::condition_variable m_conditionVariable;
-
-//*******************************************************************
-//DpaTransfer2
-//*******************************************************************
-
-public:
   void ProcessReceivedMessage(const DpaMessage& receivedMessage)
   {
     TRC_ENTER("");
     // direction
-    auto messageDirection = receivedMessage.MessageDirection();
+    DpaMessage::MessageType messageDirection = receivedMessage.MessageDirection();
+    int32_t estimatedTimeMs = 0;
 
-    // is transfer in progress?
-    //TODO is it valid here?
-    if (!IsInProgressStatus()) {
-      m_messageToBeProcessed = false;
+    //check transaction state
+    switch (m_state)
+    {
+    case kSent:
+    case kSentCoordinator:
+    case kConfirmation:
+    case kConfirmationBroadcast:
+    case kReceivedResponse:
+      break; //continue
+    case kCreated:
+    case kProcessed:
+    case kTimeout:
+    case kAborted:
+    case kError:
+    default:
       return;
     }
-    // yes
-    else {
-      // no request is expected
-      if (messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation) {
-        // clear flag after processing
-        m_messageToBeProcessed = false;
-        throw unexpected_packet_type("Response is expected.");
-      }
-      const DpaMessage& request = m_dpaTransactionResultPtr->getRequest();
-      // same as sent request
-      if (receivedMessage.NodeAddress() != request.NodeAddress()) {
-        // clear flag after processing
-        m_messageToBeProcessed = false;
-        throw unexpected_peripheral("Different node address than in sent message.");
-      }
-      // same as sent request
-      if (receivedMessage.PeripheralType() != request.PeripheralType()) {
-        // clear flag after processing
-        m_messageToBeProcessed = false;
-        throw unexpected_peripheral("Different peripheral type than in sent message.");
-      }
-      // same as sent request
-      if ((receivedMessage.PeripheralCommand() & ~0x80) != request.PeripheralCommand()) {
-        // clear flag after processing
-        m_messageToBeProcessed = false;
-        throw unexpected_command("Different peripheral command than in sent message.");
-      }
+
+    //check massage validity
+    // no request is expected
+    if (messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation) {
+      throw unexpected_packet_type("Response is expected.");
+    }
+    const DpaMessage& request = m_dpaTransactionResultPtr->getRequest();
+    // same as sent request
+    if (receivedMessage.NodeAddress() != request.NodeAddress()) {
+      throw unexpected_peripheral("Different node address than in sent message.");
+    }
+    // same as sent request
+    if (receivedMessage.PeripheralType() != request.PeripheralType()) {
+      throw unexpected_peripheral("Different peripheral type than in sent message.");
+    }
+    // same as sent request
+    if ((receivedMessage.PeripheralCommand() & ~0x80) != request.PeripheralCommand()) {
+      throw unexpected_command("Different peripheral command than in sent message.");
     }
 
+    // process confirmation
     if (messageDirection == DpaMessage::kConfirmation) {
       if (receivedMessage.NodeAddress() == DpaMessage::kBroadCastAddress) {
-        m_status = kConfirmationBroadcast;
+        m_state = kConfirmationBroadcast;
       }
       else {
-        m_status = kConfirmation;
+        m_state = kConfirmation;
       }
-      m_dpaTransactionResultPtr->setConfirmation(receivedMessage);
 
       // setting timeout based on the confirmation
-      SetTimingForCurrentTransfer(EstimatedTimeout(receivedMessage));
+      TIFaceConfirmation iFace = receivedMessage.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
+
+      // save for later use with response
+      m_hops = iFace.Hops;
+      m_timeslotLength = iFace.TimeSlotLength;
+      m_hopsResponse = iFace.HopsResponse;
+
+      if (m_currentCommunicationMode == IDpaHandler2::RfMode::kLp) {
+        estimatedTimeMs = EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse);
+      }
+      else { // std
+        estimatedTimeMs = EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse);
+      }
+
+      m_dpaTransactionResultPtr->setConfirmation(receivedMessage);
       TRC_INF("Confirmation processed.");
     }
+
+    // process response
     else {
-      // if there is a request to coordinator then after receiving response it is allowed to send another
-      if (m_status == kSentCoordinator) {
+      // if there was a request to coordinator then after receiving response it is allowed to send another
+      if (m_state == kSentCoordinator) {
         // done, next request gets ready 
-        m_status = kProcessed;
+        m_state = kProcessed;
       }
       else {
         // only if there is not infinite timeout
         if (m_expectedDurationMs != 0) {
-          m_status = kReceivedResponse;
-          // adjust timing before allowing next request
-          SetTimingForCurrentTransfer(EstimatedTimeout(receivedMessage));
+          m_state = kReceivedResponse; 
+          /////////////////////////////
+          // TODO is it necessary here to wait if we have the response already?
+          // is it aditional wait time for some reason depending on response len?
+          if (m_currentCommunicationMode == IDpaHandler2::RfMode::kLp) {
+            estimatedTimeMs = EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse,
+              receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
+          }
+          else { // std
+            estimatedTimeMs = EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse,
+              receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
+          }
+          /////////////////////////////
+          m_expectedDurationMs = estimatedTimeMs;
         }
         // infinite timeout
         else {
           // done, next request gets ready 
-          m_status = kProcessed;
+          m_state = kProcessed;
         }
       }
 
@@ -411,59 +509,32 @@ public:
       TRC_INF("Response processed.");
     }
 
-    // notification about reception
+    // estimation done
+    if (estimatedTimeMs >= 0) {
+      // either default timeout is 200 or user sets lower time than estimated
+      if (m_userTimeoutMs < estimatedTimeMs) {
+        // in both cases use estimation from confirmation
+        m_userTimeoutMs = estimatedTimeMs;
+      }
+      // set new duration
+      // there is also case when user sets higher than estimation then user choice is set
+      m_expectedDurationMs = m_userTimeoutMs;
+      TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
+    }
+
+    // start time when dpa request is sent and rerun again when confirmation is received
+    m_startTime = std::chrono::system_clock::now();
+
+    // notification to execute() 
     {
       std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
       m_conditionVariable.notify_one();
-      //TRC_INF("Notify from ResponseMessageHandler: message received.");
     }
 
-    // clear flag after processing
-    m_messageToBeProcessed = false;
     TRC_LEAVE("");
   }
 
 private:
-  int32_t EstimatedTimeout(const DpaMessage& receivedMessage)
-  {
-    // direction
-    auto direction = receivedMessage.MessageDirection();
-
-    // double check
-    if (direction != DpaMessage::kConfirmation && direction != DpaMessage::kResponse) {
-      throw std::invalid_argument("Parameter is not a received message type.");
-    }
-
-    // confirmation
-    if (direction == DpaMessage::kConfirmation) {
-      auto iFace = receivedMessage.DpaPacket().DpaResponsePacket_t.DpaMessage.IFaceConfirmation;
-
-      // save for later use with response
-      m_hops = iFace.Hops;
-      m_timeslotLength = iFace.TimeSlotLength;
-      m_hopsResponse = iFace.HopsResponse;
-
-      // lp
-      if (m_currentCommunicationMode == IDpaHandler2::RfMode::kLp) {
-        return EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse);
-      }
-      // std
-      return EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse);
-    }
-
-    // response
-    if (direction == DpaMessage::kResponse) {
-      // lp
-      if (m_currentCommunicationMode == IDpaHandler2::RfMode::kLp) {
-        return EstimateLpTimeout(m_hops, m_timeslotLength, m_hopsResponse,
-          receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
-      }
-      // std
-      return EstimateStdTimeout(m_hops, m_timeslotLength, m_hopsResponse,
-        receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2));
-    }
-  }
-
   int32_t EstimateStdTimeout(uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength = -1)
   {
     TRC_ENTER("");
@@ -499,7 +570,7 @@ private:
       TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
     }
 
-    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
+    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
 
     TRC_INF("Estimated STD timeout: " << PAR(estimatedTimeoutMs));
     TRC_LEAVE("");
@@ -545,146 +616,16 @@ private:
       TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
     }
 
-    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + m_safetyTimeoutMs;
+    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
 
     TRC_INF("Estimated LP timeout: " << PAR(estimatedTimeoutMs));
     TRC_LEAVE("");
     return estimatedTimeoutMs;
   }
 
-  void SetTimingForCurrentTransfer(int32_t estimatedTimeMs = 0)
-  {
-    TRC_ENTER("");
-
-    // waiting forever
-    if (m_defaultTimeoutMs == 0) {
-      m_expectedDurationMs = m_defaultTimeoutMs;
-      TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
-      return;
-    }
-
-    // adjust time to wait before allowing next request to go the iqrf network
-    if (m_status == kReceivedResponse) {
-      //adjust new timing based on length of PData in response
-      m_expectedDurationMs = estimatedTimeMs;
-      TRC_INF("New expected duration to wait :" << PAR(m_expectedDurationMs));
-      return;
-    }
-
-    // estimation done
-    if (estimatedTimeMs >= 0) {
-      // either default timeout is 200 or user sets lower time than estimated
-      if (m_defaultTimeoutMs < estimatedTimeMs) {
-        // in both cases use estimation from confirmation
-        m_defaultTimeoutMs = estimatedTimeMs;
-      }
-      // set new duration
-      // there is also case when user sets higher than estimation then user choice is set
-      m_expectedDurationMs = m_defaultTimeoutMs;
-      TRC_INF("Expected duration to wait :" << PAR(m_expectedDurationMs));
-    }
-
-    // start time when dpa request is sent and rerun again when confirmation is received
-    m_startTime = std::chrono::system_clock::now();
-    TRC_INF("Transfer status: started");
-
-    TRC_LEAVE("");
-  }
-
-  int32_t CheckTimeout()
-  {
-    int32_t remains(0);
-
-    if (m_status == kCreated) {
-      TRC_INF("Transfer status: created");
-      return remains;
-    }
-
-    if (m_status == kAborted) {
-      TRC_INF("Transfer status: aborted");
-      return remains;
-    }
-
-    bool timingFinished(false);
-
-    // infinite (0) is out of this statement
-    if (m_expectedDurationMs > 0) {
-      // passed time from sent request
-      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
-      remains = m_expectedDurationMs - duration.count();
-      TRC_INF("Time to wait: " << PAR(remains));
-
-      // already over?
-      timingFinished = remains < 0;
-    }
-
-    // not yet set and yes time is over
-    // processed or timeouted can be set only after finished timing
-    if (m_status != kProcessed && m_status != kTimeout) {
-      if (timingFinished) {
-        // double check that there is no message yet to be processed
-        // this allows not to exit transfer before actual processing
-        if (!m_messageToBeProcessed) {
-          // and we have received confirmation for broadcast or response
-          if (m_status == kConfirmationBroadcast || m_status == kReceivedResponse) {
-            m_status = kProcessed;
-            TRC_INF("Transfer status: processed");
-          }
-          else {
-            m_status = kTimeout;
-            TRC_INF("Transfer status: timeout");
-          }
-        }
-      }
-    }
-
-    // time to wait
-    return remains;
-  }
-
-  bool IsInProgress(int32_t& expectedDuration) {
-    expectedDuration = CheckTimeout();
-    return IsInProgressStatus();
-  }
-
-  bool IsInProgressStatus()
-  {
-    switch (m_status)
-    {
-    case kSent:
-    case kSentCoordinator:
-    case kConfirmation:
-    case kConfirmationBroadcast:
-    case kReceivedResponse:
-      return true;
-      // kCreated, kProcessed, kTimeout, kAbort, kError
-    default:
-      return false;
-    }
-  }
-
   void Abort() {
-    m_status = kAborted;
+    m_state = kAborted;
   }
-
-private: //DpaTransfer2
-  /** An extra timeout added to timeout from a confirmation packet. */
-  const int32_t m_safetyTimeoutMs = 40;
-  IDpaHandler2::RfMode m_currentCommunicationMode;
-
-  std::chrono::system_clock::time_point m_startTime;
-  int32_t m_defaultTimeoutMs;
-  int32_t m_requiredTimeoutMs;
-  int32_t m_expectedDurationMs;
-
-  std::atomic<DpaTransfer2Status> m_status;
-
-  int8_t m_hops;
-  int8_t m_timeslotLength;
-  int8_t m_hopsResponse;
-
-  bool m_messageToBeProcessed;
-
 };
 
 /////////////////////////////////////
@@ -693,12 +634,22 @@ private: //DpaTransfer2
 class DpaHandler2::Imp
 {
 public:
+  // maximal queue lenght - can be prolonged if it make sense
+  static const int QUEUE_MAX_LEN = 32;
+
   Imp(IChannel* iqrfInterface)
     :m_iqrfInterface(iqrfInterface)
   {
     m_dpaTransactionQueue = new TaskQueue<std::shared_ptr<DpaTransaction2>>([&](std::shared_ptr<DpaTransaction2> ptr) {
       m_pendingTransaction = ptr;
-      m_pendingTransaction->execute();
+      size_t size = m_dpaTransactionQueue->size();
+      if (size < QUEUE_MAX_LEN) {
+        m_pendingTransaction->execute(true); // succesfully queued
+      }
+      else {
+        TRC_ERR("Transaction queue overload: " << PAR(size));
+        m_pendingTransaction->execute(false);  // queue full transaction not handled, error reported
+      }
     });
 
     if (iqrfInterface == nullptr) {
@@ -725,23 +676,15 @@ public:
     if (message.length() == 0)
       return;
 
-    // signal that message is received, but not yet processed
-    //m_currentTransfer->MessageReceived(true);
-    // there were delays sometime before processing causing timeout and not processing response at all
-    //m_messageToBeProcessed = flg;
-
     TRC_DBG(">>>>>>>>>>>>>>>>>>" << std::endl <<
       "Received from IQRF interface: " << std::endl << FORM_HEX(message.data(), message.length()));
 
-    // new message
+    // incomming message
     DpaMessage receivedMessage;
     try {
       receivedMessage.FillFromResponse(message.data(), message.length());
     }
     catch (std::exception& e) {
-      //m_currentTransfer->MessageReceived(false);
-      // there were delays sometime before processing causing timeout and not processing response at all
-      //m_messageToBeProcessed = flg;
       CATCH_EX("in processing msg", std::exception, e);
       return;
     }
@@ -749,16 +692,12 @@ public:
     auto messageDirection = receivedMessage.MessageDirection();
     if (messageDirection == DpaMessage::MessageType::kRequest) {
       //Always Async
-      //m_currentTransfer->MessageReceived(false);
-      // there were delays sometime before processing causing timeout and not processing response at all
-      //m_messageToBeProcessed = flg;
       processAsynchronousMessage(message);
       return;
     }
     else if (messageDirection == DpaMessage::MessageType::kResponse &&
       receivedMessage.DpaPacket().DpaResponsePacket_t.ResponseCode & STATUS_ASYNC_RESPONSE) {
       // async msg
-      //m_currentTransfer->MessageReceived(false);
       processAsynchronousMessage(message);
       return;
     }
@@ -774,7 +713,7 @@ public:
 
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request)
   {
-    std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request,
+    std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request, m_rfMode,
       [&](const DpaMessage& r) {
         sendRequest(r);
       }
@@ -846,7 +785,6 @@ private:
   IChannel* m_iqrfInterface = nullptr;
   int m_timeout;
 
-  //TODO queue
   std::shared_ptr<DpaTransaction2> m_pendingTransaction;
   TaskQueue<std::shared_ptr<DpaTransaction2>>* m_dpaTransactionQueue = nullptr;
 
