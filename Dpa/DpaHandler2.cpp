@@ -205,10 +205,6 @@ private:
   /// Result object tobe returned when the transaction finishes
   std::unique_ptr<DpaTransactionResult2> m_dpaTransactionResultPtr;
 
-  /// future/promise pair bounding the transaction life (can be used just once)
-  std::future<int> m_future;
-  std::promise<int> m_promise;
-
   /// functor to send the request message towards the coordinator
   SendDpaMessageFunc m_sender;
 
@@ -227,6 +223,7 @@ private:
   std::chrono::system_clock::time_point m_startTime;
   uint32_t m_userTimeoutMs = DEFAULT_TIMEOUT; //required by user
   uint32_t m_expectedDurationMs = INFINITE_TIMEOUT;
+  bool m_infinitTimeout = false;
 
   /// transaction state
   std::atomic<DpaTransfer2State> m_state = kCreated;
@@ -237,33 +234,34 @@ private:
   int8_t m_hopsResponse;
 
 public:
+  DpaTransaction2() = delete;
+
   DpaTransaction2(const DpaMessage& request, IDpaHandler2::RfMode mode, int32_t timeout, SendDpaMessageFunc sender)
     :m_sender(sender)
     ,m_dpaTransactionResultPtr(new DpaTransactionResult2(request))
     ,m_currentCommunicationMode(mode)
   {
-    // init future object
-    m_future = m_promise.get_future();
-
     const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
     int32_t requiredTimeout = timeout;
 
     // check and correct timeout here before blocking:
     if (requiredTimeout < 0) {
       // default timeout
-      timeout = DEFAULT_TIMEOUT;
+      requiredTimeout = DEFAULT_TIMEOUT;
     }
     else if (requiredTimeout == INFINITE_TIMEOUT) {
-      // it is allowed just for Coordinator Discovery
-      if (message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
-        message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
-        // force setting minimal timing as only Discovery can have infinite timeout
-        TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
-        requiredTimeout = MINIMAL_TIMEOUT;
-      }
-      else {
-        TRC_WAR(PAR(requiredTimeout) << " allowed for DISCOVERY message");
-      }
+      requiredTimeout = DEFAULT_TIMEOUT;
+      m_infinitTimeout = true;
+      //// it is allowed just for Coordinator Discovery
+      //if (message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
+      //  message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
+      //  // force setting minimal timing as only Discovery can have infinite timeout
+      //  TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
+      //  requiredTimeout = MINIMAL_TIMEOUT;
+      //}
+      //else {
+      //  TRC_WAR(PAR(requiredTimeout) << " allowed for DISCOVERY message");
+      //}
     }
     else if (requiredTimeout < MINIMAL_TIMEOUT) {
       TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
@@ -277,37 +275,28 @@ public:
   {
   }
 
-  // blocking function called from user code
-  // user calls:
-  // std::shared_ptr<IDpaTransaction2> dt = m_dpa->executeDpaTransaction(dpaTask->getRequest());
-  // std::unique_ptr<IDpaTransactionResult2> dtr = dt->get(); //wait for async result
-  std::unique_ptr<IDpaTransactionResult2> get0()
+  bool isFinished()
   {
-    // error code to be stored in result
-    int errorCode = 0;
-
-    if (m_userTimeoutMs == INFINITE_TIMEOUT) {
-      // infinite timeout blocks until the result becomes available
-      m_future.wait();
-      errorCode = m_future.get();
+    switch (m_state) {
+    case kCreated:
+    case kSent:
+    case kSentCoordinator:
+    case kConfirmation:
+    case kConfirmationBroadcast:
+    case kReceivedResponse:
+      return false;
+    case kProcessed:
+    case kTimeout:
+    case kAborted:
+    case kError:
+    case kQueueFull:
+    default:
+      return true;
     }
-    else {
-      // TODO it shall be handle differently if estimation is longer then user time
-      if (m_future.wait_for(std::chrono::milliseconds(m_userTimeoutMs)) == std::future_status::timeout) {
-        //TODO handle iqrf BUSY or queue full
-        // future timeout 
-        TRC_WAR("Transaction timeout.");
-        errorCode = IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY;
-      }
-      else {
-        errorCode = m_future.get();
-      }
-    }
-    m_dpaTransactionResultPtr->setErrorCode(errorCode); // update error code in result
+  }
 
-    // return result and move ownership 
-    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
-    return result;
+  void abort() {
+    m_state = kAborted;
   }
 
   // blocking function called from user code
@@ -317,42 +306,20 @@ public:
   std::unique_ptr<IDpaTransactionResult2> get()
   {
     // wait for transaction start
-    bool waitResult;
+    std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
+    if (!m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] { return m_state != kCreated; }))
     {
-      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
-      waitResult = m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] { return m_state == kCreated; });
-    }
-    if (waitResult) {
-      // finished waiting for start now it is controlled by execute()
-      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
-      m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] {
-        switch (m_state) {
-        case kCreated:
-        case kSent:
-        case kSentCoordinator:
-        case kConfirmation:
-        case kConfirmationBroadcast:
-        case kReceivedResponse:
-          return true;
-        case kProcessed:
-        case kTimeout:
-        case kAborted:
-        case kError:
-        case kQueueFull:
-        default:
-          return false;
-        }
-      });
-    }
-    else {
-      //timeout
+      // timeout
       TRC_WAR("Transaction timeout - transaction was not started in time.");
       m_dpaTransactionResultPtr->setErrorCode(IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY);
+      return std::move(m_dpaTransactionResultPtr);
     }
 
+    // transaction started
+    while (!m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] { return isFinished(); }));
+
     // return result and move ownership 
-    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
-    return result;
+    return std::move(m_dpaTransactionResultPtr);
   }
 
   // Transaction is started via this method. It is called from DpaHandler queue worker thread
@@ -389,20 +356,16 @@ public:
       m_state = kQueueFull;
     }
 
-    // 1st notification to get() 
-    {
-      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
-      m_getConditionVariable.notify_one();
-      // now get() waits for ever and depends on next processing
-    }
+    // notification to get() 
+    m_getConditionVariable.notify_one();
 
-    int32_t remains = 0;
     bool expired = false;
 
+    std::unique_lock<std::mutex> lck(m_getConditionVariableMutex); // block get() to avoid preliminary finish
     do {
-      //int32_t remains = 0;
+      int32_t remains = 0;
 
-      if (INFINITE_TIMEOUT != m_userTimeoutMs && m_expectedDurationMs > 0) {
+      if (m_expectedDurationMs > 0) {
         // passed time from sent request
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
         remains = m_expectedDurationMs - duration.count();
@@ -414,7 +377,7 @@ public:
       case kSent:
       case kSentCoordinator:
       case kConfirmation:
-        if (expired) {
+        if (expired && !m_infinitTimeout) {
           m_state = kTimeout;
           errorCode = DpaTransactionResult2::TRN_ERROR_TIMEOUT;
         }
@@ -462,11 +425,7 @@ public:
     m_dpaTransactionResultPtr->setErrorCode(errorCode);
 
     // 2st notification to get() 
-    {
-      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
-      m_getConditionVariable.notify_one();
-      // now get() when notified returns
-    }
+    m_getConditionVariable.notify_one();
 
     // sync with future
     //m_promise.set_value(errorCode);
@@ -596,9 +555,9 @@ public:
     // start time when dpa request is sent and rerun again when confirmation is received
     m_startTime = std::chrono::system_clock::now();
 
-    // notification to execute() 
+    // notification to execute() and get()
     {
-      std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
+      //std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
       m_conditionVariable.notify_one();
     }
 
@@ -694,9 +653,6 @@ private:
     return estimatedTimeoutMs;
   }
 
-  void Abort() {
-    m_state = kAborted;
-  }
 };
 
 /////////////////////////////////////
@@ -795,7 +751,7 @@ public:
 
   void killDpaTransaction()
   {
-
+    m_pendingTransaction->abort();
   }
 
   int getTimeout() const
@@ -805,6 +761,7 @@ public:
 
   void setTimeout(int timeout)
   {
+    // TODO propagate as default timeout to transactions
     m_timeout = timeout;
   }
 
