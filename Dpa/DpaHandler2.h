@@ -50,15 +50,7 @@ public:
     TRN_ERROR_USER_FROM = ERROR_USER_FROM
   };
 
-  /**
-  * Returns code of error.
-  * 0: success, -1: DpaHandler timeout, -2: future timeout, <n>: response code
-  */
   virtual int getErrorCode() const = 0;
-
-  /**
-  * Returns string, which describes error in more detail.
-  */
   virtual std::string getErrorString() const = 0;
 
   virtual const DpaMessage& getRequest() const = 0;
@@ -74,8 +66,7 @@ class IDpaTransaction2
 {
 public:
   virtual ~IDpaTransaction2() {}
-  /// 0 > timout - use default, 0 == timout - use infinit, 0 < timeout - user value
-  virtual std::unique_ptr<IDpaTransactionResult2> get(int32_t timeout = -1) = 0;
+  virtual std::unique_ptr<IDpaTransactionResult2> get() = 0;
 };
 
 class IDpaHandler2
@@ -89,7 +80,8 @@ public:
   /// Asynchronous DPA message handler functional type
   typedef std::function<void(const DpaMessage& dpaMessage)> AsyncMessageHandlerFunc;
 
-  virtual std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request) = 0;
+  /// 0 > timeout - use default, 0 == timeout - use infinit, 0 < timeout - user value
+  virtual std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout) = 0;
   virtual void killDpaTransaction() = 0;
   virtual int getTimeout() const = 0;
   virtual void setTimeout(int timeout) = 0;
@@ -105,7 +97,7 @@ class DpaHandler2 : public IDpaHandler2 {
 public:
   DpaHandler2(IChannel* iqrfInterface);
   ~DpaHandler2();
-  std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request) override;
+  std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout) override;
   void killDpaTransaction() override;
   int getTimeout() const override;
   void setTimeout(int timeout) override;

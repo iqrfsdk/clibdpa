@@ -212,6 +212,10 @@ private:
   /// functor to send the request message towards the coordinator
   SendDpaMessageFunc m_sender;
 
+  /// condition used to wait on get()
+  std::mutex m_getConditionVariableMutex;
+  std::condition_variable m_getConditionVariable;
+
   /// condition used to wait for confirmation and response messages from coordinator
   std::mutex m_conditionVariableMutex;
   std::condition_variable m_conditionVariable;
@@ -233,21 +237,14 @@ private:
   int8_t m_hopsResponse;
 
 public:
-  DpaTransaction2(const DpaMessage& request, IDpaHandler2::RfMode mode, SendDpaMessageFunc sender)
+  DpaTransaction2(const DpaMessage& request, IDpaHandler2::RfMode mode, int32_t timeout, SendDpaMessageFunc sender)
     :m_sender(sender)
     ,m_dpaTransactionResultPtr(new DpaTransactionResult2(request))
     ,m_currentCommunicationMode(mode)
   {
     // init future object
     m_future = m_promise.get_future();
-  }
 
-  virtual ~DpaTransaction2()
-  {
-  }
-
-  std::unique_ptr<IDpaTransactionResult2> get(int32_t timeout) override
-  {
     const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
     int32_t requiredTimeout = timeout;
 
@@ -274,6 +271,18 @@ public:
     }
     m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
 
+  }
+
+  virtual ~DpaTransaction2()
+  {
+  }
+
+  // blocking function called from user code
+  // user calls:
+  // std::shared_ptr<IDpaTransaction2> dt = m_dpa->executeDpaTransaction(dpaTask->getRequest());
+  // std::unique_ptr<IDpaTransactionResult2> dtr = dt->get(); //wait for async result
+  std::unique_ptr<IDpaTransactionResult2> get0()
+  {
     // error code to be stored in result
     int errorCode = 0;
 
@@ -295,6 +304,51 @@ public:
       }
     }
     m_dpaTransactionResultPtr->setErrorCode(errorCode); // update error code in result
+
+    // return result and move ownership 
+    std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
+    return result;
+  }
+
+  // blocking function called from user code
+  // user calls:
+  // std::shared_ptr<IDpaTransaction2> dt = m_dpa->executeDpaTransaction(dpaTask->getRequest());
+  // std::unique_ptr<IDpaTransactionResult2> dtr = dt->get(); //wait for async result
+  std::unique_ptr<IDpaTransactionResult2> get()
+  {
+    // wait for transaction start
+    bool waitResult;
+    {
+      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
+      waitResult = m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] { return m_state == kCreated; });
+    }
+    if (waitResult) {
+      // finished waiting for start now it is controlled by execute()
+      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
+      m_getConditionVariable.wait_for(lck, std::chrono::milliseconds(m_userTimeoutMs), [&] {
+        switch (m_state) {
+        case kCreated:
+        case kSent:
+        case kSentCoordinator:
+        case kConfirmation:
+        case kConfirmationBroadcast:
+        case kReceivedResponse:
+          return true;
+        case kProcessed:
+        case kTimeout:
+        case kAborted:
+        case kError:
+        case kQueueFull:
+        default:
+          return false;
+        }
+      });
+    }
+    else {
+      //timeout
+      TRC_WAR("Transaction timeout - transaction was not started in time.");
+      m_dpaTransactionResultPtr->setErrorCode(IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY);
+    }
 
     // return result and move ownership 
     std::unique_ptr<IDpaTransactionResult2> result = std::move(m_dpaTransactionResultPtr);
@@ -333,6 +387,13 @@ public:
     else {
       //transaction is not handled 
       m_state = kQueueFull;
+    }
+
+    // 1st notification to get() 
+    {
+      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
+      m_getConditionVariable.notify_one();
+      // now get() waits for ever and depends on next processing
     }
 
     int32_t remains = 0;
@@ -397,8 +458,18 @@ public:
 
     } while (!expired);
 
+    // update error code in result
+    m_dpaTransactionResultPtr->setErrorCode(errorCode);
+
+    // 2st notification to get() 
+    {
+      std::unique_lock<std::mutex> lck(m_getConditionVariableMutex);
+      m_getConditionVariable.notify_one();
+      // now get() when notified returns
+    }
+
     // sync with future
-    m_promise.set_value(errorCode);
+    //m_promise.set_value(errorCode);
   }
 
   void ProcessReceivedMessage(const DpaMessage& receivedMessage)
@@ -711,9 +782,9 @@ public:
     }
   }
 
-  std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request)
+  std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout)
   {
-    std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request, m_rfMode,
+    std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request, m_rfMode, timeout,
       [&](const DpaMessage& r) {
         sendRequest(r);
       }
@@ -803,9 +874,9 @@ DpaHandler2::~DpaHandler2()
   delete m_imp;
 }
 
-std::shared_ptr<IDpaTransaction2> DpaHandler2::executeDpaTransaction(const DpaMessage& request)
+std::shared_ptr<IDpaTransaction2> DpaHandler2::executeDpaTransaction(const DpaMessage& request, int32_t timeout)
 {
-  return m_imp->executeDpaTransaction(request);
+  return m_imp->executeDpaTransaction(request, timeout);
 }
 
 void DpaHandler2::killDpaTransaction()
