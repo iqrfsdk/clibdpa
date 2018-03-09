@@ -302,7 +302,8 @@ public:
   {
   }
 
-  void abort() {
+  void abort() override {
+    std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
     m_state = kAborted;
   }
 
@@ -734,6 +735,10 @@ public:
 
   ~Imp()
   {
+    // kill DpaTransaction if any
+    if (m_pendingTransaction) {
+      m_pendingTransaction->abort();
+    }
     m_dpaTransactionQueue->stopQueue();
     delete m_dpaTransactionQueue;
   }
@@ -787,11 +792,6 @@ public:
     ));
     m_dpaTransactionQueue->pushToQueue(ptr);
     return ptr;
-  }
-
-  void killDpaTransaction()
-  {
-    m_pendingTransaction->abort();
   }
 
   int getTimeout() const
@@ -873,11 +873,6 @@ DpaHandler2::~DpaHandler2()
 std::shared_ptr<IDpaTransaction2> DpaHandler2::executeDpaTransaction(const DpaMessage& request, int32_t timeout)
 {
   return m_imp->executeDpaTransaction(request, timeout);
-}
-
-void DpaHandler2::killDpaTransaction()
-{
-  m_imp->killDpaTransaction();
 }
 
 int DpaHandler2::getTimeout() const

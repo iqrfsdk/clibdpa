@@ -66,7 +66,10 @@ class IDpaTransaction2
 {
 public:
   virtual ~IDpaTransaction2() {}
+  /// wait for result
   virtual std::unique_ptr<IDpaTransactionResult2> get() = 0;
+  /// abort the transaction immediately 
+  virtual void abort() = 0;
 };
 
 class IDpaHandler2
@@ -82,7 +85,6 @@ public:
 
   /// 0 > timeout - use default, 0 == timeout - use infinit, 0 < timeout - user value
   virtual std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout) = 0;
-  virtual void killDpaTransaction() = 0;
   virtual int getTimeout() const = 0;
   virtual void setTimeout(int timeout) = 0;
   virtual RfMode getRfCommunicationMode() const = 0;
@@ -98,7 +100,6 @@ public:
   DpaHandler2(IChannel* iqrfInterface);
   ~DpaHandler2();
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout) override;
-  void killDpaTransaction() override;
   int getTimeout() const override;
   void setTimeout(int timeout) override;
   RfMode getRfCommunicationMode() const override;
