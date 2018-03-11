@@ -47,6 +47,8 @@ message(STATUS "CMAKE_C_FLAGS_DEBUG:     ${CMAKE_C_FLAGS_DEBUG}")
 include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
 include_directories(${cutils_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dpa)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DpaExtension)
 
 #library build
 add_subdirectory(Dpa)

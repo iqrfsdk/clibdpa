@@ -17,7 +17,6 @@ set(DpaExtension_INC_FILES
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/Dpa)
 
 add_library(${PROJECT_NAME} STATIC ${DpaExtension_SRC_FILES} ${DpaExtension_INC_FILES})
 
