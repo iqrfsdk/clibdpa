@@ -14,14 +14,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    # set(LIB_SYS_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/linux/ARM)
-# ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-# IF (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # set(LIB_SYS_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/windows)
-# ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -32,9 +24,6 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
-
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -ftest-coverage -fprofile-arcs")
-# set_property(TARGET dpa_library PROPERTY CXX_STANDARD 11)
 
 message(STATUS "CMAKE_CXX_STANDARD:     ${CMAKE_CXX_STANDARD}")
 message(STATUS "CMAKE_CXX_FLAGS:         ${CMAKE_CXX_FLAGS}")
