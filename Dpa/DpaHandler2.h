@@ -18,7 +18,6 @@
 #pragma once
 
 #include "DpaMessage.h"
-#include "IChannel.h"
 #include <memory>
 #include <functional>
 #include <chrono>
@@ -94,6 +93,8 @@ public:
 
   virtual ~IDpaHandler2() {}
 };
+
+class IChannel;
 
 class DpaHandler2 : public IDpaHandler2 {
 public:

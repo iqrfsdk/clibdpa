@@ -19,6 +19,7 @@
 #include "DpaHandler2.h"
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
+#include "IChannel.h"
 
 #include "unexpected_command.h"
 #include "unexpected_packet_type.h"
