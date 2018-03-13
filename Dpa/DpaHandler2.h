@@ -58,6 +58,8 @@ public:
   virtual const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const = 0;
   virtual const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const = 0;
   virtual const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const = 0;
+  virtual bool isConfirmed() const = 0;
+  virtual bool isResponded() const = 0;
   virtual ~IDpaTransactionResult2() {};
 };
 

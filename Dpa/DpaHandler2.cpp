@@ -57,7 +57,13 @@ private:
   /// response timestamp
   std::chrono::time_point<std::chrono::system_clock> m_response_ts;
   /// overall error code
-  int m_errorCode = 0;
+  int m_errorCode = TRN_ERROR_ABORTED;
+  /// response code
+  int m_responseCode = TRN_OK;
+  /// received and set response flag
+  bool m_isResponded = false;
+  /// received and set confirmation flag
+  int m_isConfirmed = false;
 
 public:
   DpaTransactionResult2() = delete;
@@ -69,7 +75,12 @@ public:
 
   int getErrorCode() const override
   {
-    return m_errorCode;
+    if (m_errorCode != TRN_OK) {
+      return m_errorCode;
+    }
+    else {
+      return m_responseCode;
+    }
   }
 
   std::string getErrorString() const override
@@ -149,20 +160,36 @@ public:
     return m_response_ts;
   }
 
+  bool isConfirmed() const override
+  {
+    return m_isConfirmed;
+  }
+
+  bool isResponded() const override
+  {
+    return m_isResponded;
+  }
+
   void setConfirmation(const DpaMessage& confirmation)
   {
     m_confirmation_ts = std::chrono::system_clock::now();
     m_confirmation = confirmation;
+    m_isConfirmed = true;
   }
 
   void setResponse(const DpaMessage& response)
   {
     m_response_ts = std::chrono::system_clock::now();
     m_response = response;
+    m_responseCode = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
+    m_isResponded = true;
   }
 
   void setErrorCode(int errorCode)
   {
+    if (errorCode == TRN_OK && m_responseCode != TRN_OK) {
+      errorCode = m_responseCode;
+    }
     m_errorCode = errorCode;
   }
 };
@@ -786,6 +813,11 @@ public:
 
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction(const DpaMessage& request, int32_t timeout)
   {
+    if (request.GetLength() <= 0) {
+      TRC_WAR("Empty request => nothing to sent and transaction aborted");
+      std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request, m_rfMode, m_defaultTimeout, timeout, nullptr));
+      return ptr;
+    }
     std::shared_ptr<DpaTransaction2> ptr(new DpaTransaction2(request, m_rfMode, m_defaultTimeout, timeout,
       [&](const DpaMessage& r) {
         sendRequest(r);
