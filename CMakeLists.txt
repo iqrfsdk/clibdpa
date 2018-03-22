@@ -2,9 +2,17 @@ project(clibdpa)
 
 cmake_minimum_required(VERSION 2.8)
 
-FIND_PACKAGE(clibcdc REQUIRED)
-FIND_PACKAGE(clibspi REQUIRED)
-FIND_PACKAGE(cutils REQUIRED)
+if (NOT clibcdc_FOUND)
+  FIND_PACKAGE(clibcdc REQUIRED)
+endif()
+
+if (NOT clibspi_FOUND)
+  FIND_PACKAGE(clibspi REQUIRED)
+endif()
+
+if (NOT cutils_FOUND)
+  FIND_PACKAGE(cutils REQUIRED)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_DEBUG "_DEBUG")
@@ -38,6 +46,9 @@ include_directories(${clibspi_INCLUDE_DIRS})
 include_directories(${cutils_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dpa)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DpaExtension)
+
+set(clibdpa_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/Dpa PARENT_SCOPE)
+set(clibdpa_FOUND TRUE PARENT_SCOPE)
 
 #library build
 add_subdirectory(Dpa)
