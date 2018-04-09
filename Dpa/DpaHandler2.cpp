@@ -288,6 +288,7 @@ public:
     ,m_dpaTransactionResultPtr(new DpaTransactionResult2(request))
     ,m_currentCommunicationMode(mode)
   {
+    TRC_ENTER(PAR(mode) << PAR(defaultTimeout) << PAR(userTimeout))
     static uint32_t transactionId = 0;
     m_transactionId = ++transactionId;
 
@@ -323,7 +324,7 @@ public:
       requiredTimeout = MINIMAL_TIMEOUT;
     }
     m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
-
+    TRC_LEAVE("Using: " << PAR(m_userTimeoutMs));
   }
 
   virtual ~DpaTransaction2()
@@ -569,7 +570,7 @@ public:
       
       if (estimatedTimeMs > 0) {
         TRC_INF("Expected duration to wait :" << PAR(m_userTimeoutMs) << PAR(estimatedTimeMs));
-        if (estimatedTimeMs < m_userTimeoutMs) {
+        if (estimatedTimeMs >= m_userTimeoutMs) {
           m_expectedDurationMs = estimatedTimeMs;
         }
         else {
