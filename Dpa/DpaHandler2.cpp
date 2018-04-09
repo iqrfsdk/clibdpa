@@ -268,9 +268,9 @@ private:
   bool m_infinitTimeout = false;
 
   /// iqrf structure info to estimate transaction processing time
-  int8_t m_hops;
-  int8_t m_timeslotLength;
-  int8_t m_hopsResponse;
+  int8_t m_hops = 0;
+  int8_t m_timeslotLength = 0;
+  int8_t m_hopsResponse = 0;
 
   /// condition used to wait for confirmation and response messages from coordinator
   std::condition_variable m_conditionVariable;
@@ -334,6 +334,7 @@ public:
   void abort() override {
     std::unique_lock<std::mutex> lck(m_conditionVariableMutex);
     m_state = kAborted;
+    m_conditionVariable.notify_all();
   }
 
   //-----------------------------------------------------
