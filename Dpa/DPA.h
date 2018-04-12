@@ -4,10 +4,12 @@
 // Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.208 $
-// Date:    $Date: 2017/08/09 12:24:46 $
+// Version: $Revision: 1.219 $
+// Date:    $Date: 2018/03/15 13:23:56 $
 //
 // Revision history:
+//   20??/??/??  Release for DPA 3.03
+//   2017/11/16  Release for DPA 3.02
 //   2017/08/14  Release for DPA 3.01
 //   2017/03/13  Release for DPA 3.00
 //   2016/09/12  Release for DPA 2.28
@@ -34,16 +36,16 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER		0x0301
+#define	DPA_VERSION_MASTER			0x0303
 
 #ifdef __CC5X__
 // Compiled only at CC5X
-#if __CC5X__ < 3507
-#error Insufficient CC5X compiler version, V3.5G is minimum
+#if __CC5X__ < 3600
+#error Insufficient CC5X compiler version, V3.6 is minimum
 #endif
 
-#if IQRFOS < 400
-#error IQRF OS 4.00+ is required
+#if IQRFOS < 403
+#error IQRF OS 4.03+ is required
 #endif
 
 // Bank for custom variables
@@ -196,7 +198,7 @@ typedef struct
 // Maximum number of peripherals info that can fit in the message
 #define	MAX_PERIPHERALS_PER_BLOCK_INFO	( DPA_MAX_DATA_LENGTH / sizeof( TPeripheralInfoAnswer ) )
 
-// Standard peripheral numbers
+// Embedded peripheral numbers
 #define	PNUM_COORDINATOR	0x00
 #define	PNUM_NODE			0x01
 #define	PNUM_OS				0x02
@@ -220,7 +222,7 @@ typedef struct
 #define	PNUM_MAX			0x7F
 
 // Fake peripheral number used to flag DPA response with error sent by RF
-#define	PNUM_ERROR_FLAG	0xFE
+#define	PNUM_ERROR_FLAG		0xFE
 // Special peripheral used for enumeration
 #define	PNUM_ENUMERATION	0xFF
 
@@ -243,6 +245,7 @@ typedef struct
 #define	CMD_COORDINATOR_READ_REMOTELY_BONDED_MID 15
 #define	CMD_COORDINATOR_CLEAR_REMOTELY_BONDED_MID 16
 #define	CMD_COORDINATOR_ENABLE_REMOTE_BONDING 17
+#define	CMD_COORDINATOR_SMART_CONNECT 18
 
 #define	CMD_NODE_READ 0
 #define	CMD_NODE_REMOVE_BOND 1
@@ -472,12 +475,12 @@ typedef struct
   uns8	BondingMask;
 } STRUCTATTR TPerCoordinatorBondNode_Request;
 
-// Structure returned by CMD_COORDINATOR_BOND_NODE
+// Structure returned by CMD_COORDINATOR_BOND_NODE or CMD_COORDINATOR_SMART_CONNECT
 typedef struct
 {
   uns8	BondAddr;
   uns8	DevNr;
-} STRUCTATTR TPerCoordinatorBondNode_Response;
+} STRUCTATTR TPerCoordinatorBondNodeSmartConnect_Response;
 
 // Structure for CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
 typedef struct
@@ -598,6 +601,20 @@ typedef struct
   TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof( TPrebondedNode )];
 } STRUCTATTR TPerCoordinatorNodeReadRemotelyBondedMID_Response;
 
+// Structure for CMD_COORDINATOR_SMART_CONNECT
+typedef struct
+{
+  uns8  ReqAddr;
+  uns8  BondingTestRetries;
+  uns8  IBK[16];
+  uns8  MID[4];
+  uns8  reserved0;
+  uns8  BondingChannel;
+  uns8  VirtualDeviceAddress;
+  uns8  reserved1[9];
+  uns8	UserData[4];
+} STRUCTATTR TPerCoordinatorSmartConnect_Request;
+
 // Structure returned by CMD_NODE_READ
 typedef struct
 {
@@ -624,6 +641,7 @@ typedef struct
   uns8	SupplyVoltage;
   uns8	Flags;
   uns8	SlotLimits;
+  uns8  IBK[16];
 } STRUCTATTR TPerOSRead_Response;
 
 // Structure returned by CMD_OS_READ_CFG
@@ -705,7 +723,7 @@ typedef struct
     // Size of Address field
 #define	MEMORY_WRITE_REQUEST_OVERHEAD	( sizeof( uns8 ) )
 
-  // Memory write request
+    // Memory write request
     struct
     {
       uns8	PData[DPA_MAX_DATA_LENGTH - MEMORY_WRITE_REQUEST_OVERHEAD];
@@ -732,7 +750,7 @@ typedef struct
     // Size of Address field
 #define	XMEMORY_WRITE_REQUEST_OVERHEAD	( sizeof( uns16 ) )
 
-  // Memory write request
+    // Memory write request
     struct
     {
       uns8	PData[DPA_MAX_DATA_LENGTH - XMEMORY_WRITE_REQUEST_OVERHEAD];
@@ -864,8 +882,8 @@ typedef union
   // Structure for CMD_COORDINATOR_BOND_NODE
   TPerCoordinatorBondNode_Request PerCoordinatorBondNode_Request;
 
-  // Structure returned by CMD_COORDINATOR_BOND_NODE
-  TPerCoordinatorBondNode_Response PerCoordinatorBondNode_Response;
+  // Structure returned by CMD_COORDINATOR_BOND_NODE or CMD_COORDINATOR_SMART_CONNECT
+  TPerCoordinatorBondNodeSmartConnect_Response PerCoordinatorBondNodeSmartConnect_Response;
 
   // Structure for CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
   TPerCoordinatorRemoveRebondBond_Request PerCoordinatorRemoveRebondBond_Request;
@@ -917,6 +935,9 @@ typedef union
 
   // Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
   TPerCoordinatorNodeReadRemotelyBondedMID_Response PerCoordinatorNodeReadRemotelyBondedMID_Response;
+
+  // Structure for CMD_COORDINATOR_SMART_CONNECT
+  TPerCoordinatorSmartConnect_Request PerCoordinatorSmartConnect_Request;
 
   // Structure returned by CMD_NODE_READ
   TPerNodeRead_Response PerNodeRead_Response;
@@ -1062,7 +1083,7 @@ typedef enum
 TDpaMessage DpaRfMessage @bufferRF;
 
 // Actual allocation of the RAM Peripheral memory block @ UserBank_02
-bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH];
+bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH] @ 0x620;
 
 // Actual DPA message parameters at memory
 #define	_NADR			RX
