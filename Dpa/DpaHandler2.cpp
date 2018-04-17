@@ -30,7 +30,7 @@
 // Timing constants
 
 /// Default timeout
-static const int DEFAULT_TIMEOUT = 200;
+static const int DEFAULT_TIMEOUT = 500;
 /// Minimal timeout used if required by user is too low
 static const int MINIMAL_TIMEOUT = 200;
 /// Zero value used to indicate infinit timeout in special cases (discovery)
