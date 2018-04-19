@@ -97,7 +97,7 @@ public:
     case TRN_ERROR_TIMEOUT:
       return "ERROR_TIMEOUT";
     case TRN_OK:
-      return "OK";
+      return "ok";
     case TRN_ERROR_FAIL:
       return "ERROR_FAIL";
     case TRN_ERROR_PCMD:
