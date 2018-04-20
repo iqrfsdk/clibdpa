@@ -306,8 +306,6 @@ public:
       requiredTimeout = DEFAULT_TIMEOUT;
     }
     else if (requiredTimeout == INFINITE_TIMEOUT) {
-      requiredTimeout = DEFAULT_TIMEOUT;
-      m_infinitTimeout = true;
       // it is allowed just for Coordinator Discovery
       if (message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
         message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
@@ -316,7 +314,9 @@ public:
         requiredTimeout = MINIMAL_TIMEOUT;
       }
       else {
-        TRC_WAR(PAR(requiredTimeout) << " allowed for DISCOVERY message");
+        TRC_WAR(PAR(requiredTimeout) << " infinite timeout allowed for DISCOVERY message");
+        requiredTimeout = DEFAULT_TIMEOUT;
+        m_infinitTimeout = true;
       }
     }
     else if (requiredTimeout < MINIMAL_TIMEOUT) {
