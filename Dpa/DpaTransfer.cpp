@@ -31,7 +31,7 @@ DpaTransfer::DpaTransfer()
 }
 
 DpaTransfer::DpaTransfer(DpaTransaction* dpaTransaction, IqrfRfCommunicationMode comMode, int32_t timeout)
-  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr), m_responseMessage(nullptr),
+  : m_status(kCreated), m_messageToBeProcessed(false), m_sentMessage(nullptr),
   m_expectedDurationMs(timeout), m_timeoutMs(timeout), m_currentCommunicationMode(comMode), m_dpaTransaction(dpaTransaction)
 {
 }
