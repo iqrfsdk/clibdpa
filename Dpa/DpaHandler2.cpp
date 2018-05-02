@@ -86,14 +86,17 @@ public:
   std::string getErrorString() const override
   {
     switch (m_errorCode) {
-    case TRN_ERROR_IFACE_QUEUE_FULL:
-      return "ERROR_IFACE_QUEUE_FULL";
+
+    case TRN_ERROR_BAD_REQUEST:
+      return "BAD_REQUEST";
+    case TRN_ERROR_IFACE_BUSY:
+      return "ERROR_IFACE_BUSY";
     case TRN_ERROR_IFACE:
       return "ERROR_IFACE";
     case TRN_ERROR_ABORTED:
       return "ERROR_ABORTED";
-    case TRN_ERROR_IFACE_BUSY:
-      return "ERROR_IFACE_BUSY";
+    case TRN_ERROR_IFACE_QUEUE_FULL:
+      return "ERROR_IFACE_QUEUE_FULL";
     case TRN_ERROR_TIMEOUT:
       return "ERROR_TIMEOUT";
     case TRN_OK:
