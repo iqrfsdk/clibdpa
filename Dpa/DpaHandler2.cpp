@@ -83,10 +83,17 @@ public:
     }
   }
 
+  void overrideErrorCode(IDpaTransactionResult2::ErrorCode err) override
+  {
+    m_errorCode = err;
+  }
+
   std::string getErrorString() const override
   {
     switch (m_errorCode) {
 
+    case TRN_ERROR_BAD_RESPONSE:
+      return "BAD_RESPONSE";
     case TRN_ERROR_BAD_REQUEST:
       return "BAD_REQUEST";
     case TRN_ERROR_IFACE_BUSY:

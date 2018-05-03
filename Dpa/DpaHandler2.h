@@ -27,6 +27,7 @@ class IDpaTransactionResult2
 public:
   enum ErrorCode {
     // transaction handling
+    TRN_ERROR_BAD_RESPONSE = -7,
     TRN_ERROR_BAD_REQUEST = -6,
     TRN_ERROR_IFACE_BUSY = -5,
     TRN_ERROR_IFACE = -4,
@@ -51,6 +52,7 @@ public:
   };
 
   virtual int getErrorCode() const = 0;
+  virtual void overrideErrorCode(ErrorCode err) = 0;
   virtual std::string getErrorString() const = 0;
 
   virtual const DpaMessage& getRequest() const = 0;
