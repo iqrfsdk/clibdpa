@@ -184,8 +184,13 @@ public:
   {
     m_response_ts = std::chrono::system_clock::now();
     m_response = response;
-    m_responseCode = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
-    m_isResponded = true;
+    if (0 < response.GetLength()) {
+      m_responseCode = response.DpaPacket().DpaResponsePacket_t.ResponseCode;
+      m_isResponded = true;
+    }
+    else {
+      m_isResponded = false;
+    }
   }
 
   void setErrorCode(int errorCode)
