@@ -63,7 +63,7 @@ private:
   /// received and set response flag
   bool m_isResponded = false;
   /// received and set confirmation flag
-  int m_isConfirmed = false;
+  bool m_isConfirmed = false;
 
 public:
   DpaTransactionResult2() = delete;
