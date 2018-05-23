@@ -82,6 +82,15 @@ public:
     kLp
   };
 
+  /// Default timeout
+  static const int DEFAULT_TIMEOUT = 500;
+  /// Minimal timeout used if required by user is too low
+  static const int MINIMAL_TIMEOUT = 200;
+  /// Zero value used to indicate infinit timeout in special cases (discovery)
+  static const int INFINITE_TIMEOUT = 0;
+  /// An extra timeout added to timeout from a confirmation packet.
+  static const int32_t SAFETY_TIMEOUT_MS = 40;
+
   /// Asynchronous DPA message handler functional type
   typedef std::function<void(const DpaMessage& dpaMessage)> AsyncMessageHandlerFunc;
 

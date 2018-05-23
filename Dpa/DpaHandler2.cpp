@@ -29,14 +29,14 @@
 
 // Timing constants
 
-/// Default timeout
-static const int DEFAULT_TIMEOUT = 500;
-/// Minimal timeout used if required by user is too low
-static const int MINIMAL_TIMEOUT = 200;
-/// Zero value used to indicate infinit timeout in special cases (discovery)
-static const int INFINITE_TIMEOUT = 0;
-/// An extra timeout added to timeout from a confirmation packet.
-static const int32_t SAFETY_TIMEOUT_MS = 40;
+///// Default timeout
+//static const int DEFAULT_TIMEOUT = 500;
+///// Minimal timeout used if required by user is too low
+//static const int MINIMAL_TIMEOUT = 200;
+///// Zero value used to indicate infinit timeout in special cases (discovery)
+//static const int INFINITE_TIMEOUT = 0;
+///// An extra timeout added to timeout from a confirmation packet.
+//static const int32_t SAFETY_TIMEOUT_MS = 40;
 
 /////////////////////////////////////
 // class DpaTransactionResult2
@@ -270,9 +270,8 @@ private:
 
   /// functor to send the request message towards the coordinator
   SendDpaMessageFunc m_sender;
-
-  uint32_t m_userTimeoutMs = DEFAULT_TIMEOUT; //required by user
-  uint32_t m_expectedDurationMs = DEFAULT_TIMEOUT;
+  uint32_t m_userTimeoutMs = IDpaHandler2::DEFAULT_TIMEOUT; //required by user
+  uint32_t m_expectedDurationMs = IDpaHandler2::DEFAULT_TIMEOUT;
   bool m_infinitTimeout = false;
 
   /// iqrf structure info to estimate transaction processing time
@@ -311,25 +310,25 @@ public:
     // check and correct timeout here before blocking:
     if (requiredTimeout < 0) {
       // default timeout
-      requiredTimeout = DEFAULT_TIMEOUT;
+      requiredTimeout = IDpaHandler2::DEFAULT_TIMEOUT;
     }
-    else if (requiredTimeout == INFINITE_TIMEOUT) {
+    else if (requiredTimeout == IDpaHandler2::INFINITE_TIMEOUT) {
       // it is allowed just for Coordinator Discovery
       if (message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
         message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY) {
         // force setting minimal timing as only Discovery can have infinite timeout
-        TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
-        requiredTimeout = MINIMAL_TIMEOUT;
+        TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(IDpaHandler2::MINIMAL_TIMEOUT));
+        requiredTimeout = IDpaHandler2::MINIMAL_TIMEOUT;
       }
       else {
         TRC_WAR(PAR(requiredTimeout) << " infinite timeout allowed for DISCOVERY message");
-        requiredTimeout = DEFAULT_TIMEOUT;
+        requiredTimeout = IDpaHandler2::DEFAULT_TIMEOUT;
         m_infinitTimeout = true;
       }
     }
-    else if (requiredTimeout < MINIMAL_TIMEOUT) {
-      TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(MINIMAL_TIMEOUT));
-      requiredTimeout = MINIMAL_TIMEOUT;
+    else if (requiredTimeout < IDpaHandler2::MINIMAL_TIMEOUT) {
+      TRC_WAR("User: " << PAR(requiredTimeout) << " forced to: " << PAR(IDpaHandler2::MINIMAL_TIMEOUT));
+      requiredTimeout = IDpaHandler2::MINIMAL_TIMEOUT;
     }
     m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
     TRC_LEAVE("Using: " << PAR(m_userTimeoutMs));
@@ -679,7 +678,7 @@ private:
       TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
     }
 
-    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
+    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + IDpaHandler2::SAFETY_TIMEOUT_MS;
 
     TRC_INF("Estimated STD timeout: " << PAR(estimatedTimeoutMs));
     TRC_LEAVE("");
@@ -725,7 +724,7 @@ private:
       TRC_DBG("Correction of the response timeout: " << PAR(responseTimeSlotLengthMs));
     }
 
-    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
+    estimatedTimeoutMs += (hopsResponse + 1) * responseTimeSlotLengthMs + IDpaHandler2::SAFETY_TIMEOUT_MS;
 
     TRC_INF("Estimated LP timeout: " << PAR(estimatedTimeoutMs));
     TRC_LEAVE("");
