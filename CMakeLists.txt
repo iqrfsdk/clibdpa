@@ -45,17 +45,14 @@ include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
 include_directories(${cutils_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dpa)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DpaExtension)
 
 set(clibdpa_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/Dpa PARENT_SCOPE)
 set(clibdpa_FOUND TRUE PARENT_SCOPE)
 
 #library build
 add_subdirectory(Dpa)
-add_subdirectory(DpaExtension)
 
 #example build
-add_subdirectory(DpaDemo)
 add_subdirectory(DpaExamples)
 
 # Configure config file.

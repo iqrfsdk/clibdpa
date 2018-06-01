@@ -16,11 +16,7 @@
 
 #include "IqrfCdcChannel.h"
 #include "IqrfSpiChannel.h"
-#include "DpaHandler.h"
-#include "DpaTransactionTask.h"
-#include "DpaRaw.h"
-#include "PrfLeds.h"
-#include "PrfFrc.h"
+#include "DpaHandler2.h"
 #include "IqrfLogging.h"
 
 using namespace std;
@@ -33,239 +29,130 @@ void asynchronousMessageHandler(const DpaMessage& message) {
     << FORM_HEX((unsigned char *)message.DpaPacketData(), message.GetLength()));
 }
 
-int main(int argc, char** argv) {
-
-  TRC_START("log.txt", Level::dbg, 1000000);
-  TRC_ENTER("");
+int main( int argc, char** argv ) {
+  TRC_START( "log.txt", Level::dbg, 1000000 );
+  TRC_ENTER( "" );
 
   // COM interface
   string portNameWinCdc = "COM4";
+  string serviceId = "";
   //string portNameLinuxCdc = "/dev/ttyACM0";
-  //string portNameLinuxSpi = "/dev/spidev0.0";
-
-  TRC_DBG("Communication interface :" << PAR(portNameWinCdc));
-
-  // IQRF channel
-  IChannel *iqrfChannel;
-
-  try {
-    TRC_INF("Creating IQRF interface");
-    iqrfChannel = new IqrfCdcChannel(portNameWinCdc);
-    //iqrfchannel = new IqrfSpiChannel(portNameLinuxSpi);
-  }
-  catch (std::exception &e) {
-    CATCH_EX("Cannot create IqrfInterface: ", std::exception, e);
-    return 1;
-  }
+  string portNameLinuxSpi = "/dev/spidev0.0";
+  spi_iqrf_config_struct spiCfg;
+  spiCfg.enableGpioPin = 1;
 
   // DPA handler
-  DpaHandler *dpaHandler;
+  DpaHandler2 *dpaHandler;
 
   try {
-    TRC_INF("Creating DPA handler");
-    dpaHandler = new DpaHandler(iqrfChannel);
+    TRC_INF( "Creating DPA handler" );
+    // IQRF CDC interface
+    dpaHandler = new DpaHandler2( portNameWinCdc );
 
-    // async messages
-    dpaHandler->RegisterAsyncMessageHandler(&asynchronousMessageHandler);
+    // Register async. messages handler
+    dpaHandler->registerAsyncMessageHandler( serviceId, &asynchronousMessageHandler );
+
     // default iqrf communication mode is standard 
-    dpaHandler->SetRfCommunicationMode(kLp);
-
-    // default timeout waiting for confirmation is 400ms, no need to call it
-    // this timeout is then used for all transaction if not set otherwise for each transaction
-    dpaHandler->Timeout(DpaHandler::DEFAULT_TIMING);
+    dpaHandler->setRfCommunicationMode( IDpaTransaction2::kStd );
+    // Define and set FRC timing
+    IDpaTransaction2::FRC_TimingParams frcTiming;
+    frcTiming.bondedNodes = 2;
+    frcTiming.discoveredNodes = 2;
+    frcTiming.responseTime = IDpaTransaction2::FrcResponseTime::k20620Ms;
+    dpaHandler->setFrcTiming( frcTiming );
   }
-  catch (std::exception &e) {
-    CATCH_EX("Cannot create DpaHandler Interface: ", std::exception, e);
-    delete iqrfChannel;
+  catch ( std::exception &e ) {
+    CATCH_EX( "Cannot create DpaHandler Interface: ", std::exception, e );
     return 2;
   }
 
-  /*** 1) Generic Raw DPA access ***/
-  TRC_INF("Creating DPA request to run discovery on coordinator");
-  cout << "Creating DPA request to run discovery on coordinator" << endl;
-  /* Option 1*/
-
-  // DPA message
-  DpaMessage dpaRequest;
-
-  // coordinator address
-  dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
-
-  // embedded peripheral
-  dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = 0x00;
-  //dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
-
-  // command to run
-  dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = 0x07;
-  //dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_COORDINATOR_DISCOVERY;
-
-  // hwpid
-  dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = 0xFFFF;
-  //dpaPacket.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-
-  // tx power for discovery
-  dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.TxPower = 0x07;
-
-  // max number of nodes to discover (0x00 - whole network)
-  dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.MaxAddr = 0x00;
-
-  // set request data length
-  dpaRequest.SetLength(sizeof(TDpaIFaceHeader) + 2);
-
-  /* Option 2*/
-  /*
-    DpaMessage::DpaPacket_t dpaPacket;
-    dpaPacket.DpaRequestPacket_t.NADR = 0x00;
-    dpaPacket.DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
-    dpaPacket.DpaRequestPacket_t.PCMD = CMD_COORDINATOR_DISCOVERY;
-    dpaPacket.DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-    dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.TxPower = 0x07;
-    dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.MaxAddr = 0x00;
-
-    dpaRequest.DataToBuffer(dpaPacket.Buffer, sizeof(TDpaIFaceHeader) + 2);
-  */
-
-  // Raw DPA access
-  DpaRaw rawTask(dpaRequest);
-
-  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
-  // default timeout waiting for response is based on estimation from DPA confirmation 
-  // sets according to your needs and dpa timing requirements but there is no need if you want default
-
-  // ! discovery command needs infinite timeout since we do not know how long will run !
-  rawTask.setTimeout(DpaHandler::INFINITE_TIMING);
-
-  // DPA transaction task
-  TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT1(rawTask);
-
-  if (dpaHandler) {
+  if ( dpaHandler ) {
     try {
-      dpaHandler->ExecuteDpaTransaction(dpaTT1);
+      // DPA message
+      DpaMessage dpaRequest;
+
+      // Pulse LEDR at [C]
+      dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_LEDR;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+      // Set request data length      
+      dpaRequest.SetLength( sizeof( TDpaIFaceHeader ));
+      // Send DPA request
+      cout << "Pulse LEDR\r\n";
+      auto dt = dpaHandler->executeDpaTransaction( dpaRequest, 1000 );
+      auto res = dt->get();
+      int err = res->getErrorCode();
+      auto s = res->getErrorString();
+      const uint8_t *buf = res->getResponse().DpaPacket().Buffer;
+      int sz = res->getResponse().GetLength();
+      for ( int i = 0; i < sz; i++ )
+        cout << std::hex << (int)buf[i] << ' ';
+
+      // Set FRC params 
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_FRC;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_FRC_SET_PARAMS;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSetParams_RequestResponse.FRCresponseTime = IDpaTransaction2::FrcResponseTime::k20620Ms;
+      // Set request data length      
+      dpaRequest.SetLength( sizeof( TDpaIFaceHeader ) + sizeof( TPerFrcSetParams_RequestResponse ) );
+      cout << "\r\nSet FRC params\r\n";
+      dt = dpaHandler->executeDpaTransaction( dpaRequest, 1000 );
+      res = dt->get();
+      err = res->getErrorCode();
+      s = res->getErrorString();
+      buf = res->getResponse().DpaPacket().Buffer;
+      sz = res->getResponse().GetLength();
+      for ( int i = 0; i < sz; i++ )
+        cout << std::hex << (int)buf[i] << ' ';
+
+      // Send FRC
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_FRC;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_FRC_SEND;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = 0xc0;
+      // Set request data length      
+      dpaRequest.SetLength( sizeof( TDpaIFaceHeader ) + 3);
+      cout << "\r\nSend FRC\r\n";
+      dt = dpaHandler->executeDpaTransaction( dpaRequest, 10000 );
+      res = dt->get();
+      err = res->getErrorCode();
+      s = res->getErrorString();
+      buf = res->getResponse().DpaPacket().Buffer;
+      sz = res->getResponse().GetLength();
+      for ( int i = 0; i < sz; i++ )
+        cout << std::hex << (int)buf[i] << ' ';
+
+      /*
+      // Discovery
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_COORDINATOR;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_COORDINATOR_DISCOVERY;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.TxPower = 0x07;
+      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerCoordinatorDiscovery_Request.MaxAddr = 0xfe;
+      dpaRequest.SetLength( sizeof( TDpaIFaceHeader ) + sizeof( TPerCoordinatorDiscovery_Request ) );
+      dt = dpaHandler->executeDpaTransaction( dpaRequest, 500 );
+      res = dt->get();
+      err = res->getErrorCode();
+      s = res->getErrorString();
+      buf = res->getResponse().DpaPacket().Buffer;
+      sz = res->getResponse().GetLength();
+      for ( int i = 0; i < sz; i++ )
+        cout << std::hex << (int)buf[i] << ' ';
+      */
+
+      this_thread::sleep_for( chrono::seconds( 1 ) );
     }
-    catch (std::exception& e) {
-      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
-      dpaTT1.processFinish(DpaTransfer::kError);
-    }
-  }
-  else {
-    TRC_ERR("Dpa interface is not working");
-    dpaTT1.processFinish(DpaTransfer::kError);
-  }
-
-  int result = dpaTT1.waitFinish();
-  TRC_DBG("Result from DPA transaction: " << PAR(result));
-  TRC_DBG("Result from DPA transaction as string: " << PAR(dpaTT1.getErrorStr()));
-
-  if (result == 0) {
-    // getting response data
-    DpaMessage dpaResponse = rawTask.getResponse();
-    int discoveredNodes = dpaResponse.DpaPacket().DpaResponsePacket_t.DpaMessage.Response.PData[0];
-    TRC_INF("Discovery done: " << PAR(discoveredNodes));
-  }
-
-  /*** 2) Peripheral Ledr DPA access ***/
-  
-  TRC_INF("Creating DPA request to pulse LEDR on all nodes");
-  cout << "Creating DPA request to pulse LEDR on all nodes" << endl;
-
-  // PrfLedr DPA access
-  PrfLedR ledrPulseDpa(0xFF, PrfLed::Cmd::PULSE);
-
-  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
-  // default timeout waiting for response is based on estimation from DPA confirmation 
-  // sets according to your needs and dpa timing requirements but there is no need if you want default
-
-  // no need to set default here since it is already set at DpaHandler level
-  ledrPulseDpa.setTimeout(DpaHandler::DEFAULT_TIMING);
-
-  // DPA transaction task
-  TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT2(ledrPulseDpa);
-
-  if (dpaHandler) {
-    try {
-      dpaHandler->ExecuteDpaTransaction(dpaTT2);
-    }
-    catch (std::exception& e) {
-      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
-      dpaTT2.processFinish(DpaTransfer::kError);
-    }
-  }
-  else {
-    TRC_ERR("Dpa interface is not working");
-    dpaTT2.processFinish(DpaTransfer::kError);
-  }
-
-  result = dpaTT2.waitFinish();
-  TRC_DBG("Result from DPA transaction :" << PAR(result));
-  TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT2.getErrorStr()));
-
-  if (result == 0) {
-    TRC_INF("Pulse LEDR done!");
-    TRC_DBG("DPA transaction :" << NAME_PAR(ledrPulseDpa.getPrfName(), ledrPulseDpa.getAddress()) << PAR(ledrPulseDpa.encodeCommand()));
-  }
-  else {
-    TRC_DBG("DPA transaction error: " << PAR(result));
-  }
-
-  /*** 3) Peripheral FRC DPA access ***/
-
-  TRC_INF("Creating DPA request to send FRC to all nodes");
-  cout << "Creating DPA request to send FRC to all nodes" << endl;
-
-  // PrfFrc DPA access
-  PrfFrc frcDpa(PrfFrc::Cmd::SEND, PrfFrc::FrcCmd::Temperature);
-
-  // default timeout waiting for confirmation or response if communicated directly with coordinator is 400ms
-  // default timeout waiting for response is based on estimation from DPA confirmation 
-  // sets according to your needs and dpa timing requirements but there is no need if you want default
-
-  // FRC requires its own timing, consult iqrf os guide to set it correctly according to your IQRF network
-  frcDpa.setTimeout(5000);
-
-  // DPA transaction task
-  TRC_INF("Running DPA transaction");
-  DpaTransactionTask dpaTT3(frcDpa);
-
-  if (dpaHandler) {
-    try {
-      dpaHandler->ExecuteDpaTransaction(dpaTT3);
-    }
-    catch (std::exception& e) {
-      CATCH_EX("Error in ExecuteDpaTransaction: ", std::exception, e);
-      dpaTT3.processFinish(DpaTransfer::kError);
+    catch ( std::exception& e ) {
+      CATCH_EX( "Error in ExecuteDpaTransaction: ", std::exception, e );
     }
   }
   else {
-    TRC_ERR("DPA interface is not working");
-    dpaTT3.processFinish(DpaTransfer::kError);
+    TRC_ERR( "Dpa interface is not working" );
   }
 
-  result = dpaTT3.waitFinish();
-  TRC_DBG("Result from DPA transaction :" << PAR(result));
-  TRC_DBG("Result from DPA transaction as string :" << PAR(dpaTT3.getErrorStr()));
-
-  if (result == 0) {
-    TRC_INF("FRC done!");
-    TRC_DBG("DPA transaction :" << NAME_PAR(frcDpa.getPrfName(), frcDpa.getAddress()) << PAR(frcDpa.encodeCommand()));
-  }
-  else {
-    TRC_DBG("DPA transaction error: " << PAR(result));
-  }
-
-  TRC_INF("Waiting 30s before exit");
-  cout << "Waiting 30s before exit" << endl;
-  TRC_INF("Space to test asynchronous messages from IQRF");
-  cout << "Space to test asynchronous messages from IQRF" << endl;
-
-  this_thread::sleep_for(chrono::seconds(30));
-
-  TRC_INF("Clean after yourself");
-  delete iqrfChannel;
+  this_thread::sleep_for( chrono::seconds( 1 ) );
+  TRC_INF( "Clean after yourself" );
   delete dpaHandler;
 
-  TRC_LEAVE("");
+  TRC_LEAVE( "" );
   TRC_STOP();
 
   return 0;

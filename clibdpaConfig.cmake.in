@@ -30,8 +30,7 @@ set(@PROJECT_NAME@_CMAKE_RUNTIME_OUTPUT_DIRECTORY "@CMAKE_RUNTIME_OUTPUT_DIRECTO
 
 # Include directories (directories with include header files).
 set(@PROJECT_NAME@_INCLUDE_DIRS
-    "${@PROJECT_NAME@_CMAKE_CURRENT_SOURCE_DIR}/Dpa"
-    "${@PROJECT_NAME@_CMAKE_CURRENT_SOURCE_DIR}/DpaExtension")
+    "${@PROJECT_NAME@_CMAKE_CURRENT_SOURCE_DIR}/Dpa")
 
 #---------------------------------------------------------------------------------------------------
 # Actions performed on find_package(...).
