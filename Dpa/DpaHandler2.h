@@ -18,7 +18,7 @@
 #pragma once
 
 #include "DpaMessage.h"
-#include "IqrfSpiChannel.h"
+#include "IChannel.h"
 #include "DpaTransaction2.h"
 
 class IDpaHandler2
@@ -42,9 +42,7 @@ public:
 class DpaHandler2 : public IDpaHandler2 {
 public:
   DpaHandler2( IChannel* iqrfInterface );
-  DpaHandler2( const std::string& serviceId );
-  DpaHandler2( const spi_iqrf_config_struct& cfg );
-  ~DpaHandler2();
+  virtual ~DpaHandler2();
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout ) override;
   int getTimeout() const override;
   void setTimeout( int timeout ) override;

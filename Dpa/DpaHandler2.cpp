@@ -22,8 +22,6 @@
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
 #include "IChannel.h"
-#include "IqrfCdcChannel.h"
-#include "IqrfSpiChannel.h"
 
 #include "unexpected_command.h"
 #include "unexpected_packet_type.h"
@@ -222,16 +220,6 @@ private:
 DpaHandler2::DpaHandler2( IChannel* iqrfInterface )
 {
   m_imp = new Imp( iqrfInterface );
-}
-
-DpaHandler2::DpaHandler2( const std::string& comPort )
-{
-  m_imp = new Imp( new IqrfCdcChannel( comPort ) );
-}
-
-DpaHandler2::DpaHandler2( const spi_iqrf_config_struct& cfg )
-{
-  m_imp = new Imp( new IqrfSpiChannel( cfg ) );
 }
 
 DpaHandler2::~DpaHandler2()

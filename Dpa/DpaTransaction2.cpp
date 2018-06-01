@@ -22,8 +22,6 @@
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
 #include "IChannel.h"
-#include "IqrfCdcChannel.h"
-#include "IqrfSpiChannel.h"
 
 #include "unexpected_command.h"
 #include "unexpected_packet_type.h"
