@@ -17,7 +17,7 @@
 
 #include "DpaTransactionResult2.h"
 #include "DpaMessage.h"
-#include "IqrfLogging.h"
+ #include <sstream>
 
 using namespace std;
 
