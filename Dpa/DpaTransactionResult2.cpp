@@ -19,10 +19,6 @@
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
 
-#include "unexpected_command.h"
-#include "unexpected_packet_type.h"
-#include "unexpected_peripheral.h"
-
 using namespace std;
 
 /////////////////////////////////////

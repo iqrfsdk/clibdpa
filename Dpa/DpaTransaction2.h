@@ -17,52 +17,10 @@
 
 #pragma once
 
-#include "DpaMessage.h"
+#include "IDpaTransaction2.h"
 #include "DpaTransactionResult2.h"
-#include <future>
-
-class IDpaTransaction2
-{
-public:
-  enum RfMode {
-    kStd,
-    kLp
-  };
-
-  enum FrcResponseTime {
-    k40Ms = 0x00,
-    k360Ms = 0x10,
-    k680Ms = 0x20,
-    k1320Ms = 0x30,
-    k2600Ms = 0x40,
-    k5160Ms = 0x50,
-    k10280Ms = 0x60,
-    k20620Ms = 0x70
-  };
-
-  typedef struct
-  {
-    uint8_t bondedNodes;
-    uint8_t discoveredNodes;
-    FrcResponseTime responseTime;
-  } FRC_TimingParams;
-
-  // Timing constants
-  /// Default timeout
-  static const int DEFAULT_TIMEOUT = 500;
-  /// Minimal timeout used if required by user is too low
-  static const int MINIMAL_TIMEOUT = 200;
-  /// Zero value used to indicate infinit timeout in special cases (discovery)
-  static const int INFINITE_TIMEOUT = 0;
-  /// An extra timeout added to timeout from a confirmation packet.
-  static const int32_t SAFETY_TIMEOUT_MS = 40;
-
-  virtual ~IDpaTransaction2() {}
-  /// wait for result
-  virtual std::unique_ptr<IDpaTransactionResult2> get() = 0;
-  /// abort the transaction immediately 
-  virtual void abort() = 0;
-};
+#include "DpaMessage.h"
+#include <condition_variable>
 
 class DpaTransaction2 : public IDpaTransaction2
 {
@@ -109,7 +67,7 @@ private:
   std::unique_ptr<DpaTransactionResult2> m_dpaTransactionResultPtr;
 
   /// transaction state
-  DpaTransfer2State m_state = kCreated;
+  DpaTransfer2State m_state = DpaTransfer2State::kCreated;
   /// signalize final state
   bool m_finish = false;
 

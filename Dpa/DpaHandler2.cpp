@@ -22,10 +22,7 @@
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
 #include "IChannel.h"
-
-#include "unexpected_command.h"
-#include "unexpected_packet_type.h"
-#include "unexpected_peripheral.h"
+#include <exception>
 #include <future>
 
 /////////////////////////////////////

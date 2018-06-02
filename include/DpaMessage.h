@@ -68,23 +68,36 @@ public:
   };
 
   /** Default constructor */
-  DpaMessage();
+  DpaMessage() : m_length(0) {
+    m_dpa_packet = new DpaPacket_t();
+  }
 
   /** Constructor from data */
-  DpaMessage(const unsigned char* data, uint8_t length);
+  DpaMessage(const unsigned char* data, uint8_t length) {
+    m_dpa_packet = new DpaPacket_t();
+    DataToBuffer(data, length);
+  }
 
   /** Constructor from string */
-  DpaMessage(const std::basic_string<unsigned char>& message);
+  DpaMessage(const std::basic_string<unsigned char>& message) {
+    m_dpa_packet = new DpaPacket_t();
+    DataToBuffer(message.data(), message.length());
+  }
 
   /**
    Copy constructor
 
    @param	other the original message
    */
-  DpaMessage(const DpaMessage& other);
+  DpaMessage(const DpaMessage& other) : m_length(other.m_length) {
+    m_dpa_packet = new DpaPacket_t();
+    std::copy(other.m_dpa_packet->Buffer, other.m_dpa_packet->Buffer + other.m_length, this->m_dpa_packet->Buffer);
+  }
 
   /** Destructor. */
-  virtual ~DpaMessage();
+  virtual ~DpaMessage() {
+    delete m_dpa_packet;
+  }
 
   /**
    Assignment operator
@@ -92,7 +105,18 @@ public:
    @param	other the original message
    @return	A shallow copy of this object
    */
-  DpaMessage& operator=(const DpaMessage& other);
+  DpaMessage& operator=(const DpaMessage& other) {
+    if (this == &other)
+      return *this;
+
+    delete m_dpa_packet;
+    m_dpa_packet = new DpaPacket_t();
+
+    std::copy(other.m_dpa_packet->Buffer, other.m_dpa_packet->Buffer + other.m_length, this->m_dpa_packet->Buffer);
+    m_length = other.m_length;
+
+    return *this;
+  }
 
   /**
   Assignment operator.
@@ -101,14 +125,28 @@ public:
 
   @return	this with assigned data
   */
-  DpaMessage& operator=(const std::basic_string<unsigned char>& message);
+  DpaMessage& operator=(const std::basic_string<unsigned char>& message) {
+    DataToBuffer(message.data(), message.length());
+    return *this;
+  }
 
   /**
    Gets message type
 
    @return	A MessageType
    */
-  MessageType MessageDirection() const;
+  MessageType MessageDirection() const {
+    if (m_length < kCommandIndex)
+      return kRequest;
+
+    if (PeripheralCommand() & 0x80)
+      return kResponse;
+
+    if (m_length > kStatusCodeIndex && IsConfirmationMessage())
+      return kConfirmation;
+
+    return kRequest;
+  }
 
   /**
    Fills message with data from IQRF network
@@ -120,7 +158,12 @@ public:
    @param [in,out]	data	Pointer to data.
    @param	length			The number of bytes to be added
    */
-  void FillFromResponse(const unsigned char* data, uint8_t length);
+  void FillFromResponse(const unsigned char* data, uint8_t length) {
+    if (length == 0)
+      throw std::invalid_argument("Invalid length.");
+
+    DataToBuffer(data, length);
+  }
 
   /**
   Stores data to message buffer
@@ -132,7 +175,19 @@ public:
   @param	[in,out]		data	Pointer to data
   @param	length					The number of bytes to be stored
   */
-  void DataToBuffer(const unsigned char* data, uint8_t length);
+  void DataToBuffer(const unsigned char* data, uint8_t length) {
+    if (length == 0)
+      return;
+
+    if (data == nullptr)
+      throw std::invalid_argument("Data argument can not be null.");
+
+    if (length > kMaxDpaMessageSize)
+      throw std::length_error("Not enough space for this data.");
+
+    std::copy(data, data + length, m_dpa_packet->Buffer);
+    m_length = length;
+  }
 
   /**
    Gets length of data stored in message
@@ -146,7 +201,11 @@ public:
 
   @param	length The number of bytes to be set
   */
-  void SetLength(int length);
+  void SetLength(int length) {
+    if (length > kMaxDpaMessageSize || length <= 0)
+      throw std::length_error("Invalid length value.");
+    m_length = length;
+  }
 
   /**
    Gets destination or source address of sender/receiver
@@ -176,7 +235,12 @@ public:
 
    @return	A response code
    */
-  TErrorCodes ResponseCode() const;
+  TErrorCodes ResponseCode() const {
+    if (MessageDirection() != kResponse)
+      throw std::logic_error("Only response packet has response error defined.");
+
+    return TErrorCodes(m_dpa_packet->DpaResponsePacket_t.ResponseCode);
+  }
 
   /**
    Gets DPA packet behind the message
@@ -201,5 +265,12 @@ private:
   DpaPacket_t *m_dpa_packet;
   int m_length;
 
-  bool IsConfirmationMessage() const;
+  bool DpaMessage::IsConfirmationMessage() const {
+    auto responseCode = TErrorCodes(m_dpa_packet->DpaResponsePacket_t.ResponseCode);
+
+    if (responseCode == STATUS_CONFIRMATION)
+      return true;
+
+    return false;
+  }
 };

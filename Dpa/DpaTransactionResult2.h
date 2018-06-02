@@ -17,55 +17,8 @@
 
 #pragma once
 
-#include "DpaMessage.h"
-#include <chrono>
+#include "IDpaTransactionResult2.h"
 
-class IDpaTransactionResult2
-{
-public:
-  enum ErrorCode {
-    // transaction handling
-    TRN_ERROR_BAD_RESPONSE = -7,
-    TRN_ERROR_BAD_REQUEST = -6,
-    TRN_ERROR_IFACE_BUSY = -5,
-    TRN_ERROR_IFACE = -4,
-    TRN_ERROR_ABORTED = -3,
-    TRN_ERROR_IFACE_QUEUE_FULL = -2,
-    TRN_ERROR_TIMEOUT = -1,
-    TRN_OK = STATUS_NO_ERROR,
-    // DPA response erors
-    TRN_ERROR_FAIL = ERROR_FAIL,
-    TRN_ERROR_PCMD = ERROR_PCMD,
-    TRN_ERROR_PNUM = ERROR_PNUM,
-    TRN_ERROR_ADDR = ERROR_ADDR,
-    TRN_ERROR_DATA_LEN = ERROR_DATA_LEN,
-    TRN_ERROR_DATA = ERROR_DATA,
-    TRN_ERROR_HWPID = ERROR_HWPID,
-    TRN_ERROR_NADR = ERROR_NADR,
-    TRN_ERROR_IFACE_CUSTOM_HANDLER = ERROR_IFACE_CUSTOM_HANDLER,
-    TRN_ERROR_MISSING_CUSTOM_DPA_HANDLER = ERROR_MISSING_CUSTOM_DPA_HANDLER,
-    TRN_ERROR_USER_TO = ERROR_USER_TO,
-    TRN_STATUS_CONFIRMATION = STATUS_CONFIRMATION,
-    TRN_ERROR_USER_FROM = ERROR_USER_FROM
-  };
-
-  virtual int getErrorCode() const = 0;
-  virtual void overrideErrorCode( ErrorCode err ) = 0;
-  virtual std::string getErrorString() const = 0;
-  virtual const DpaMessage& getRequest() const = 0;
-  virtual const DpaMessage& getConfirmation() const = 0;
-  virtual const DpaMessage& getResponse() const = 0;
-  virtual const std::chrono::time_point<std::chrono::system_clock>& getRequestTs() const = 0;
-  virtual const std::chrono::time_point<std::chrono::system_clock>& getConfirmationTs() const = 0;
-  virtual const std::chrono::time_point<std::chrono::system_clock>& getResponseTs() const = 0;
-  virtual bool isConfirmed() const = 0;
-  virtual bool isResponded() const = 0;
-  virtual ~IDpaTransactionResult2() {};
-};
-
-/////////////////////////////////////
-// class DpaTransactionResult2
-/////////////////////////////////////
 class DpaTransactionResult2 : public IDpaTransactionResult2
 {
 private:
@@ -82,9 +35,9 @@ private:
   /// response timestamp
   std::chrono::time_point<std::chrono::system_clock> m_response_ts;
   /// overall error code
-  int m_errorCode = TRN_ERROR_ABORTED;
+  int m_errorCode = ErrorCode::TRN_ERROR_ABORTED;
   /// response code
-  int m_responseCode = TRN_OK;
+  int m_responseCode = ErrorCode::TRN_OK;
   /// received and set response flag
   bool m_isResponded = false;
   /// received and set confirmation flag
@@ -94,7 +47,7 @@ public:
   DpaTransactionResult2() = delete;
   DpaTransactionResult2( const DpaMessage& request );
   int getErrorCode() const override;
-  void overrideErrorCode( IDpaTransactionResult2::ErrorCode err ) override;
+  void overrideErrorCode( ErrorCode err ) override;
   std::string getErrorString() const override;
   const DpaMessage& getRequest() const override;
   const DpaMessage& getConfirmation() const override;

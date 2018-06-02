@@ -17,38 +17,9 @@
 
 #pragma once
 
-#include "DpaMessage.h"
+#include "IDpaHandler2.h"
 #include "IChannel.h"
 #include "DpaTransaction2.h"
-
-class IDpaHandler2
-{
-public:
-
-  // Timing constants
-
-  /// Default timeout
-  static const int DEFAULT_TIMEOUT = 500;
-  /// Minimal timeout used if required by user is too low
-  static const int MINIMAL_TIMEOUT = 200;
-  /// Zero value used to indicate infinit timeout in special cases (discovery)
-  static const int INFINITE_TIMEOUT = 0;
-  /// An extra timeout added to timeout from a confirmation packet.
-  static const int32_t SAFETY_TIMEOUT_MS = 40;
-  /// Asynchronous DPA message handler functional type
-  typedef std::function<void( const DpaMessage& dpaMessage )> AsyncMessageHandlerFunc;
-  /// 0 > timeout - use default, 0 == timeout - use infinit, 0 < timeout - user value
-  virtual std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout ) = 0;
-  virtual int getTimeout() const = 0;
-  virtual void setTimeout( int timeout ) = 0;
-  virtual IDpaTransaction2::RfMode getRfCommunicationMode() const = 0;
-  virtual void setRfCommunicationMode( IDpaTransaction2::RfMode rfMode ) = 0;
-  virtual IDpaTransaction2::FRC_TimingParams getFrcTiming() const = 0;
-  virtual void setFrcTiming( IDpaTransaction2::FRC_TimingParams params ) = 0;
-  virtual void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) = 0;
-  virtual void unregisterAsyncMessageHandler( const std::string& serviceId ) = 0;
-  virtual ~IDpaHandler2() {}
-};
 
 class DpaHandler2 : public IDpaHandler2 {
 public:

@@ -22,13 +22,10 @@
 #include "DpaMessage.h"
 #include "IqrfLogging.h"
 #include "IChannel.h"
-
-#include "unexpected_command.h"
-#include "unexpected_packet_type.h"
-#include "unexpected_peripheral.h"
-
 #include <iostream>
 #include <future>
+#include <exception>
+
 using namespace std;
 
 /////////////////////////////////////
@@ -125,7 +122,7 @@ void DpaTransaction2::abort() {
   m_conditionVariable.notify_all();
 }
 
-  //-----------------------------------------------------
+//-----------------------------------------------------
 std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
 {
   // wait for transaction start
@@ -315,20 +312,20 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
   // TODO verify exception handling. Do we need the exception here at all?
   // no request is expected
   if ( messageDirection != DpaMessage::kResponse && messageDirection != DpaMessage::kConfirmation ) {
-    throw unexpected_packet_type( "Response is expected." );
+    throw std::logic_error( "Response is expected." );
   }
   const DpaMessage& request = m_dpaTransactionResultPtr->getRequest();
   // same as sent request
   if ( receivedMessage.NodeAddress() != request.NodeAddress() ) {
-    throw unexpected_peripheral( "Different node address than in sent message." );
+    throw std::logic_error( "Different node address than in sent message." );
   }
   // same as sent request
   if ( receivedMessage.PeripheralType() != request.PeripheralType() ) {
-    throw unexpected_peripheral( "Different peripheral type than in sent message." );
+    throw std::logic_error( "Different peripheral type than in sent message." );
   }
   // same as sent request
   if ( ( receivedMessage.PeripheralCommand() & ~0x80 ) != request.PeripheralCommand() ) {
-    throw unexpected_command( "Different peripheral command than in sent message." );
+    throw std::logic_error( "Different peripheral command than in sent message." );
   }
 
   int32_t estimatedTimeMs = 0;

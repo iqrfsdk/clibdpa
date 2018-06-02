@@ -44,10 +44,7 @@ message(STATUS "CMAKE_C_FLAGS_DEBUG:     ${CMAKE_C_FLAGS_DEBUG}")
 include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
 include_directories(${cutils_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Dpa)
-
-set(clibdpa_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/Dpa PARENT_SCOPE)
-set(clibdpa_FOUND TRUE PARENT_SCOPE)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 #library build
 add_subdirectory(Dpa)
@@ -60,3 +57,8 @@ add_subdirectory(DpaExamples)
 # The find_package requires properly set ${PROJECT_NAME}_DIR variable to a location where the
 # configured config file persists. This variable is usually specified from the outside of CMake.
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake @ONLY)
+
+set(clibdpa_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
+set(clibdpa_FOUND TRUE PARENT_SCOPE)
+# message(STATUS "CURR clibdpa_INCLUDE_DIRS: ${CMAKE_CURRENT_SOURCE_DIR}")
+# message(STATUS "clibdpa_INCLUDE_DIRS: ${clibdpa_INCLUDE_DIRS}")
