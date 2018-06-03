@@ -10,10 +10,6 @@ if (NOT clibspi_FOUND)
   FIND_PACKAGE(clibspi REQUIRED)
 endif()
 
-if (NOT cutils_FOUND)
-  FIND_PACKAGE(cutils REQUIRED)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_DEBUG "_DEBUG")
 endif()
@@ -43,7 +39,6 @@ message(STATUS "CMAKE_C_FLAGS_DEBUG:     ${CMAKE_C_FLAGS_DEBUG}")
 
 include_directories(${clibcdc_INCLUDE_DIRS})
 include_directories(${clibspi_INCLUDE_DIRS})
-#include_directories(${cutils_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 #library build
@@ -51,6 +46,10 @@ add_subdirectory(Dpa)
 
 #example build
 add_subdirectory(DpaExamples)
+
+add_subdirectory(include)
+add_subdirectory(IqrfCdcChannel)
+add_subdirectory(IqrfSpiChannel)
 
 # Configure config file.
 # This file specifies actions performed and variables exported when using find_package on this project.

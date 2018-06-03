@@ -17,11 +17,18 @@
 
 #pragma once
 
-#include "DpaWrapper.h"
-
+#include <cstdint>
 #include <memory>
 #include <string>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <cstdint>
+#include "DPA.h"
+#ifdef __cplusplus
+}
+#endif
 
  /** Size of the buffer for a message */
 #define MAX_DPA_BUFFER	64

@@ -1,6 +1,5 @@
 /**
- * Copyright 2015-2017 MICRORISC s.r.o.
- * Copyright 2017 IQRF Tech s.r.o.
+ * Copyright 2016-2017 MICRORISC s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +16,22 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <cstdint>
-#include "DPA.h"
-#ifdef __cplusplus
-}
-#endif
+#include "IChannel.h"
+#include "CdcInterface.h"
+#include "CDCImpl.h"
+
+class IqrfCdcChannel : public IChannel
+{
+public:
+  IqrfCdcChannel(const std::string& portIqrf);
+  virtual ~IqrfCdcChannel();
+  virtual void sendTo(const std::basic_string<unsigned char>& message) override;
+  virtual void registerReceiveFromHandler(ReceiveFromFunc receiveFromFunc) override;
+  virtual void unregisterReceiveFromHandler() override;
+  State getState() override;
+
+private:
+  IqrfCdcChannel();
+  CDCImpl m_cdc;
+  ReceiveFromFunc m_receiveFromFunc;
+};

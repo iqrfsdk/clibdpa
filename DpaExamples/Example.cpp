@@ -42,12 +42,13 @@ int main( int argc, char** argv ) {
   spiCfg.enableGpioPin = 1;
 
   // DPA handler
-  DpaHandler2 *dpaHandler;
+  IChannel *cdc = new IqrfCdcChannel(portNameWinCdc);
+  DpaHandler2 *dpaHandler = nullptr;
 
   try {
     TRC_INF( "Creating DPA handler" );
     // IQRF CDC interface
-    dpaHandler = new DpaHandler2( portNameWinCdc );
+    dpaHandler = new DpaHandler2(cdc);
 
     // Register async. messages handler
     dpaHandler->registerAsyncMessageHandler( serviceId, &asynchronousMessageHandler );
