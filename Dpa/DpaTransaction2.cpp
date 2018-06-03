@@ -516,35 +516,35 @@ int32_t DpaTransaction2::getFrcTimeout()
 
   // set FRC response time
   switch ( m_currentFRC_TimingParams.responseTime ) {
-    case FrcResponseTime::k360Ms:
+    case IDpaTransaction2::FrcResponseTime::k360Ms:
       FrcResponseTime = 360;
       break;
 
-    case FrcResponseTime::k680Ms:
+    case IDpaTransaction2::FrcResponseTime::k680Ms:
       FrcResponseTime = 680;
       break;
 
-    case FrcResponseTime::k1320Ms:
+    case IDpaTransaction2::FrcResponseTime::k1320Ms:
       FrcResponseTime = 1320;
       break;
 
-    case FrcResponseTime::k2600Ms:
+    case IDpaTransaction2::FrcResponseTime::k2600Ms:
       FrcResponseTime = 2600;
       break;
 
-    case FrcResponseTime::k5160Ms:
+    case IDpaTransaction2::FrcResponseTime::k5160Ms:
       FrcResponseTime = 5160;
       break;
 
-    case FrcResponseTime::k10280Ms:
+    case IDpaTransaction2::FrcResponseTime::k10280Ms:
       FrcResponseTime = 10280;
       break;
 
-    case FrcResponseTime::k20620Ms:
+    case IDpaTransaction2::FrcResponseTime::k20620Ms:
       FrcResponseTime = 20620;
       break;
 
-    case FrcResponseTime::k40Ms:
+    case IDpaTransaction2::FrcResponseTime::k40Ms:
     default:
       FrcResponseTime = 40;
       break;

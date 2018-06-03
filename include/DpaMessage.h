@@ -272,7 +272,7 @@ private:
   DpaPacket_t *m_dpa_packet;
   int m_length;
 
-  bool DpaMessage::IsConfirmationMessage() const {
+  bool IsConfirmationMessage() const {
     auto responseCode = TErrorCodes(m_dpa_packet->DpaResponsePacket_t.ResponseCode);
 
     if (responseCode == STATUS_CONFIRMATION)
