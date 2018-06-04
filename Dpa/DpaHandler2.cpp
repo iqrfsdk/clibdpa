@@ -20,7 +20,8 @@
 #include "DpaTransaction2.h"
 #include "DpaTransactionResult2.h"
 #include "DpaMessage.h"
-#include "IqrfLogging.h"
+#include "IqrfTrace.h"
+#include "IqrfTraceHex.h"
 #include "IChannel.h"
 #include <exception>
 #include <future>
@@ -44,7 +45,7 @@ public:
         m_pendingTransaction->execute( true ); // succesfully queued
       }
       else {
-        TRC_ERR( "Transaction queue overload: " << PAR( size ) );
+        TRC_ERROR( "Transaction queue overload: " << PAR( size ) );
         m_pendingTransaction->execute( false );  // queue full transaction not handled, error reported
       }
     } );
@@ -81,8 +82,8 @@ public:
     if ( message.length() == 0 )
       return;
 
-    TRC_DBG( ">>>>>>>>>>>>>>>>>>" << std::endl <<
-             "Received from IQRF interface: " << std::endl << FORM_HEX( message.data(), message.length() ) );
+    TRC_DEBUG( ">>>>>>>>>>>>>>>>>>" << std::endl <<
+             "Received from IQRF interface: " << std::endl << MEM_HEX( message.data(), message.length() ) );
 
     // incomming message
     DpaMessage receivedMessage;
@@ -90,7 +91,7 @@ public:
       receivedMessage.FillFromResponse( message.data(), message.length() );
     }
     catch ( std::exception& e ) {
-      CATCH_EX( "in processing msg", std::exception, e );
+      CATCH_EXC_TRC_WAR(std::exception, e, "in processing msg");
       return;
     }
 
@@ -111,7 +112,7 @@ public:
         m_pendingTransaction->processReceivedMessage( message );
       }
       catch ( std::logic_error& le ) {
-        CATCH_EX( "Process received message error...", std::logic_error, le );
+        CATCH_EXC_TRC_WAR(std::logic_error, le, "Process received message error..." );
       }
     }
   }
@@ -119,7 +120,7 @@ public:
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout )
   {
     if ( request.GetLength() <= 0 ) {
-      TRC_WAR( "Empty request => nothing to sent and transaction aborted" );
+      TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
       std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr ) );
       return ptr;
     }
@@ -140,7 +141,7 @@ public:
   void setTimeout( int timeout )
   {
     if ( timeout < IDpaTransaction2::MINIMAL_TIMEOUT ) {
-      TRC_WAR( PAR( timeout ) << " is too low and it is forced to: " << PAR( IDpaTransaction2::MINIMAL_TIMEOUT ) )
+      TRC_WARNING( PAR( timeout ) << " is too low and it is forced to: " << PAR( IDpaTransaction2::MINIMAL_TIMEOUT ) )
         timeout = IDpaTransaction2::MINIMAL_TIMEOUT;
     }
     m_defaultTimeout = timeout;
@@ -194,8 +195,8 @@ public:
 private:
   void sendRequest( const DpaMessage& request )
   {
-    TRC_DBG( "<<<<<<<<<<<<<<<<<<" << std::endl <<
-             "Sent to DPA interface: " << std::endl << FORM_HEX( request.DpaPacketData(), request.GetLength() ) );
+    TRC_DEBUG( "<<<<<<<<<<<<<<<<<<" << std::endl <<
+             "Sent to DPA interface: " << std::endl << MEM_HEX( request.DpaPacketData(), request.GetLength() ) );
     m_iqrfInterface->sendTo( std::basic_string<unsigned char>( request.DpaPacketData(), request.GetLength() ) );
   }
 

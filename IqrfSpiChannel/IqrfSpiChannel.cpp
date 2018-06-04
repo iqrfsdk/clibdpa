@@ -15,7 +15,8 @@
  */
 
 #include "IqrfSpiChannel.h"
-#include "IqrfLogging.h"
+#include "IqrfTrace.h"
+#include "IqrfTraceHex.h"
 #include "TaskQueue.h"
 #include <string.h>
 #include <thread>
@@ -49,7 +50,7 @@ public:
     int retval = spi_iqrf_initAdvanced(&cfg);
     if (BASE_TYPES_OPER_OK != retval) {
       delete[] m_rx;
-      THROW_EX(SpiChannelException, "Communication interface has not been open.");
+      THROW_EXC_TRC_WAR(SpiChannelException, "Communication interface has not been open.");
     }
 
     m_receiveMessageQueue = new TaskQueue<std::basic_string<unsigned char>>([&](std::basic_string<unsigned char> msg) {
@@ -58,7 +59,7 @@ public:
         m_receiveFromFunc(msg);
       }
       else {
-        TRC_WAR("Unregistered receiveFrom() handler");
+        TRC_WARNING("Unregistered receiveFrom() handler");
       }
     });
 
@@ -70,10 +71,10 @@ public:
   {
     m_runListenThread = false;
 
-    TRC_DBG("joining udp listening thread");
+    TRC_DEBUG("joining udp listening thread");
     if (m_listenThread.joinable())
       m_listenThread.join();
-    TRC_DBG("listening thread joined");
+    TRC_DEBUG("listening thread joined");
 
     spi_iqrf_destroy();
 
@@ -94,7 +95,7 @@ public:
   {
     spi_iqrf_setCommunicationMode(mode);
     if (mode != spi_iqrf_getCommunicationMode()) {
-      THROW_EX(SpiChannelException, "CommunicationMode was not changed.");
+      THROW_EXC_TRC_WAR(SpiChannelException, "CommunicationMode was not changed.");
     }
   }
 
@@ -123,8 +124,8 @@ public:
         state = State::Ready;
       }
       else {
-        TRC_INF("SPI status1: " << PAR(spiStatus1.dataNotReadyStatus));
-        TRC_INF("SPI status2: " << PAR(spiStatus2.dataNotReadyStatus));
+        TRC_INFORMATION("SPI status1: " << PAR(spiStatus1.dataNotReadyStatus));
+        TRC_INFORMATION("SPI status2: " << PAR(spiStatus2.dataNotReadyStatus));
         state = State::NotReady;
       }
       break;
@@ -144,10 +145,10 @@ public:
     int attempt = 0;
     counter++;
 
-    TRC_INF("Sending to IQRF SPI: " << std::endl << FORM_HEX(message.data(), message.size()));
+    TRC_INFORMATION("Sending to IQRF SPI: " << std::endl << MEM_HEX(message.data(), message.size()));
 
     while (attempt++ < ATTEMPTS) {
-      TRC_DBG("Trying to sent: " << counter << "." << attempt);
+      TRC_DEBUG("Trying to sent: " << counter << "." << attempt);
       spi_iqrf_SPIStatus status;
 
       std::unique_lock<std::mutex> lck(m_commMutex);
@@ -158,21 +159,21 @@ public:
         if (status.dataNotReadyStatus == SPI_IQRF_SPI_READY_COMM) {
           int retval = spi_iqrf_write((void*)message.data(), message.size());
           if (BASE_TYPES_OPER_OK == retval) {
-            TRC_DBG("Success write: " << NAME_PAR(wrData, message.size()))
+            TRC_DEBUG("Success write: " << NAME_PAR(wrData, message.size()))
             break;
           }
           else {
-            TRC_WAR("spi_iqrf_write() failed: " << PAR(retval));
+            TRC_WARNING("spi_iqrf_write() failed: " << PAR(retval));
           }
         }
       }
       else {
-        TRC_WAR("spi_iqrf_getSPIStatus() failed: " << PAR(retval));
+        TRC_WARNING("spi_iqrf_getSPIStatus() failed: " << PAR(retval));
       }
 
       // conflict with incoming data
       if (status.isDataReady) {
-        TRC_WAR("Data ready postpone write: " << PAR_HEX(status.isDataReady) << PAR_HEX(status.dataReady) << PAR(m_runListenThread));
+        TRC_WARNING("Data ready postpone write: " << PAR_HEX(status.isDataReady) << PAR_HEX(status.dataReady) << PAR(m_runListenThread));
         
         // notify listen() to read immediately
         m_commCondition.notify_one();
@@ -183,17 +184,17 @@ public:
 
     }
     if (attempt > ATTEMPTS) {
-      TRC_WAR("Cannot send to SPI: message is dropped");
+      TRC_WARNING("Cannot send to SPI: message is dropped");
     }
   }
 
 private:
   void listen()
   {
-    TRC_ENTER("thread starts");
+    TRC_FUNCTION_ENTER("thread starts");
 
     try {
-      TRC_DBG("SPI is ready");
+      TRC_DEBUG("SPI is ready");
 
       while (m_runListenThread)
       {
@@ -209,7 +210,7 @@ private:
           int retval = spi_iqrf_getSPIStatus(&status);
           if (BASE_TYPES_OPER_OK == retval) {
             if (status.isDataReady) {
-              TRC_DBG("Data is ready: " << NAME_PAR(dataReady, status.dataReady));
+              TRC_DEBUG("Data is ready: " << NAME_PAR(dataReady, status.dataReady));
               if (status.dataReady <= m_bufsize) {
                 retval = spi_iqrf_read(m_rx, status.dataReady);
                 if (BASE_TYPES_OPER_OK == retval) {
@@ -217,16 +218,16 @@ private:
                   recData = status.dataReady;
                 }
                 else {
-                  TRC_WAR("spi_iqrf_read() failed: " << PAR(retval));
+                  TRC_WARNING("spi_iqrf_read() failed: " << PAR(retval));
                 }
               }
               else {
-                TRC_WAR("Received data too long: " << NAME_PAR(dataReady, status.dataReady) << PAR(m_bufsize));
+                TRC_WARNING("Received data too long: " << NAME_PAR(dataReady, status.dataReady) << PAR(m_bufsize));
               }
             }
           }
           else {
-            TRC_WAR("spi_iqrf_getSPIStatus() failed: " << PAR(retval));
+            TRC_WARNING("spi_iqrf_getSPIStatus() failed: " << PAR(retval));
           }
         }
 
@@ -235,17 +236,17 @@ private:
 
         // push received message if any
         if (recData) {
-          TRC_DBG("Success read: " << PAR(recData));
+          TRC_DEBUG("Success read: " << PAR(recData));
           m_receiveMessageQueue->pushToQueue(std::basic_string<unsigned char>(m_rx, recData));
         }
 
       }
     }
     catch (SpiChannelException& e) {
-      CATCH_EX("listening thread error", SpiChannelException, e);
+      CATCH_EXC_TRC_WAR(SpiChannelException, e, "listening thread error");
       m_runListenThread = false;
     }
-    TRC_WAR("thread stopped");
+    TRC_WARNING("thread stopped");
   }
 
   ReceiveFromFunc m_receiveFromFunc;

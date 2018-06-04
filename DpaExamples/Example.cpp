@@ -17,21 +17,23 @@
 #include "IqrfCdcChannel.h"
 #include "IqrfSpiChannel.h"
 #include "DpaHandler2.h"
-#include "IqrfLogging.h"
+#include "IqrfTrace.h"
+#include "IqrfTraceHex.h"
+#include <iostream>
 
 using namespace std;
 using namespace iqrf;
 
-TRC_INIT();
-
 void asynchronousMessageHandler(const DpaMessage& message) {
-  TRC_INF("Received as async msg: " << endl 
-    << FORM_HEX((unsigned char *)message.DpaPacketData(), message.GetLength()));
+  TRC_INFORMATION("Received as async msg: " << endl 
+    << MEM_HEX((unsigned char *)message.DpaPacketData(), message.GetLength()));
 }
 
 int main( int argc, char** argv ) {
-  TRC_START( "log.txt", Level::dbg, 1000000 );
-  TRC_ENTER( "" );
+  TRC_INIT
+  //TRC_START( "log.txt", iqrf::TrcLevel::Debug, 1000000 ); //tracing to ./log.txt
+  TRC_START( "", iqrf::TrcLevel::Debug, 1000000 ); //tracing to cout
+  TRC_FUNCTION_ENTER( "" );
 
   // COM interface
   string portNameWinCdc = "COM4";
@@ -41,13 +43,14 @@ int main( int argc, char** argv ) {
   spi_iqrf_config_struct spiCfg;
   spiCfg.enableGpioPin = 1;
 
-  // DPA handler
-  IChannel *cdc = new IqrfCdcChannel(portNameWinCdc);
   DpaHandler2 *dpaHandler = nullptr;
 
   try {
-    TRC_INF( "Creating DPA handler" );
+    TRC_INFORMATION( "Creating DPA handler" );
     // IQRF CDC interface
+    IChannel *cdc = new IqrfCdcChannel(portNameWinCdc);
+
+    // DPA handler
     dpaHandler = new DpaHandler2(cdc);
 
     // Register async. messages handler
@@ -63,7 +66,7 @@ int main( int argc, char** argv ) {
     dpaHandler->setFrcTiming( frcTiming );
   }
   catch ( std::exception &e ) {
-    CATCH_EX( "Cannot create DpaHandler Interface: ", std::exception, e );
+    CATCH_EXC_TRC_WAR( std::exception, e, "Cannot create DpaHandler Interface: " );
     return 2;
   }
 
@@ -142,19 +145,19 @@ int main( int argc, char** argv ) {
       this_thread::sleep_for( chrono::seconds( 1 ) );
     }
     catch ( std::exception& e ) {
-      CATCH_EX( "Error in ExecuteDpaTransaction: ", std::exception, e );
+      CATCH_EXC_TRC_WAR(std::exception, e, "Error in ExecuteDpaTransaction: ");
     }
   }
   else {
-    TRC_ERR( "Dpa interface is not working" );
+    TRC_ERROR( "Dpa interface is not working" );
   }
 
   this_thread::sleep_for( chrono::seconds( 1 ) );
-  TRC_INF( "Clean after yourself" );
+  TRC_INFORMATION( "Clean after yourself" );
   delete dpaHandler;
 
-  TRC_LEAVE( "" );
-  TRC_STOP();
+  TRC_FUNCTION_LEAVE( "" );
+  TRC_STOP
 
   return 0;
 }

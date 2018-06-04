@@ -20,7 +20,7 @@
 #include "DpaTransaction2.h"
 #include "DpaTransactionResult2.h"
 #include "DpaMessage.h"
-#include "IqrfLogging.h"
+#include "IqrfTrace.h"
 #include "IChannel.h"
 #include <iostream>
 #include <future>
@@ -54,7 +54,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
   , m_currentFRC_TimingParams( params )
   , m_defaultTimeout( defaultTimeout )
 {
-  TRC_ENTER( PAR( mode ) << PAR( defaultTimeout ) << PAR( userTimeout ) )
+  TRC_FUNCTION_ENTER( PAR( mode ) << PAR( defaultTimeout ) << PAR( userTimeout ) )
     static uint32_t transactionId = 0;
   m_transactionId = ++transactionId;
 
@@ -72,17 +72,17 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
     if ( message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY ) {
       // force setting minimal timing as only Discovery can have infinite timeout
-      TRC_WAR( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
+      TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
       requiredTimeout = defaultTimeout;
     }
     else {
-      TRC_WAR( PAR( requiredTimeout ) << " infinite timeout allowed for DISCOVERY message" );
+      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for DISCOVERY message" );
       requiredTimeout = defaultTimeout;
       m_infinitTimeout = true;
     }
   }
   else if ( requiredTimeout < defaultTimeout ) {
-    TRC_WAR( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
+    TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
     requiredTimeout = defaultTimeout;
   }
 
@@ -104,12 +104,12 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
       // user timeout is not applied, forced to FRC 
       requiredTimeout = getFrcTimeout();
       m_expectedDurationMs = requiredTimeout;
-      TRC_WAR( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
+      TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
     }
   }
   
   m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
-  TRC_LEAVE( "Using: " << PAR( m_userTimeoutMs ) );
+  TRC_FUNCTION_LEAVE( "Using: " << PAR( m_userTimeoutMs ) );
 }
 
 DpaTransaction2::~DpaTransaction2()
@@ -126,7 +126,7 @@ void DpaTransaction2::abort() {
 std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
 {
   // wait for transaction start
-  TRC_DBG( "wait for start: " << PAR( m_transactionId ) );
+  TRC_DEBUG( "wait for start: " << PAR( m_transactionId ) );
 
   // lock this function except blocking in wait_for()
   std::unique_lock<std::mutex> lck( m_conditionVariableMutex );
@@ -137,13 +137,13 @@ std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
     {
       // out of wait timeout
       if ( !m_infinitTimeout ) {
-        TRC_WAR( "Transaction timeout - transaction was not started in time." );
+        TRC_WARNING( "Transaction timeout - transaction was not started in time." );
         m_dpaTransactionResultPtr->setErrorCode( IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY );
         // return result and move ownership 
         return std::move( m_dpaTransactionResultPtr );
       }
       else {
-        TRC_WAR( "Infinit timeout - wait forever." );
+        TRC_WARNING( "Infinit timeout - wait forever." );
       }
     }
     // out of wait notify from execute() or processReceivedMessage
@@ -151,12 +151,12 @@ std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
   }
 
   // transaction started
-  TRC_DBG( "Started, wait for finish: " << PAR( m_transactionId ) );
+  TRC_DEBUG( "Started, wait for finish: " << PAR( m_transactionId ) );
   // wait_for() unlock lck when blocking and lock it again when get out, waiting continue if not finished (predicate == false)
   while ( !m_conditionVariable.wait_for( lck, std::chrono::milliseconds( m_userTimeoutMs ), [&] { return m_finish; } ) );
 
   // return result and move ownership 
-  TRC_DBG( "Finished: " << PAR( m_transactionId ) << PAR( m_state ) );
+  TRC_DEBUG( "Finished: " << PAR( m_transactionId ) << PAR( m_state ) );
   return std::move( m_dpaTransactionResultPtr );
 }
 
@@ -186,7 +186,7 @@ void DpaTransaction2::execute( bool queued )
       // now we can expect handling in processReceivedMessage()
     }
     catch ( std::exception& e ) {
-      TRC_WAR( "Send error occured: " << e.what() );
+      TRC_WARNING( "Send error occured: " << e.what() );
       // init expected duration - we have final error state - just finish transaction
       m_expectedDurationMs = 0;
       m_state = kError;
@@ -296,7 +296,7 @@ void DpaTransaction2::execute( bool queued )
   //-----------------------------------------------------
 void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage )
 {
-  TRC_ENTER( "" );
+  TRC_FUNCTION_ENTER( "" );
 
   // lock this function
   std::unique_lock<std::mutex> lck( m_conditionVariableMutex );
@@ -355,7 +355,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
     }
 
     if ( estimatedTimeMs > 0 ) {
-      TRC_INF( "Expected duration to wait :" << PAR( m_userTimeoutMs ) << PAR( estimatedTimeMs ) );
+      TRC_INFORMATION( "Expected duration to wait :" << PAR( m_userTimeoutMs ) << PAR( estimatedTimeMs ) );
       if ( estimatedTimeMs >= m_userTimeoutMs ) {
         m_expectedDurationMs = estimatedTimeMs;
       }
@@ -365,10 +365,10 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
       }
     }
 
-    TRC_DBG( "From confirmation: " << PAR( estimatedTimeMs ) );
+    TRC_DEBUG( "From confirmation: " << PAR( estimatedTimeMs ) );
 
     m_dpaTransactionResultPtr->setConfirmation( receivedMessage );
-    TRC_INF( "Confirmation processed." );
+    TRC_INFORMATION( "Confirmation processed." );
   }
 
   // process response
@@ -393,7 +393,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
           estimatedTimeMs = EstimateStdTimeout( m_hops, m_timeslotLength, m_hopsResponse,
                                                 receivedMessage.GetLength() - ( sizeof( TDpaIFaceHeader ) + 2 ) );
         }
-        TRC_DBG( "From response: " << PAR( estimatedTimeMs ) );
+        TRC_DEBUG( "From response: " << PAR( estimatedTimeMs ) );
         m_expectedDurationMs = estimatedTimeMs;
         if ( m_expectedDurationMs <= 0 ) {
           m_state = kProcessed;
@@ -408,13 +408,13 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
     }
 
     m_dpaTransactionResultPtr->setResponse( receivedMessage );
-    TRC_INF( "Response processed." );
+    TRC_INFORMATION( "Response processed." );
   }
 
   // notification to execute() and get()
   m_conditionVariable.notify_all();
 
-  TRC_LEAVE( "" );
+  TRC_FUNCTION_LEAVE( "" );
 }
 
   // TODO it is not necessary pass the values as they are stored in members
@@ -422,7 +422,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
   // we will need other network structure info for FRC evaluation
 int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength )
 {
-  TRC_ENTER( "" );
+  TRC_FUNCTION_ENTER( "" );
   //	int8_t responseDataLength = -1;
   int32_t responseTimeSlotLengthMs;
 
@@ -440,7 +440,7 @@ int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timesl
   }
   // correction of the estimation from response 
   else {
-    TRC_DBG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
+    TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
     if ( responseDataLength >= 0 && responseDataLength < 16 )
     {
       responseTimeSlotLengthMs = 40;
@@ -453,19 +453,19 @@ int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timesl
     {
       responseTimeSlotLengthMs = 60;
     }
-    TRC_DBG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
+    TRC_DEBUG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
   }
 
   estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
 
-  TRC_INF( "Estimated STD timeout: " << PAR( estimatedTimeoutMs ) );
-  TRC_LEAVE( "" );
+  TRC_INFORMATION( "Estimated STD timeout: " << PAR( estimatedTimeoutMs ) );
+  TRC_FUNCTION_LEAVE( "" );
   return estimatedTimeoutMs;
 }
 
 int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength )
 {
-  TRC_ENTER( "" );
+  TRC_FUNCTION_ENTER( "" );
   int32_t responseTimeSlotLengthMs;
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
@@ -482,7 +482,7 @@ int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslo
   }
   // correction of the estimation from response 
   else {
-    TRC_DBG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
+    TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
     if ( responseDataLength >= 0 && responseDataLength < 11 )
     {
       responseTimeSlotLengthMs = 80;
@@ -499,13 +499,13 @@ int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslo
     {
       responseTimeSlotLengthMs = 110;
     }
-    TRC_DBG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
+    TRC_DEBUG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
   }
 
   estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
 
-  TRC_INF( "Estimated LP timeout: " << PAR( estimatedTimeoutMs ) );
-  TRC_LEAVE( "" );
+  TRC_INFORMATION( "Estimated LP timeout: " << PAR( estimatedTimeoutMs ) );
+  TRC_FUNCTION_LEAVE( "" );
   return estimatedTimeoutMs;
 }
 

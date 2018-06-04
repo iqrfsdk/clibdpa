@@ -50,6 +50,7 @@ add_subdirectory(DpaExamples)
 add_subdirectory(include)
 add_subdirectory(IqrfCdcChannel)
 add_subdirectory(IqrfSpiChannel)
+add_subdirectory(IqrfTracer)
 
 # Configure config file.
 # This file specifies actions performed and variables exported when using find_package on this project.

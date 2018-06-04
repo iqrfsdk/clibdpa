@@ -15,7 +15,8 @@
  */
 
 #include "IqrfCdcChannel.h"
-#include "IqrfLogging.h"
+#include "IqrfTrace.h"
+#include "IqrfTraceHex.h"
 #include <thread>
 #include <chrono>
 
@@ -23,7 +24,7 @@ IqrfCdcChannel::IqrfCdcChannel(const std::string& portIqrf)
   : m_cdc(portIqrf.c_str())
 {
   if (!m_cdc.test()) {
-    THROW_EX(CDCImplException, "CDC Test failed");
+    THROW_EXC_TRC_WAR(CDCImplException, "CDC Test failed");
   }
 }
 
@@ -38,19 +39,19 @@ void IqrfCdcChannel::sendTo(const std::basic_string<unsigned char>& message)
   int attempt = 0;
   counter++;
 
-  TRC_INF("Sending to IQRF CDC: " << std::endl << FORM_HEX(message.data(), message.size()));
+  TRC_INFORMATION("Sending to IQRF CDC: " << std::endl << MEM_HEX(message.data(), message.size()));
 
   while (attempt++ < 4) {
-    TRC_INF("Trying to sent: " << counter << "." << attempt);
+    TRC_INFORMATION("Trying to sent: " << counter << "." << attempt);
     dsResponse = m_cdc.sendData(message);
     if (dsResponse != DSResponse::BUSY)
       break;
     //wait for next attempt
-    TRC_DBG("Sleep for a while ... ");
+    TRC_DEBUG("Sleep for a while ... ");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   if (dsResponse != DSResponse::OK) {
-    THROW_EX(CDCImplException, "CDC send failed" << PAR(dsResponse));
+    THROW_EXC_TRC_WAR(CDCImplException, "CDC send failed" << PAR(dsResponse));
   }
 }
 
