@@ -30,7 +30,6 @@ void asynchronousMessageHandler(const DpaMessage& message) {
 }
 
 int main( int argc, char** argv ) {
-  TRC_INIT
   //TRC_START( "log.txt", iqrf::TrcLevel::Debug, 1000000 ); //tracing to ./log.txt
   TRC_START( "", iqrf::TrcLevel::Debug, 1000000 ); //tracing to cout
   TRC_FUNCTION_ENTER( "" );

@@ -147,11 +147,6 @@ namespace iqrf {
   };
 
   /////////////////////////////////////////
-  void tracerInit()
-  {
-    //IqrfTracer::getTracer()
-  }
-
   void tracerStart(const std::string& filename, TrcLevel level, int filesize)
   {
     IqrfTracer::getTracer().start(filename, level, filesize);

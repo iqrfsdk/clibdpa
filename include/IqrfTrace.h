@@ -13,9 +13,6 @@
 #define TRC_MNAME ""
 #endif
 
-#define TRC_INIT \
-iqrf::tracerInit();
-
 #define TRC_START(filename, level, filesize) \
 iqrf::tracerStart(filename, level, filesize);
 
@@ -94,7 +91,6 @@ namespace iqrf {
   };
 
   // Trace functions declarations
-  void tracerInit();
   void tracerStart(const std::string& filename, TrcLevel level, int filesize);
   void tracerStop();
   bool tracerIsValid(TrcLevel level, int channel);
