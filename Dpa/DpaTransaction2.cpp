@@ -89,7 +89,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
   // init expected duration - no estimation yet, so use default timeout
   m_expectedDurationMs = m_defaultTimeout;
 
-  // calculate requiredTimeout for FRC command
+  // calculate requiredTimeout for special cases
   if ( message.NodeAddress() == COORDINATOR_ADDRESS )
   {
     if ( requiredTimeout > defaultTimeout )
@@ -105,6 +105,18 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
       requiredTimeout = getFrcTimeout();
       m_expectedDurationMs = requiredTimeout;
       TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
+    }
+    
+    //discovery special timeout 
+    if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
+      (message.PeripheralCommand() == CMD_COORDINATOR_DISCOVERY))
+    {
+      // user timeout is not applied, forced to DISCOVERY_TIMEOUT_MS
+      if (userTimeout < 0) {
+        requiredTimeout = DISCOVERY_TIMEOUT_MS;
+        m_expectedDurationMs = requiredTimeout;
+        TRC_INFORMATION("Used timeout: " << PAR(DISCOVERY_TIMEOUT_MS));
+      }
     }
   }
   
