@@ -55,7 +55,7 @@ public:
   /// An extra timeout added to timeout from a confirmation packet.
   static const int32_t SAFETY_TIMEOUT_MS = 40;
   /// A special DISCOVERY timeout
-  static const int32_t DISCOVERY_TIMEOUT_MS = 11000;
+  static const int32_t BOND_TIMEOUT_MS = 11000;
 
   virtual ~IDpaTransaction2() {}
   /// wait for result

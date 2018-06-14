@@ -107,15 +107,15 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
       TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
     }
     
-    //discovery special timeout 
+    //bonding special timeout 
     if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
-      (message.PeripheralCommand() == CMD_COORDINATOR_DISCOVERY))
+      (message.PeripheralCommand() == CMD_COORDINATOR_BOND_NODE))
     {
-      // user timeout is not applied, forced to DISCOVERY_TIMEOUT_MS
+      // user timeout is not applied, forced to BOND_TIMEOUT_MS
       if (userTimeout < 0) {
-        requiredTimeout = DISCOVERY_TIMEOUT_MS;
+        requiredTimeout = BOND_TIMEOUT_MS;
         m_expectedDurationMs = requiredTimeout;
-        TRC_INFORMATION("Used timeout: " << PAR(DISCOVERY_TIMEOUT_MS));
+        TRC_INFORMATION("Used timeout: " << PAR(BOND_TIMEOUT_MS));
       }
     }
   }
