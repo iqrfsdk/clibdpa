@@ -69,7 +69,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
   }
   else if ( requiredTimeout == INFINITE_TIMEOUT ) {
     // it is allowed just for Coordinator Discovery
-    if ( message.DpaPacket().DpaRequestPacket_t.NADR != COORDINATOR_ADDRESS ||
+    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS ||
          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY ) {
       // force setting minimal timing as only Discovery can have infinite timeout
       TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
@@ -90,7 +90,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
   m_expectedDurationMs = m_defaultTimeout;
 
   // calculate requiredTimeout for special cases
-  if ( message.NodeAddress() == COORDINATOR_ADDRESS )
+  if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS )
   {
     if ( requiredTimeout > defaultTimeout )
     {
@@ -106,16 +106,16 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_Ti
       m_expectedDurationMs = requiredTimeout;
       TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
     }
-    
+
     //bonding special timeout 
-    if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
-      (message.PeripheralCommand() == CMD_COORDINATOR_BOND_NODE))
+    if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
+      ( message.PeripheralCommand() == CMD_COORDINATOR_BOND_NODE ) )
     {
       // user timeout is not applied, forced to BOND_TIMEOUT_MS
-      if (userTimeout < 0) {
+      if ( userTimeout < 0 ) {
         requiredTimeout = BOND_TIMEOUT_MS;
         m_expectedDurationMs = requiredTimeout;
-        TRC_INFORMATION("Used timeout: " << PAR(BOND_TIMEOUT_MS));
+        TRC_INFORMATION( "Used timeout: " << PAR( BOND_TIMEOUT_MS ) );
       }
     }
   }
@@ -182,7 +182,7 @@ void DpaTransaction2::execute( bool queued )
 
   if ( queued ) {
     // init transaction state
-    if ( message.NodeAddress() == COORDINATOR_ADDRESS ) {
+    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS ) {
       m_state = kSentCoordinator;
     }
     else {
@@ -344,7 +344,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
 
   // process confirmation
   if ( messageDirection == DpaMessage::kConfirmation ) {
-    if ( receivedMessage.NodeAddress() == DpaMessage::kBroadCastAddress ) {
+    if (( receivedMessage.NodeAddress() & BROADCAST_ADDRESS )== BROADCAST_ADDRESS ) {
       m_state = kConfirmationBroadcast;
     }
     else {
