@@ -19,6 +19,7 @@
 
 #include "DpaMessage.h"
 #include <chrono>
+#include <sstream>
 
 class IDpaTransactionResult2
 {
@@ -61,4 +62,57 @@ public:
   virtual bool isConfirmed() const = 0;
   virtual bool isResponded() const = 0;
   virtual ~IDpaTransactionResult2() {};
+
+  static std::string errorCode(int errorCode)
+  {
+    switch (errorCode) {
+
+    case TRN_ERROR_BAD_RESPONSE:
+      return "BAD_RESPONSE";
+    case TRN_ERROR_BAD_REQUEST:
+      return "BAD_REQUEST";
+    case TRN_ERROR_IFACE_BUSY:
+      return "ERROR_IFACE_BUSY";
+    case TRN_ERROR_IFACE:
+      return "ERROR_IFACE";
+    case TRN_ERROR_ABORTED:
+      return "ERROR_ABORTED";
+    case TRN_ERROR_IFACE_QUEUE_FULL:
+      return "ERROR_IFACE_QUEUE_FULL";
+    case TRN_ERROR_TIMEOUT:
+      return "ERROR_TIMEOUT";
+    case TRN_OK:
+      return "ok";
+    case TRN_ERROR_FAIL:
+      return "ERROR_FAIL";
+    case TRN_ERROR_PCMD:
+      return "ERROR_PCMD";
+    case TRN_ERROR_PNUM:
+      return "ERROR_PNUM";
+    case TRN_ERROR_ADDR:
+      return "ERROR_ADDR";
+    case TRN_ERROR_DATA_LEN:
+      return "ERROR_DATA_LEN";
+    case TRN_ERROR_DATA:
+      return "ERROR_DATA";
+    case TRN_ERROR_HWPID:
+      return "ERROR_HWPID";
+    case TRN_ERROR_NADR:
+      return "ERROR_NADR";
+    case TRN_ERROR_IFACE_CUSTOM_HANDLER:
+      return "ERROR_IFACE_CUSTOM_HANDLER";
+    case TRN_ERROR_MISSING_CUSTOM_DPA_HANDLER:
+      return "ERROR_MISSING_CUSTOM_DPA_HANDLER";
+    case TRN_ERROR_USER_TO:
+      return "ERROR_USER_TO";
+    case TRN_STATUS_CONFIRMATION:
+      return "STATUS_CONFIRMATION";
+    case TRN_ERROR_USER_FROM:
+    default:
+      std::ostringstream os;
+      os << "TRN_ERROR_USER_" << std::hex << errorCode;
+      return os.str();
+    }
+  }
+
 };
