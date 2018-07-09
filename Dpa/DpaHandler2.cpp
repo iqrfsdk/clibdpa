@@ -42,11 +42,11 @@ public:
       m_pendingTransaction = ptr;
       size_t size = m_dpaTransactionQueue->size();
       if ( size < QUEUE_MAX_LEN ) {
-        m_pendingTransaction->execute( true ); // succesfully queued
+        m_pendingTransaction->execute(); // succesfully queued
       }
       else {
         TRC_ERROR( "Transaction queue overload: " << PAR( size ) );
-        m_pendingTransaction->execute( false );  // queue full transaction not handled, error reported
+        m_pendingTransaction->execute(IDpaTransactionResult2::TRN_ERROR_IFACE_QUEUE_FULL);  // queue full transaction not handled, error reported
       }
     } );
 
@@ -117,18 +117,22 @@ public:
     }
   }
 
-  std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout )
+  std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout, 
+    IDpaTransactionResult2::ErrorCode defaultError)
   {
     if ( request.GetLength() <= 0 ) {
+      //TODO gets stuck on DpaTransaction2::get() if processed here
       TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
-      std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr ) );
+      std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr, defaultError ) );
       return ptr;
     }
-    std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout,
-                                                               [&]( const DpaMessage& r ) {
-      sendRequest( r );
-    }
-    ) );
+    std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request,
+      m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout,
+      [&]( const DpaMessage& r ) {
+        sendRequest( r );
+      },
+      defaultError
+    ));
     m_dpaTransactionQueue->pushToQueue( ptr );
     return ptr;
   }
@@ -225,9 +229,10 @@ DpaHandler2::~DpaHandler2()
   delete m_imp;
 }
 
-std::shared_ptr<IDpaTransaction2> DpaHandler2::executeDpaTransaction( const DpaMessage& request, int32_t timeout )
+std::shared_ptr<IDpaTransaction2> DpaHandler2::executeDpaTransaction( const DpaMessage& request, int32_t timeout,
+  IDpaTransactionResult2::ErrorCode defaultError)
 {
-  return m_imp->executeDpaTransaction( request, timeout );
+  return m_imp->executeDpaTransaction( request, timeout, defaultError );
 }
 
 int DpaHandler2::getTimeout() const

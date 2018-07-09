@@ -47,12 +47,15 @@ using namespace std;
 // The function computes expected time set appropriate transaction state and pass controll back to execute() to continue or finish the transaction.
 // When transaction is finish the function execute() pass control to get() and it returns transaction result to user.
 //
-DpaTransaction2::DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender )
+DpaTransaction2::DpaTransaction2( const DpaMessage& request,
+  RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
+  IDpaTransactionResult2::ErrorCode defaultError)
   : m_sender( sender )
   , m_dpaTransactionResultPtr( new DpaTransactionResult2( request ) )
   , m_currentCommunicationMode( mode )
   , m_currentFRC_TimingParams( params )
   , m_defaultTimeout( defaultTimeout )
+  , m_defaultError( defaultError )
 {
   TRC_FUNCTION_ENTER( PAR( mode ) << PAR( defaultTimeout ) << PAR( userTimeout ) )
     static uint32_t transactionId = 0;
@@ -172,15 +175,23 @@ std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
   return std::move( m_dpaTransactionResultPtr );
 }
 
-  //-----------------------------------------------------
-void DpaTransaction2::execute( bool queued )
+//-----------------------------------------------------
+void DpaTransaction2::execute()
+{
+  execute(m_defaultError);
+}
+
+//-----------------------------------------------------
+void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
 {
   // lock this function except blocking in wait_for()
   std::unique_lock<std::mutex> lck( m_conditionVariableMutex );
+  
+  m_defaultError = defaultError;
 
   const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
 
-  if ( queued ) {
+  if ( m_defaultError == IDpaTransactionResult2::TRN_OK) {
     // init transaction state
     if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS ) {
       m_state = kSentCoordinator;
@@ -188,9 +199,6 @@ void DpaTransaction2::execute( bool queued )
     else {
       m_state = kSent;
     }
-
-    // init expected duration - no estimation yet, so use default timeout
-    //m_expectedDurationMs = m_defaultTimeout;
 
     // send request toward coordinator via send functor
     try {
@@ -201,12 +209,12 @@ void DpaTransaction2::execute( bool queued )
       TRC_WARNING( "Send error occured: " << e.what() );
       // init expected duration - we have final error state - just finish transaction
       m_expectedDurationMs = 0;
-      m_state = kError;
+      m_state = kInterfaceError;
     }
   }
   else {
     // transaction is not handled 
-    m_state = kQueueFull;
+    m_state = kDefaultError;
     // init expected duration - we have final error state - just finish transaction
     m_expectedDurationMs = 0;
   }
@@ -283,11 +291,11 @@ void DpaTransaction2::execute( bool queued )
       case kAborted:
         errorCode = DpaTransactionResult2::TRN_ERROR_ABORTED;
         break;
-      case kError:
+      case kInterfaceError:
         errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;
         break;
-      case kQueueFull:
-        errorCode = DpaTransactionResult2::TRN_ERROR_IFACE_QUEUE_FULL;
+      case kDefaultError:
+        errorCode = m_defaultError;
         break;
       default:
         errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;

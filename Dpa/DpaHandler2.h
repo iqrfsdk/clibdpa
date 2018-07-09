@@ -25,7 +25,8 @@ class DpaHandler2 : public IDpaHandler2 {
 public:
   DpaHandler2( IChannel* iqrfInterface );
   virtual ~DpaHandler2();
-  std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout ) override;
+  std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout,
+    IDpaTransactionResult2::ErrorCode defaultError) override;
   int getTimeout() const override;
   void setTimeout( int timeout ) override;
   IDpaTransaction2::RfMode getRfCommunicationMode() const override;

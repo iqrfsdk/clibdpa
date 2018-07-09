@@ -28,11 +28,14 @@ public:
   /// type of functor to send the request message towards the coordinator
   typedef std::function<void( const DpaMessage& dpaMessage )> SendDpaMessageFunc;
   DpaTransaction2() = delete;
-  DpaTransaction2( const DpaMessage& request, RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender );
+  DpaTransaction2( const DpaMessage& request,
+    RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
+    IDpaTransactionResult2::ErrorCode defaultError);
   virtual ~DpaTransaction2();
   void abort() override;
   std::unique_ptr<IDpaTransactionResult2> get();
-  void execute( bool queued );
+  void execute();
+  void execute(IDpaTransactionResult2::ErrorCode defaultError);
   void processReceivedMessage( const DpaMessage& receivedMessage );
 
 private:
@@ -58,9 +61,9 @@ private:
     /// transaction forced to abort.
     kAborted,
     /// error state during sending via iqrf interface.
-    kError,
-    /// iqrf interface queue is full
-    kQueueFull
+    kInterfaceError,
+    /// error state enforced at the beginning of the transaction
+    kDefaultError
   };
 
   /// Result object tobe returned when the transaction finishes
@@ -80,6 +83,7 @@ private:
   /// functor to send the request message towards the coordinator
   SendDpaMessageFunc m_sender;
 
+  IDpaTransactionResult2::ErrorCode m_defaultError = IDpaTransactionResult2::TRN_OK;
   uint32_t m_defaultTimeout = DEFAULT_TIMEOUT; //set form configuration
   uint32_t m_userTimeoutMs = DEFAULT_TIMEOUT; //required by user
   uint32_t m_expectedDurationMs = DEFAULT_TIMEOUT;
