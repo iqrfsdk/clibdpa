@@ -44,7 +44,7 @@ int main( int argc, char** argv ) {
   spi_iqrf_config_struct spiCfg;
   spiCfg.enableGpioPin = 1;
 
-  DpaHandler2 *dpaHandler = nullptr;
+  IDpaHandler2 *dpaHandler = nullptr;
 
   try {
     TRC_INFORMATION( "Creating DPA handler" );
