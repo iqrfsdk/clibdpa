@@ -26,6 +26,7 @@ class IDpaTransactionResult2
 public:
   enum ErrorCode {
     // transaction handling
+    TRN_ERROR_IFACE_EXCLUSIVE_ACCESS = -8,
     TRN_ERROR_BAD_RESPONSE = -7,
     TRN_ERROR_BAD_REQUEST = -6,
     TRN_ERROR_IFACE_BUSY = -5,
@@ -67,6 +68,8 @@ public:
   {
     switch (errorCode) {
 
+    case TRN_ERROR_IFACE_EXCLUSIVE_ACCESS:
+      return "ERROR_IFACE_EXCLUSIVE_ACCESS";
     case TRN_ERROR_BAD_RESPONSE:
       return "BAD_RESPONSE";
     case TRN_ERROR_BAD_REQUEST:
