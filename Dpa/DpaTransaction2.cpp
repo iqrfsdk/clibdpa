@@ -67,6 +67,12 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
 
   // check and correct timeout here before blocking:
   if ( requiredTimeout < 0 ) {
+    // Discovery command ?
+    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ) {
+      // Yes, set default (infinite) timeout for discovery 
+      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for DISCOVERY message" );
+      m_infinitTimeout = true;
+    }
     // default timeout
     requiredTimeout = defaultTimeout;
   }
