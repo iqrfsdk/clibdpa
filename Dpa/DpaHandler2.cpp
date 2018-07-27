@@ -38,7 +38,7 @@ public:
   Imp( IChannel* iqrfInterface )
     :m_iqrfInterface( iqrfInterface )
   {
-    m_dpaTransactionQueue = new TaskQueue<std::shared_ptr<DpaTransaction2>>( [&]( std::shared_ptr<DpaTransaction2> ptr ) {
+    m_dpaTransactionQueue = ant_new TaskQueue<std::shared_ptr<DpaTransaction2>>( [&]( std::shared_ptr<DpaTransaction2> ptr ) {
       m_pendingTransaction = ptr;
       size_t size = m_dpaTransactionQueue->size();
       if ( size < QUEUE_MAX_LEN ) {
@@ -123,10 +123,10 @@ public:
     if ( request.GetLength() <= 0 ) {
       //TODO gets stuck on DpaTransaction2::get() if processed here
       TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
-      std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr, defaultError ) );
+      std::shared_ptr<DpaTransaction2> ptr( ant_new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr, defaultError ) );
       return ptr;
     }
-    std::shared_ptr<DpaTransaction2> ptr( new DpaTransaction2( request,
+    std::shared_ptr<DpaTransaction2> ptr( ant_new DpaTransaction2( request,
       m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout,
       [&]( const DpaMessage& r ) {
         sendRequest( r );
@@ -221,7 +221,7 @@ private:
 /////////////////////////////////////
 DpaHandler2::DpaHandler2( IChannel* iqrfInterface )
 {
-  m_imp = new Imp( iqrfInterface );
+  m_imp = ant_new Imp( iqrfInterface );
 }
 
 DpaHandler2::~DpaHandler2()

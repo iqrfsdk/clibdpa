@@ -30,6 +30,21 @@ extern "C" {
 }
 #endif
 
+#if defined _WIN32 || defined _WIN64
+#define WIN32
+#endif
+
+// anotaded ant_new for memleak debug purpose
+#ifdef WIN32
+#ifdef _DEBUG
+#define ant_new new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#else
+#define ant_new new
+#endif
+#else
+#define ant_new new
+#endif
+
  /** Size of the buffer for a message */
 #define MAX_DPA_BUFFER	64
 
@@ -76,18 +91,18 @@ public:
 
   /** Default constructor */
   DpaMessage() : m_length(0) {
-    m_dpa_packet = new DpaPacket_t();
+    m_dpa_packet = ant_new DpaPacket_t();
   }
 
   /** Constructor from data */
   DpaMessage(const unsigned char* data, uint8_t length) {
-    m_dpa_packet = new DpaPacket_t();
+    m_dpa_packet = ant_new DpaPacket_t();
     DataToBuffer(data, length);
   }
 
   /** Constructor from string */
   DpaMessage(const std::basic_string<unsigned char>& message) {
-    m_dpa_packet = new DpaPacket_t();
+    m_dpa_packet = ant_new DpaPacket_t();
     DataToBuffer(message.data(), message.length());
   }
 
@@ -97,7 +112,7 @@ public:
    @param	other the original message
    */
   DpaMessage(const DpaMessage& other) : m_length(other.m_length) {
-    m_dpa_packet = new DpaPacket_t();
+    m_dpa_packet = ant_new DpaPacket_t();
     std::copy(other.m_dpa_packet->Buffer, other.m_dpa_packet->Buffer + other.m_length, this->m_dpa_packet->Buffer);
   }
 
@@ -117,7 +132,7 @@ public:
       return *this;
 
     delete m_dpa_packet;
-    m_dpa_packet = new DpaPacket_t();
+    m_dpa_packet = ant_new DpaPacket_t();
 
     std::copy(other.m_dpa_packet->Buffer, other.m_dpa_packet->Buffer + other.m_length, this->m_dpa_packet->Buffer);
     m_length = other.m_length;

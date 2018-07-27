@@ -51,7 +51,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
   IDpaTransactionResult2::ErrorCode defaultError)
   : m_sender( sender )
-  , m_dpaTransactionResultPtr( new DpaTransactionResult2( request ) )
+  , m_dpaTransactionResultPtr( ant_new DpaTransactionResult2( request ) )
   , m_currentCommunicationMode( mode )
   , m_currentFRC_TimingParams( params )
   , m_defaultTimeout( defaultTimeout )
