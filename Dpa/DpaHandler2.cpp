@@ -62,9 +62,11 @@ public:
     } );
 
     // initialize m_FrcTimingParams 
-    m_FrcTimingParams.bondedNodes = 0;
-    m_FrcTimingParams.discoveredNodes = 0;
-    m_FrcTimingParams.responseTime = IDpaTransaction2::FrcResponseTime::k40Ms;
+    m_timingParams.bondedNodes = 1;
+    m_timingParams.discoveredNodes = 1;
+    m_timingParams.osVersion = "4.02D";
+    m_timingParams.dpaVersion = 0x0302;
+    m_timingParams.frcResponseTime = IDpaTransaction2::FrcResponseTime::k40Ms;
   }
 
   ~Imp()
@@ -123,11 +125,11 @@ public:
     if ( request.GetLength() <= 0 ) {
       //TODO gets stuck on DpaTransaction2::get() if processed here
       TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
-      std::shared_ptr<DpaTransaction2> ptr( ant_new DpaTransaction2( request, m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout, nullptr, defaultError ) );
+      std::shared_ptr<DpaTransaction2> ptr( ant_new DpaTransaction2( request, m_rfMode, m_timingParams, m_defaultTimeout, timeout, nullptr, defaultError ) );
       return ptr;
     }
     std::shared_ptr<DpaTransaction2> ptr( ant_new DpaTransaction2( request,
-      m_rfMode, m_FrcTimingParams, m_defaultTimeout, timeout,
+      m_rfMode, m_timingParams, m_defaultTimeout, timeout,
       [&]( const DpaMessage& r ) {
         sendRequest( r );
       },
@@ -162,14 +164,24 @@ public:
     m_rfMode = rfMode;
   }
 
-  IDpaTransaction2::FRC_TimingParams getFrcTiming() const
+  IDpaTransaction2::TimingParams getTimingParams() const
   {
-    return m_FrcTimingParams;
+    return m_timingParams;
   }
 
-  void setFrcTiming( IDpaTransaction2::FRC_TimingParams params )
+  void setTimingParams( IDpaTransaction2::TimingParams params )
   {
-    m_FrcTimingParams = params;
+    m_timingParams = params;
+  }
+
+  IDpaTransaction2::FrcResponseTime getFrcResponseTime() const
+  {
+    return m_timingParams.frcResponseTime;
+  }
+
+  void setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime )
+  {
+    m_timingParams.frcResponseTime = frcResponseTime;
   }
 
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun )
@@ -205,7 +217,7 @@ private:
   }
 
   IDpaTransaction2::RfMode m_rfMode = IDpaTransaction2::RfMode::kStd;
-  IDpaTransaction2::FRC_TimingParams m_FrcTimingParams;
+  IDpaTransaction2::TimingParams m_timingParams;
 
   AsyncMessageHandlerFunc m_asyncMessageHandler;
   std::mutex m_asyncMessageMutex;
@@ -255,14 +267,24 @@ void DpaHandler2::setRfCommunicationMode( IDpaTransaction2::RfMode rfMode )
   m_imp->setRfCommunicationMode( rfMode );
 }
 
-IDpaTransaction2::FRC_TimingParams DpaHandler2::getFrcTiming() const
+IDpaTransaction2::TimingParams DpaHandler2::getTimingParams() const
 {
-  return m_imp->getFrcTiming();
+  return m_imp->getTimingParams();
 }
 
-void DpaHandler2::setFrcTiming( IDpaTransaction2::FRC_TimingParams params )
+void DpaHandler2::setTimingParams( IDpaTransaction2::TimingParams params )
 {
-  m_imp->setFrcTiming( params );
+  m_imp->setTimingParams( params );
+}
+
+IDpaTransaction2::FrcResponseTime DpaHandler2::getFrcResponseTime() const
+{
+  return m_imp->getFrcResponseTime();
+}
+
+void DpaHandler2::setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime )
+{
+  m_imp->setFrcResponseTime( frcResponseTime );
 }
 
 void DpaHandler2::registerAsyncMessageHandler( const std::string& serviceId, IDpaHandler2::AsyncMessageHandlerFunc fun )

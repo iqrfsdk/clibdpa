@@ -48,12 +48,12 @@ using namespace std;
 // When transaction is finish the function execute() pass control to get() and it returns transaction result to user.
 //
 DpaTransaction2::DpaTransaction2( const DpaMessage& request,
-  RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
+  RfMode mode, TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
   IDpaTransactionResult2::ErrorCode defaultError)
   : m_sender( sender )
   , m_dpaTransactionResultPtr( ant_new DpaTransactionResult2( request ) )
   , m_currentCommunicationMode( mode )
-  , m_currentFRC_TimingParams( params )
+  , m_currentTimingParams( params )
   , m_defaultTimeout( defaultTimeout )
   , m_defaultError( defaultError )
 {
@@ -67,25 +67,29 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
 
   // check and correct timeout here before blocking:
   if ( requiredTimeout < 0 ) {
-    // Discovery command ?
-    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ) {
-      // Yes, set default (infinite) timeout for discovery 
-      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for DISCOVERY message" );
+    // Discovery or SmartConnect command ?
+    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS &&
+      ( message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
+        message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ) ) {
+      // Yes, set default (infinite) timeout for Discovery or SmartConnect
+      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery and SmartConnect message" );
       m_infinitTimeout = true;
     }
     // default timeout
     requiredTimeout = defaultTimeout;
   }
   else if ( requiredTimeout == INFINITE_TIMEOUT ) {
-    // it is allowed just for Coordinator Discovery
+    // it is allowed just for Coordinator Discovery and SmartConnect
     if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS ||
-         message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY ) {
+      ( message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
+        message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT )
+         ) {
       // force setting minimal timing as only Discovery can have infinite timeout
       TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
       requiredTimeout = defaultTimeout;
     }
     else {
-      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for DISCOVERY message" );
+      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for Discovery and SmartConnect message" );
       requiredTimeout = defaultTimeout;
       m_infinitTimeout = true;
     }
@@ -110,7 +114,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
     if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
       ( message.PeripheralCommand() == CMD_FRC_SEND || message.PeripheralCommand() == CMD_FRC_SEND_SELECTIVE ) )
     {
-      // user timeout is not applied, forced to FRC 
+      // user timeout is not applied, timeout forced to FRC 
       requiredTimeout = getFrcTimeout();
       m_expectedDurationMs = requiredTimeout;
       TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
@@ -449,40 +453,43 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
 int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength )
 {
   TRC_FUNCTION_ENTER( "" );
-  //	int8_t responseDataLength = -1;
   int32_t responseTimeSlotLengthMs;
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
 
   // estimation from confirmation 
   if ( responseDataLength == -1 ) {
-    if ( timeslotReq == 20 ) {
+    if ( timeslotReq == 20 )
       responseTimeSlotLengthMs = 200;
-    }
-    else {
+    else
       // worst case
       responseTimeSlotLengthMs = 60;
-    }
   }
   // correction of the estimation from response 
   else {
     TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
-    if ( responseDataLength >= 0 && responseDataLength < 16 )
-    {
-      responseTimeSlotLengthMs = 40;
+    if ( m_currentTimingParams.osVersion == "4.03D" ) {
+      // OS 4.03D
+      if( responseDataLength < 17)
+        responseTimeSlotLengthMs = 40;
+      else if ( responseDataLength < 41 )
+        responseTimeSlotLengthMs = 50;
+      else
+        responseTimeSlotLengthMs = 60;
     }
-    else if ( responseDataLength >= 16 && responseDataLength <= 39 )
-    {
-      responseTimeSlotLengthMs = 50;
-    }
-    else if ( responseDataLength > 39 )
-    {
-      responseTimeSlotLengthMs = 60;
+    else {
+      // OS 4.02D (default)
+      if ( responseDataLength < 16 )
+        responseTimeSlotLengthMs = 40;
+      else if ( responseDataLength < 40 )
+        responseTimeSlotLengthMs = 50;
+      else
+        responseTimeSlotLengthMs = 60;
     }
     TRC_DEBUG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
   }
 
-  estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
+  estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs /* * 10 */ + SAFETY_TIMEOUT_MS;
 
   TRC_INFORMATION( "Estimated STD timeout: " << PAR( estimatedTimeoutMs ) );
   TRC_FUNCTION_LEAVE( "" );
@@ -509,26 +516,30 @@ int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslo
   // correction of the estimation from response 
   else {
     TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
-    if ( responseDataLength >= 0 && responseDataLength < 11 )
-    {
-      responseTimeSlotLengthMs = 80;
+    if ( m_currentTimingParams.osVersion == "4.03D" ) {
+      // OS 4.03D
+      if ( responseDataLength < 17 )
+        responseTimeSlotLengthMs = 80;
+      else if ( responseDataLength < 41)
+        responseTimeSlotLengthMs = 90;
+      else
+        responseTimeSlotLengthMs = 100;
     }
-    else if ( responseDataLength >= 11 && responseDataLength <= 33 )
-    {
-      responseTimeSlotLengthMs = 90;
-    }
-    else if ( responseDataLength >= 34 && responseDataLength <= 56 )
-    {
-      responseTimeSlotLengthMs = 100;
-    }
-    else if ( responseDataLength > 56 )
-    {
-      responseTimeSlotLengthMs = 110;
+    else {
+      // OS 4.02D (default)
+      if ( responseDataLength < 11 )
+        responseTimeSlotLengthMs = 80;
+      else if ( responseDataLength < 34 )
+        responseTimeSlotLengthMs = 90;
+      else if ( responseDataLength < 57 )
+        responseTimeSlotLengthMs = 100;
+      else
+        responseTimeSlotLengthMs = 110;
     }
     TRC_DEBUG( "Correction of the response timeout: " << PAR( responseTimeSlotLengthMs ) );
   }
 
-  estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs + SAFETY_TIMEOUT_MS;
+  estimatedTimeoutMs += ( hopsResponse + 1 ) * responseTimeSlotLengthMs /* * 10 */ + SAFETY_TIMEOUT_MS;
 
   TRC_INFORMATION( "Estimated LP timeout: " << PAR( estimatedTimeoutMs ) );
   TRC_FUNCTION_LEAVE( "" );
@@ -541,7 +552,7 @@ int32_t DpaTransaction2::getFrcTimeout()
   uint32_t FrcResponseTime;
 
   // set FRC response time
-  switch ( m_currentFRC_TimingParams.responseTime ) {
+  switch ( m_currentTimingParams.frcResponseTime ) {
     case IDpaTransaction2::FrcResponseTime::k360Ms:
       FrcResponseTime = 360;
       break;
@@ -576,21 +587,12 @@ int32_t DpaTransaction2::getFrcTimeout()
       break;
   }
 
-  if ( m_currentCommunicationMode == RfMode::kStd ) {
-    // STD mode
-    if ( m_dpaTransactionResultPtr->getRequest().GetLength() > ( sizeof( TDpaIFaceHeader ) + 3 ) ) {
-      // advanced FRC
-      timeout = m_currentFRC_TimingParams.bondedNodes * 30 + ( m_currentFRC_TimingParams.discoveredNodes + 2 ) * 100 + FrcResponseTime + 210;
-    }
-    else {
-      // standard FRC
-      timeout = m_currentFRC_TimingParams.bondedNodes * 30 + ( m_currentFRC_TimingParams.discoveredNodes + 2 ) * 110 + FrcResponseTime + 220;
-    }
-  }
-  else {
-    // LP mode
-    timeout = m_currentFRC_TimingParams.bondedNodes * 30 + ( m_currentFRC_TimingParams.discoveredNodes + 2 ) * 160 + FrcResponseTime + 260;
-  }
+  if ( m_currentCommunicationMode == RfMode::kStd )
+    // STD mode Advanced FRC
+    timeout = m_currentTimingParams.bondedNodes * 30 + ( m_currentTimingParams.discoveredNodes + 2 ) * 110 + FrcResponseTime + 220;
+  else
+    // LP mode Advanced FRC
+    timeout = m_currentTimingParams.bondedNodes * 30 + ( m_currentTimingParams.discoveredNodes + 2 ) * 160 + FrcResponseTime + 260;
 
   return timeout;
 }

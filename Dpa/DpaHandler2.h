@@ -31,8 +31,10 @@ public:
   void setTimeout( int timeout ) override;
   IDpaTransaction2::RfMode getRfCommunicationMode() const override;
   void setRfCommunicationMode( IDpaTransaction2::RfMode rfMode ) override;
-  IDpaTransaction2::FRC_TimingParams getFrcTiming() const override;
-  void setFrcTiming( IDpaTransaction2::FRC_TimingParams params ) override;
+  IDpaTransaction2::TimingParams getTimingParams() const override;
+  void setTimingParams( IDpaTransaction2::TimingParams params ) override;
+  IDpaTransaction2::FrcResponseTime getFrcResponseTime() const override;
+  void setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime ) override;
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) override;
   void unregisterAsyncMessageHandler( const std::string& serviceId ) override;
 private:

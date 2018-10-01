@@ -38,11 +38,13 @@ public:
     k20620Ms = 0x70
   };
 
-  struct FRC_TimingParams
+  struct TimingParams
   {
     uint8_t bondedNodes;
     uint8_t discoveredNodes;
-    FrcResponseTime responseTime;
+    FrcResponseTime frcResponseTime;
+    std::string osVersion;
+    uint16_t dpaVersion;
   };
 
   // Timing constants

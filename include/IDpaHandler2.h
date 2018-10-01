@@ -44,8 +44,10 @@ public:
   virtual void setTimeout( int timeout ) = 0;
   virtual IDpaTransaction2::RfMode getRfCommunicationMode() const = 0;
   virtual void setRfCommunicationMode( IDpaTransaction2::RfMode rfMode ) = 0;
-  virtual IDpaTransaction2::FRC_TimingParams getFrcTiming() const = 0;
-  virtual void setFrcTiming( IDpaTransaction2::FRC_TimingParams params ) = 0;
+  virtual IDpaTransaction2::TimingParams getTimingParams() const = 0;
+  virtual void setTimingParams( IDpaTransaction2::TimingParams params ) = 0;
+  virtual IDpaTransaction2::FrcResponseTime getFrcResponseTime() const = 0;
+  virtual void setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime ) = 0;
   virtual void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) = 0;
   virtual void unregisterAsyncMessageHandler( const std::string& serviceId ) = 0;
   virtual ~IDpaHandler2() {}

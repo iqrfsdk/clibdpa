@@ -29,7 +29,7 @@ public:
   typedef std::function<void( const DpaMessage& dpaMessage )> SendDpaMessageFunc;
   DpaTransaction2() = delete;
   DpaTransaction2( const DpaMessage& request,
-    RfMode mode, FRC_TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
+    RfMode mode, TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
     IDpaTransactionResult2::ErrorCode defaultError);
   virtual ~DpaTransaction2();
   void abort() override;
@@ -77,8 +77,8 @@ private:
   /// actual communication mode
   RfMode m_currentCommunicationMode;
 
-  /// actual FRC timing params
-  FRC_TimingParams m_currentFRC_TimingParams;
+  /// actual timing params
+  TimingParams m_currentTimingParams;
 
   /// functor to send the request message towards the coordinator
   SendDpaMessageFunc m_sender;
@@ -94,7 +94,7 @@ private:
   int8_t m_timeslotLength = 0;
   int8_t m_hopsResponse = 0;
 
-  FRC_TimingParams m_FRC_TimingParams;
+  TimingParams m_FRC_TimingParams;
 
   /// condition used to wait for confirmation and response messages from coordinator
   std::condition_variable m_conditionVariable;
