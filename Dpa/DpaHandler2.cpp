@@ -84,7 +84,7 @@ public:
     if ( message.length() == 0 )
       return;
 
-    TRC_DEBUG( ">>>>>>>>>>>>>>>>>>" << std::endl <<
+    TRC_INFORMATION( ">>>>>>>>>>>>>>>>>>" << std::endl <<
              "Received from IQRF interface: " << std::endl << MEM_HEX( message.data(), message.length() ) );
 
     // incomming message
@@ -211,7 +211,7 @@ public:
 private:
   void sendRequest( const DpaMessage& request )
   {
-    TRC_DEBUG( "<<<<<<<<<<<<<<<<<<" << std::endl <<
+    TRC_INFORMATION( "<<<<<<<<<<<<<<<<<<" << std::endl <<
              "Sent to DPA interface: " << std::endl << MEM_HEX( request.DpaPacketData(), request.GetLength() ) );
     m_iqrfInterface->sendTo( std::basic_string<unsigned char>( request.DpaPacketData(), request.GetLength() ) );
   }
