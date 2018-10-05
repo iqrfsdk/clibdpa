@@ -60,11 +60,11 @@ int main( int argc, char** argv ) {
     // default iqrf communication mode is standard 
     dpaHandler->setRfCommunicationMode( IDpaTransaction2::kStd );
     // Define and set FRC timing
-    IDpaTransaction2::FRC_TimingParams frcTiming;
+    IDpaTransaction2::TimingParams frcTiming;
     frcTiming.bondedNodes = 2;
     frcTiming.discoveredNodes = 2;
-    frcTiming.responseTime = IDpaTransaction2::FrcResponseTime::k20620Ms;
-    dpaHandler->setFrcTiming( frcTiming );
+    frcTiming.frcResponseTime = IDpaTransaction2::FrcResponseTime::k20620Ms;
+    dpaHandler->setTimingParams( frcTiming );
   }
   catch ( std::exception &e ) {
     CATCH_EXC_TRC_WAR( std::exception, e, "Cannot create DpaHandler Interface: " );

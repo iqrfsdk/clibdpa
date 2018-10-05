@@ -213,7 +213,12 @@ private:
   {
     TRC_INFORMATION( "<<<<<<<<<<<<<<<<<<" << std::endl <<
              "Sent to DPA interface: " << std::endl << MEM_HEX( request.DpaPacketData(), request.GetLength() ) );
-    m_iqrfInterface->sendTo( std::basic_string<unsigned char>( request.DpaPacketData(), request.GetLength() ) );
+    try {
+      m_iqrfInterface->sendTo(std::basic_string<unsigned char>(request.DpaPacketData(), request.GetLength()));
+    }
+    catch (std::exception &e) {
+      CATCH_EXC_TRC_WAR(std::exception, e, "Cannot send DPA message to coordinator: ");
+    }
   }
 
   IDpaTransaction2::RfMode m_rfMode = IDpaTransaction2::RfMode::kStd;
