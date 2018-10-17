@@ -114,14 +114,14 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
     }
 
     // peripheral FRC and FRC command
-    if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
-      ( message.PeripheralCommand() == CMD_FRC_SEND || message.PeripheralCommand() == CMD_FRC_SEND_SELECTIVE ) )
-    {
-      // user timeout is not applied, timeout forced to FRC 
-      requiredTimeout = getFrcTimeout();
-      m_expectedDurationMs = requiredTimeout;
-      TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
-    }
+    //if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
+    //  ( message.PeripheralCommand() == CMD_FRC_SEND || message.PeripheralCommand() == CMD_FRC_SEND_SELECTIVE ) )
+    //{
+    //  // user timeout is not applied, timeout forced to FRC 
+    //  requiredTimeout = getFrcTimeout();
+    //  m_expectedDurationMs = requiredTimeout;
+    //  TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
+    //}
 
     //bonding special timeout 
     if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
