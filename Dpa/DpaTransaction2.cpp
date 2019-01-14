@@ -455,7 +455,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
   // we will need other network structure info for FRC evaluation
 int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength )
 {
-  TRC_FUNCTION_ENTER( "" );
+  TRC_FUNCTION_ENTER( PAR((int)hopsRequest) << PAR((int)timeslotReq) << PAR((int)hopsResponse) << PAR((int)responseDataLength) );
   int32_t responseTimeSlotLengthMs;
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
@@ -501,7 +501,7 @@ int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timesl
 
 int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslotReq, uint8_t hopsResponse, int8_t responseDataLength )
 {
-  TRC_FUNCTION_ENTER( "" );
+  TRC_FUNCTION_ENTER( PAR((int)hopsRequest) << PAR((int)timeslotReq) << PAR((int)hopsResponse) << PAR((int)responseDataLength) );
   int32_t responseTimeSlotLengthMs;
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
