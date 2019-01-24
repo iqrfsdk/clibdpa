@@ -4,11 +4,12 @@
 // Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.235 $
-// Date:    $Date: 2018/10/10 09:18:42 $
+// Version: $Revision: 1.243.2.1 $
+// Date:    $Date: 2019/01/20 13:32:48 $
 //
 // Revision history:
-//   2018/10/28  Release for DPA 3.03
+//   2019/01/20  Release for DPA 4.00
+//   2018/10/25  Release for DPA 3.03
 //   2017/11/16  Release for DPA 3.02
 //   2017/08/14  Release for DPA 3.01
 //   2017/03/13  Release for DPA 3.00
@@ -36,12 +37,12 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER			0x0303
+#define	DPA_VERSION_MASTER			0x0400
 
 #ifdef __CC5X__
 // Compiled only at CC5X
-#if __CC5X__ < 3701
-#error Insufficient CC5X compiler version, V3.7A is minimum
+#if __CC5X__ < 3703
+#error Insufficient CC5X compiler version, V3.7C is minimum
 #endif
 
 #if IQRFOS < 403
@@ -167,7 +168,7 @@ typedef struct
 #define COORDINATOR_ADDRESS			0x00
 // IQMESH broadcast address
 #define BROADCAST_ADDRESS			0xff
-// IQMESH temporary address, assigned by remote bonding before authorization is done
+// IQMESH temporary address, assigned by pre-bonding before authorization is done
 #define TEMPORARY_ADDRESS			0xfe
 // Address of the local device addressed by IFace
 #define LOCAL_ADDRESS				0xfc
@@ -175,7 +176,7 @@ typedef struct
 #define MAX_ADDRESS					( 240 - 1 )
 
 // Time slots lengths in 10 ms
-#define	MIN_STD_TIMESLOT	4	
+#define	MIN_STD_TIMESLOT	4
 #define	MAX_STD_TIMESLOT	6
 
 #define	MIN_LP_TIMESLOT		8
@@ -294,8 +295,6 @@ typedef struct
 
 #define	CMD_THERMOMETER_READ 0
 
-#define	CMD_PWM_SET 0
-
 #define	CMD_UART_OPEN 0
 #define	CMD_UART_CLOSE 1
 #define	CMD_UART_WRITE_READ 2
@@ -373,19 +372,20 @@ typedef enum
 
   // Bit/flag reserved for a future use
   STATUS_RESERVED_FLAG = 0x40,
-  // Bit to flag asynchronous response from [N]
+  // Bit to flag asynchronous DPA Response from [N]
   STATUS_ASYNC_RESPONSE = 0x80,
-  // Error code used to mark confirmation
+  // Error code used to mark DPA Confirmation
   STATUS_CONFIRMATION = 0xff
 } TErrorCodes;
 
 // Embedded FRC commands
 typedef enum
 {
-  FRC_Prebonding = 0x00,
+  FRC_Ping = 0x00,
   FRC_UART_SPI_data = 0x01,
   FRC_AcknowledgedBroadcastBits = 0x02,
   FRC_PrebondedAlive = 0x03,
+  FRC_SupplyVoltage = 0x04,
 
   FRC_Temperature = 0x80,
   FRC_AcknowledgedBroadcastBytes = 0x81,
@@ -478,7 +478,7 @@ typedef struct
 typedef struct
 {
   uns8	ReqAddr;
-  uns8	BondingMask;
+  uns8	BondingTestRetries;
 } STRUCTATTR TPerCoordinatorBondNode_Request;
 
 // Structure returned by CMD_COORDINATOR_BOND_NODE or CMD_COORDINATOR_SMART_CONNECT
@@ -818,14 +818,6 @@ typedef struct
   int16 SixteenthValue;
 } STRUCTATTR TPerThermometerRead_Response;
 
-// Structure for CMD_PWM_SET
-typedef struct
-{
-  uns8  Prescaler;
-  uns8  Period;
-  uns8  Duty;
-} STRUCTATTR TPerPwmSet_Request;
-
 // Structure for CMD_UART_OPEN
 typedef struct
 {
@@ -867,7 +859,7 @@ typedef struct
   uns8	FRCresponseTime;
 } STRUCTATTR TPerFrcSetParams_RequestResponse;
 
-// Interface and CMD_COORDINATOR_BRIDGE confirmation structure
+// Interface confirmation structure
 typedef struct
 {
   // Number of hops
@@ -1018,9 +1010,6 @@ typedef union
   // Structure returned by CMD_THERMOMETER_READ
   TPerThermometerRead_Response PerThermometerRead_Response;
 
-  // Structure for CMD_PWM_SET
-  TPerPwmSet_Request PerPwmSet_Request;
-
   // Structure for CMD_UART_OPEN
   TPerUartOpen_Request PerUartOpen_Request;
 
@@ -1039,7 +1028,7 @@ typedef union
   // Structure for request and response of CMD_FRC_SET_PARAMS
   TPerFrcSetParams_RequestResponse PerFrcSetParams_RequestResponse;
 
-  // Interface and CMD_COORDINATOR_BRIDGE confirmation structure
+  // Interface confirmation structure
   TIFaceConfirmation IFaceConfirmation;
 } TDpaMessage;
 
