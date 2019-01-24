@@ -478,7 +478,14 @@ typedef struct
 typedef struct
 {
   uns8	ReqAddr;
-  uns8	BondingTestRetries;
+  union {
+    struct {
+      uns8	BondingMask;
+    } Previous;
+    struct {
+      uns8	BondingTestRetries;
+    } Current;
+  } BondNode;
 } STRUCTATTR TPerCoordinatorBondNode_Request;
 
 // Structure returned by CMD_COORDINATOR_BOND_NODE or CMD_COORDINATOR_SMART_CONNECT
