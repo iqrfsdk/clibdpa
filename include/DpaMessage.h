@@ -31,7 +31,9 @@ extern "C" {
 #endif
 
 #if defined _WIN32 || defined _WIN64
+#ifndef WIN32
 #define WIN32
+#endif
 #endif
 
 // anotaded ant_new for memleak debug purpose
@@ -103,7 +105,7 @@ public:
   /** Constructor from string */
   DpaMessage(const std::basic_string<unsigned char>& message) {
     m_dpa_packet = ant_new DpaPacket_t();
-    DataToBuffer(message.data(), message.length());
+    DataToBuffer(message.data(), static_cast<uint8_t>(message.length()));
   }
 
   /**
@@ -148,7 +150,7 @@ public:
   @return	this with assigned data
   */
   DpaMessage& operator=(const std::basic_string<unsigned char>& message) {
-    DataToBuffer(message.data(), message.length());
+    DataToBuffer(message.data(), static_cast<uint8_t>(message.length()));
     return *this;
   }
 

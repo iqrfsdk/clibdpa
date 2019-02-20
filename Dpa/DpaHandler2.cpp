@@ -90,7 +90,7 @@ public:
     // incomming message
     DpaMessage receivedMessage;
     try {
-      receivedMessage.FillFromResponse( message.data(), message.length() );
+      receivedMessage.FillFromResponse( message.data(), static_cast<uint8_t>(message.length()) );
     }
     catch ( std::exception& e ) {
       CATCH_EXC_TRC_WAR(std::exception, e, "in processing msg");

@@ -389,7 +389,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
 
     if ( estimatedTimeMs > 0 ) {
       TRC_INFORMATION( "Expected duration to wait :" << PAR( m_userTimeoutMs ) << PAR( estimatedTimeMs ) );
-      if ( estimatedTimeMs >= m_userTimeoutMs ) {
+      if (static_cast<uint32_t>(estimatedTimeMs) >= m_userTimeoutMs ) {
         m_expectedDurationMs = estimatedTimeMs;
       }
       else {
@@ -419,12 +419,12 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
         // TODO is it necessary here to wait if we have the response already?
         // or is it aditional refresh timeout for some reason depending on response len?
         if ( m_currentCommunicationMode == RfMode::kLp ) {
-          estimatedTimeMs = EstimateLpTimeout( m_hops, m_timeslotLength, m_hopsResponse,
-                                               receivedMessage.GetLength() - ( sizeof( TDpaIFaceHeader ) + 2 ) );
+          estimatedTimeMs = EstimateLpTimeout(static_cast<uint8_t>(m_hops), static_cast<uint8_t>(m_timeslotLength), static_cast<uint8_t>(m_hopsResponse),
+            static_cast<int8_t>(receivedMessage.GetLength() - ( sizeof( TDpaIFaceHeader ) + 2 )) );
         }
         else { // std
-          estimatedTimeMs = EstimateStdTimeout( m_hops, m_timeslotLength, m_hopsResponse,
-                                                receivedMessage.GetLength() - ( sizeof( TDpaIFaceHeader ) + 2 ) );
+          estimatedTimeMs = EstimateStdTimeout(static_cast<uint8_t>(m_hops), static_cast<uint8_t>(m_timeslotLength), static_cast<uint8_t>(m_hopsResponse),
+            static_cast<int8_t>(receivedMessage.GetLength() - (sizeof(TDpaIFaceHeader) + 2)));
         }
         TRC_DEBUG( "From response: " << PAR( estimatedTimeMs ) );
         m_expectedDurationMs = estimatedTimeMs;
