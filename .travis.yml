@@ -23,11 +23,9 @@ install:
 before_script:
   - docker exec -ti travis-ci bash -c "cd /iqrfsdk && git clone https://github.com/iqrfsdk/clibcdc"
   - docker exec -ti travis-ci bash -c "cd /iqrfsdk && git clone https://github.com/iqrfsdk/clibspi"
-  - docker exec -ti travis-ci bash -c "cd /iqrfsdk && git clone https://github.com/iqrfsdk/cutils"
 script:
   - docker exec -ti travis-ci bash -c "cd /iqrfsdk/clibcdc && CC=${CC} CXX=${CXX} bash buildMake.sh"
   - docker exec -ti travis-ci bash -c "cd /iqrfsdk/clibspi && CC=${CC} CXX=${CXX} bash buildMake.sh"
-  - docker exec -ti travis-ci bash -c "cd /iqrfsdk/cutils && CC=${CC} CXX=${CXX} bash buildMake.sh"
   - docker exec -ti travis-ci bash -c "cd /iqrfsdk/clibdpa && CC=${CC} CXX=${CXX} bash buildMake.sh"
 after_script:
   - docker stop travis-ci

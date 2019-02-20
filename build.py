@@ -55,25 +55,22 @@ def main():
         
         DEP_CDC = os.path.join(DEP_PATH, "clibcdc", BUILD_DIR)
         DEP_SPI = os.path.join(DEP_PATH, "clibspi", BUILD_DIR)
-        DEP_UTIL = os.path.join(DEP_PATH, "cutils", BUILD_DIR)
 
-        build(VS_GEN + " " + WIN64, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI, DEP_UTIL)
+        build(VS_GEN + " " + WIN64, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI)
     elif gen == "make":
         BUILD_DIR = os.path.join("build", "Unix_Makefiles")
 
         DEP_CDC = os.path.join(DEP_PATH, "clibcdc", BUILD_DIR)
         DEP_SPI = os.path.join(DEP_PATH, "clibspi", BUILD_DIR)
-        DEP_UTIL = os.path.join(DEP_PATH, "cutils", BUILD_DIR)
 
-        build(UNIX_GEN, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI, DEP_UTIL)
+        build(UNIX_GEN, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI)
     elif gen == "eclipse":
         BUILD_DIR = os.path.join("build", "Eclipse_CDT4-Unix_Makefiles")
 
         DEP_CDC = os.path.join(DEP_PATH, "clibcdc", BUILD_DIR)
         DEP_SPI = os.path.join(DEP_PATH, "clibspi", BUILD_DIR)
-        DEP_UTIL = os.path.join(DEP_PATH, "cutils", BUILD_DIR)
 
-        build(ECLIPSE_GEN, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI, DEP_UTIL)
+        build(ECLIPSE_GEN, BUILD_DIR, DEBUG_STR, DEP_CDC, DEP_SPI)
 
 
 def send_command(cmd):
@@ -86,7 +83,7 @@ def send_command(cmd):
     return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.read()
 
 
-def build(generator, build_dir, debug, dep_cdc, dep_spi, dep_cutils):
+def build(generator, build_dir, debug, dep_cdc, dep_spi):
     """
     Building clibcdc
     @param arch Platform architecture
@@ -106,13 +103,13 @@ def build(generator, build_dir, debug, dep_cdc, dep_spi, dep_cutils):
         out = send_command("cmake -G " + "\"" + generator + "\"" 
                                  + " -Dclibcdc_DIR:PATH=" + dep_cdc 
                                  + " -Dclibspi_DIR:PATH=" + dep_spi 
-                                 + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir)
+                                 + " " + current_dir)
         print(out)                         
     else:
         out = send_command("cmake -G " + "\"" + generator + "\"" 
                                  + " -Dclibcdc_DIR:PATH=" + dep_cdc 
                                  + " -Dclibspi_DIR:PATH=" + dep_spi 
-                                 + " -Dcutils_DIR:PATH=" + dep_cutils + " " + current_dir + " " + debug)
+                                 + " " + current_dir + " " + debug)
         print(out)
 
     os.chdir(current_dir)

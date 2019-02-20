@@ -23,15 +23,9 @@ pushd ${clibspi}
 clibspi=$PWD
 popd
 
-#get path to cutils libs
-cutils=../cutils/${buildexp}
-pushd ${cutils}
-cutils=$PWD
-popd
-
 #launch cmake to generate build environment
 pushd ${builddir}
-cmake -G "Eclipse CDT4 - Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} -Dcutils_DIR:PATH=${cutils} ${currentdir} -DCMAKE_BUILD_TYPE=Debug
+cmake -G "Eclipse CDT4 - Unix Makefiles" -Dclibcdc_DIR:PATH=${clibcdc} -Dclibspi_DIR:PATH=${clibspi} ${currentdir} -DCMAKE_BUILD_TYPE=Debug
 popd
 
 #build from generated build environment
