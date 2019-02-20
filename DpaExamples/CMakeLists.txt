@@ -15,7 +15,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../IqrfCdcChannel)
 
 add_executable(${PROJECT_NAME} ${_HDRFILES} ${_SRCFILES})
 
-target_link_libraries(${PROJECT_NAME} IqrfCdcChannel IqrfSpiChannel Dpa IqrfTracer spi_iqrf sysfs_gpio cdc)
+target_link_libraries(${PROJECT_NAME} IqrfCdcChannel IqrfSpiChannel Dpa IqrfTracer spi_iqrf cdc)
 
 if (NOT WIN32) 
 	target_link_libraries(${PROJECT_NAME} pthread)

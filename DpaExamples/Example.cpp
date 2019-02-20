@@ -42,7 +42,7 @@ int main( int argc, char** argv ) {
   //string portNameLinuxCdc = "/dev/ttyACM0";
   string portNameLinuxSpi = "/dev/spidev0.0";
   spi_iqrf_config_struct spiCfg;
-  spiCfg.enableGpioPin = 1;
+  spiCfg.powerEnableGpioPin = 1;
 
   IDpaHandler2 *dpaHandler = nullptr;
 

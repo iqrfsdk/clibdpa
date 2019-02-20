@@ -26,11 +26,9 @@ const unsigned SPI_REC_BUFFER_SIZE = 1024;
 
 const spi_iqrf_config_struct IqrfSpiChannel::SPI_IQRF_CFG_DEFAULT = {
   SPI_IQRF_DEFAULT_SPI_DEVICE,
-  ENABLE_GPIO,
-  CE0_GPIO,
-  MISO_GPIO,
-  MOSI_GPIO,
-  SCLK_GPIO
+  POWER_ENABLE_GPIO,
+  BUS_ENABLE_GPIO,
+  PGM_SWITCH_GPIO
 };
 
 class IqrfSpiChannel::Imp
