@@ -187,6 +187,7 @@ public:
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun )
   {
     //TODO serviceId?
+    (void)serviceId; //silence -Wunused-parameter
     std::lock_guard<std::mutex> lck( m_asyncMessageMutex );
     m_asyncMessageHandler = fun;
   }
@@ -204,6 +205,7 @@ public:
   void unregisterAsyncMessageHandler( const std::string& serviceId )
   {
     //TODO serviceId?
+    (void)serviceId; //silence -Wunused-parameter
     std::lock_guard<std::mutex> lck( m_asyncMessageMutex );
     m_asyncMessageHandler = nullptr;
   }
