@@ -50,12 +50,14 @@ using namespace std;
 DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   RfMode mode, TimingParams params, int32_t defaultTimeout, int32_t userTimeout, SendDpaMessageFunc sender,
   IDpaTransactionResult2::ErrorCode defaultError)
-  : m_sender( sender )
-  , m_dpaTransactionResultPtr( ant_new DpaTransactionResult2( request ) )
+  : m_dpaTransactionResultPtr( ant_new DpaTransactionResult2( request ) )
+  , m_state(DpaTransfer2State::kCreated)
+  , m_finish(false)
   , m_currentCommunicationMode( mode )
   , m_currentTimingParams( params )
+  , m_sender(sender)
+  , m_defaultError(defaultError)
   , m_defaultTimeout( defaultTimeout )
-  , m_defaultError( defaultError )
 {
   TRC_FUNCTION_ENTER( PAR( mode ) << PAR( defaultTimeout ) << PAR( userTimeout ) )
     static uint32_t transactionId = 0;
