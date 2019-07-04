@@ -210,6 +210,11 @@ public:
     m_asyncMessageHandler = nullptr;
   }
 
+  int getDpaQueueLen() const
+  {
+    return (int)m_dpaTransactionQueue->size();
+  }
+  
 private:
   void sendRequest( const DpaMessage& request )
   {
@@ -303,3 +308,9 @@ void DpaHandler2::unregisterAsyncMessageHandler( const std::string& serviceId )
 {
   m_imp->unregisterAsyncMessageHandler( serviceId );
 }
+
+int DpaHandler2::getDpaQueueLen() const
+{
+  return m_imp->getDpaQueueLen();
+}
+

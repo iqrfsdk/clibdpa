@@ -37,6 +37,7 @@ public:
   void setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime ) override;
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) override;
   void unregisterAsyncMessageHandler( const std::string& serviceId ) override;
+  int getDpaQueueLen() const override;
 private:
   class Imp;
   Imp *m_imp = nullptr;

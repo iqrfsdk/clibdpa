@@ -50,5 +50,7 @@ public:
   virtual void setFrcResponseTime( IDpaTransaction2::FrcResponseTime frcResponseTime ) = 0;
   virtual void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) = 0;
   virtual void unregisterAsyncMessageHandler( const std::string& serviceId ) = 0;
+  virtual int getDpaQueueLen() const = 0;
+
   virtual ~IDpaHandler2() {}
 };
