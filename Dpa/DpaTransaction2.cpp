@@ -69,24 +69,26 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
 
   // check and correct timeout here before blocking:
   if ( requiredTimeout < 0 ) {
-    // Discovery or SmartConnect command ?
+    // Discovery or SmartConnect or Authorize or FRC command ?
     if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && (
       message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
       message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ||
+      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND ||
       message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC
       ) ) {
       // Yes, set default (infinite) timeout for Discovery or SmartConnect
-      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery or SmartConnect or FRC message" );
+      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery or SmartConnect or Authorize or FRC message" );
       m_infinitTimeout = true;
     }
     // default timeout
     requiredTimeout = defaultTimeout;
   }
   else if ( requiredTimeout == INFINITE_TIMEOUT ) {
-    // it is allowed just for Coordinator Discovery and SmartConnect
+    // it is allowed just for Coordinator Discovery, SmartConnect, Authorize and FRC
     if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS || (
       message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
       message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND &&
       message.DpaPacket().DpaRequestPacket_t.PNUM != PNUM_FRC
       ) ) {
       // force setting minimal timing as only Discovery can have infinite timeout
@@ -94,7 +96,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
       requiredTimeout = defaultTimeout;
     }
     else {
-      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for Discovery or SmartConnect or FRC message" );
+      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for Discovery or SmartConnect or Authorize or FRC message" );
       requiredTimeout = defaultTimeout;
       m_infinitTimeout = true;
     }
