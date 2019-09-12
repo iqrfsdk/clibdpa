@@ -4,11 +4,15 @@
 // Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.243.2.1 $
-// Date:    $Date: 2019/01/20 13:32:48 $
+// Version: $Revision: 1.258 $
+// Date:    $Date: 2019/08/15 14:27:07 $
 //
 // Revision history:
-//   2019/01/20  Release for DPA 4.00
+//   2019/08/22  Release for DPA 4.10
+//   2019/06/12  Release for DPA 4.03
+//   2019/06/03  Release for DPA 4.02
+//   2019/03/07  Release for DPA 4.01
+//   2019/01/10  Release for DPA 4.00
 //   2018/10/25  Release for DPA 3.03
 //   2017/11/16  Release for DPA 3.02
 //   2017/08/14  Release for DPA 3.01
@@ -29,6 +33,7 @@
 // *********************************************************************
 
 // Online DPA documentation http://www.iqrf.org/DpaTechGuide/
+// IQRF Standards documentation https://www.iqrfalliance.org/techDocs/
 
 #ifndef _DPA_HEADER_
 #define _DPA_HEADER_
@@ -37,7 +42,7 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER			0x0400
+#define	DPA_VERSION_MASTER			0x0410
 
 #ifdef __CC5X__
 // Compiled only at CC5X
@@ -80,6 +85,7 @@ uns8  DpaApiEntry( uns8 par1, uns8 par2, uns8 apiIndex );
 #define	DPA_API_SET_RF_DEFAULTS				6
 
 // Used buffer size symbols
+#define	sizeofBufferRF						sizeof( bufferRF )
 #define	sizeofBufferAUX						sizeof( bufferAUX )
 #define	sizeofBufferCOM						sizeof( bufferCOM )
 
@@ -95,6 +101,7 @@ typedef int8_t int8;
 typedef int16_t int16;
 
 // Fake buffer sizes
+#define	sizeofBufferRF  64
 #define	sizeofBufferAUX 64
 #define	sizeofBufferCOM 64
 
@@ -270,10 +277,13 @@ typedef struct
 #define	CMD_OS_WRITE_CFG_BYTE 9
 #define	CMD_OS_LOAD_CODE 10
 #define	CMD_OS_SELECTIVE_BATCH 11
+#define	CMD_OS_TEST_RF_SIGNAL 12
+#define	CMD_OS_FACTORY_SETTINGS 13
 #define	CMD_OS_WRITE_CFG 15
 
 #define	CMD_RAM_READ 0
 #define	CMD_RAM_WRITE 1
+#define	CMD_RAM_READ_ANY    15
 
 #define	CMD_EEPROM_READ CMD_RAM_READ
 #define	CMD_EEPROM_WRITE CMD_RAM_WRITE
@@ -381,20 +391,22 @@ typedef enum
 // Embedded FRC commands
 typedef enum
 {
+  // 2 bits
   FRC_Ping = 0x00,
   FRC_UART_SPI_data = 0x01,
   FRC_AcknowledgedBroadcastBits = 0x02,
   FRC_PrebondedAlive = 0x03,
   FRC_SupplyVoltage = 0x04,
-
+  // 1 byte
   FRC_Temperature = 0x80,
   FRC_AcknowledgedBroadcastBytes = 0x81,
   FRC_MemoryRead = 0x82,
   FRC_MemoryReadPlus1 = 0x83,
   FRC_FrcResponseTime = 0x84,
   FRC_TestRFsignal = 0x85,
-
-  FRC_PrebondedMemoryReadPlus1 = 0xF8
+  // 4 bytes
+  FRC_PrebondedMemoryReadPlus1 = 0xF8,
+  FRC_MemoryRead4B = 0xFA
 } TFRCommands;
 
 // Intervals of user FRC codes
@@ -408,7 +420,7 @@ typedef enum
 #define	FRC_USER_4BYTE_TO	  0xFF
 
 // No HWPID specified
-#define HWPID_Default         0
+#define HWPID_Default         0x0000
 // Use this type to override HWPID check
 #define HWPID_DoNotCheck      0xFfFf
 
@@ -422,8 +434,10 @@ typedef enum
 #define	PERIPHERAL_EEPROM_START		( (uns8)0x80 )
 #endif
 
-// Length of the real serial EEEPROM from the EEEPROM DPA peripheral write point of view
-#define	EEEPROM_REAL_LENGTH					0x4000
+// Length of the readable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view. 
+#define	EEEPROM_READ_LENGTH					0x8000
+// Length of the writable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view. 
+#define	EEEPROM_WRITE_LENGTH				0x4000
 
 // Starting address of the Autoexec DPA storage at external EEPROM
 #define	AUTOEXEC_EEEPROM_ADDR				0x0000
@@ -680,6 +694,14 @@ typedef struct
   uns8	Flags;
   uns8	SlotLimits;
   uns8  IBK[16];
+  // Enumerate peripherals part, variable length because of UserPer field
+  uns16	DpaVersion;
+  uns8	UserPerNr;
+  uns8	EmbeddedPers[PNUM_USER / 8];
+  uns16	HWPID;
+  uns16	HWPIDver;
+  uns8	FlagsEnum;
+  uns8	UserPer[( PNUM_MAX - PNUM_USER + 1 + 7 ) / 8];
 } STRUCTATTR TPerOSRead_Response;
 
 // Structure returned by CMD_OS_READ_CFG
@@ -742,6 +764,20 @@ typedef struct
   uns8	SelectedNodes[30];
   uns8	Requests[DPA_MAX_DATA_LENGTH - 30];
 } STRUCTATTR TPerOSSelectiveBatch_Request;
+
+// Structure for CMD_OS_TEST_RF_SIGNAL request
+typedef struct
+{
+  uns8  Channel;
+  uns8  RXfilter;
+  uns16 Time;
+} STRUCTATTR TPerOSTestRfSignal_Request;
+
+// Structure for CMD_OS_TEST_RF_SIGNAL response
+typedef struct
+{
+  uns8  Counter;
+} STRUCTATTR TPerOSTestRfSignal_Response;
 
 // Structure for general memory request
 typedef struct
@@ -866,7 +902,7 @@ typedef struct
   uns8	FRCresponseTime;
 } STRUCTATTR TPerFrcSetParams_RequestResponse;
 
-// Interface confirmation structure
+// Interface and CMD_COORDINATOR_BRIDGE confirmation structure
 typedef struct
 {
   // Number of hops
@@ -1005,6 +1041,12 @@ typedef union
   // Structure for CMD_OS_SELECTIVE_BATCH
   TPerOSSelectiveBatch_Request PerOSSelectiveBatch_Request;
 
+  // Structure for CMD_OS_TEST_RF_SIGNAL request
+  TPerOSTestRfSignal_Request PerOSTestRfSignal_Request;
+
+  // Structure for CMD_OS_TEST_RF_SIGNAL response
+  TPerOSTestRfSignal_Response PerOSTestRfSignal_Response;
+
   // Structure for general memory request
   TPerMemoryRequest MemoryRequest;
 
@@ -1035,7 +1077,7 @@ typedef union
   // Structure for request and response of CMD_FRC_SET_PARAMS
   TPerFrcSetParams_RequestResponse PerFrcSetParams_RequestResponse;
 
-  // Interface confirmation structure
+  // Interface and CMD_COORDINATOR_BRIDGE confirmation structure
   TIFaceConfirmation IFaceConfirmation;
 } TDpaMessage;
 
@@ -1159,14 +1201,54 @@ bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH] @ 0x620;
 #define	GetDpaEvent()	userReg0
 
 // Stores DPA Params inside DPA request/response
-#define	_DpaParams					  PPAR
+#define	_DpaParams		PPAR
 // Get DPA Value type out of the DPA Params
-#define	DpaValueType()				  ( _DpaParams & 0b11 )
+#define	DpaValueType()	( _DpaParams & 0b11 )
+
+// When TRUE then encryptBufferRF/decryptBufferRF is done by AccessPassord
+bit encryptByAccessPassword @ usedBank0[0x23].7;
+
+// DP2P response time-slot time in 10 ms
+#define DP2P_TIMESLOT   11
 
 // Traffic indication active: from the store in case of DPA request
 bit IsDpaTrafficIndication			  @_DpaParams.2;
 // Long diagnostic time slot request: from the store in case of DPA request
 bit IsDpaLongTimeslot				  @_DpaParams.3;
+
+// DP2P request packet. Fills out the whole bufferRF.
+typedef struct
+{
+  uns8  Header[3];  // 0x000000
+  uns8  SelectedNodes[30];
+  uns8  SlotLength;
+  uns8  ResponseTxPower;
+  uns8  Reserved;
+  uns16	HWPID;
+  uns8  PDATA[sizeofBufferRF - ( 3 + 30 + 1 + 1 + 1 ) * sizeof( uns8 ) - ( 1 ) * sizeof( uns16 )]; // size is 26 bytes
+} STRUCTATTR TDP2Prequest;
+
+// DP2P invite packet.
+typedef struct
+{
+  uns8  Header[3];  // 0x000001
+  uns8  Rand[13];
+} STRUCTATTR TDP2Invite;
+
+// DP2P confirm packet.
+typedef struct
+{
+  uns8  Header[3];  // 0x000003
+  uns8  Rand[13];
+} STRUCTATTR TDP2Confirm;
+
+// DP2P response packet.
+typedef struct
+{
+  uns8  Header[3];  // 0xFfFfFf
+  uns8  NADR;
+  uns8  PDATA[DPA_MAX_DATA_LENGTH];
+} STRUCTATTR TDP2Presponse;
 
 // Include assembler definitions
 #include "HexCodes.h"
