@@ -23,6 +23,9 @@
 
 class DpaHandler2 : public IDpaHandler2 {
 public:
+  /**
+   * @param iqrfInterface Is owned by this.
+   */
   DpaHandler2( IChannel* iqrfInterface );
   virtual ~DpaHandler2();
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout,

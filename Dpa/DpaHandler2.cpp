@@ -77,6 +77,8 @@ public:
     }
     m_dpaTransactionQueue->stopQueue();
     delete m_dpaTransactionQueue;
+    // Delete owned resource.
+    delete m_iqrfInterface;
   }
 
   // any received message from the channel
