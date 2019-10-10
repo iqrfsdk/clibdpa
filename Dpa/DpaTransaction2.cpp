@@ -223,7 +223,7 @@ void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
       // now we can expect handling in processReceivedMessage()
     }
     catch ( std::exception& e ) {
-      TRC_WARNING( "Send error occured: " << e.what() );
+      TRC_WARNING( "Send error occurred: " << e.what() );
       // init expected duration - we have final error state - just finish transaction
       m_expectedDurationMs = 0;
       m_state = kInterfaceError;

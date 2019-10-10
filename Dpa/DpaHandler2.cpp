@@ -32,7 +32,7 @@
 class DpaHandler2::Imp
 {
 public:
-  // maximal queue lenght - can be prolonged if it make sense
+  // maximal queue length - can be prolonged if it make sense
   static const int QUEUE_MAX_LEN = 16;
 
   Imp( IChannel* iqrfInterface )
@@ -87,7 +87,7 @@ public:
     TRC_INFORMATION( ">>>>>>>>>>>>>>>>>>" << std::endl <<
              "Received from IQRF interface: " << std::endl << MEM_HEX( message.data(), message.length() ) );
 
-    // incomming message
+    // incoming message
     DpaMessage receivedMessage;
     try {
       receivedMessage.FillFromResponse( message.data(), static_cast<uint8_t>(message.length()) );
