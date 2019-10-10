@@ -16,12 +16,16 @@
 
 #include "IqrfCdcChannel.h"
 #include "IqrfSpiChannel.h"
+
 #include "DpaHandler2.h"
+
 #include "IqrfTrace.h"
 #include "IqrfTraceHex.h"
+
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cstring>
 
 using namespace std;
 using namespace iqrf;
@@ -32,33 +36,51 @@ void asynchronousMessageHandler(const DpaMessage& message) {
 }
 
 int main( int argc, char** argv ) {
+
   //TRC_START( "log.txt", iqrf::TrcLevel::Debug, 1000000 ); //tracing to ./log.txt
   TRC_START( "", iqrf::TrcLevel::Debug, 1000000 ); //tracing to cout
   TRC_FUNCTION_ENTER( "" );
 
-  // COM interface
-  string portNameWinCdc = "COM4";
   string serviceId = "";
+
+  // COM interface
+  //string portNameWinCdc = "COM4";
   //string portNameLinuxCdc = "/dev/ttyACM0";
-  string portNameLinuxSpi = "/dev/spidev0.0";
-  spi_iqrf_config_struct spiCfg;
-  spiCfg.powerEnableGpioPin = 1;
+
+  string m_interfaceName = "/dev/spidev1.0";
+  spi_iqrf_config_struct m_cfg;
+
+  memset(m_cfg.spiDev, 0, sizeof(m_cfg.spiDev));
+  auto sz = m_interfaceName.size();
+  if (sz > sizeof(m_cfg.spiDev))
+    sz = sizeof(m_cfg.spiDev);
+  std::copy(m_interfaceName.c_str(), m_interfaceName.c_str() + sz, m_cfg.spiDev);
+
+  m_cfg.powerEnableGpioPin = POWER_ENABLE_GPIO;
+  m_cfg.busEnableGpioPin = BUS_ENABLE_GPIO;
+  m_cfg.pgmSwitchGpioPin = PGM_SWITCH_GPIO;
+  m_cfg.trModuleReset = TR_MODULE_RESET_ENABLE;
 
   IDpaHandler2 *dpaHandler = nullptr;
 
   try {
     TRC_INFORMATION( "Creating DPA handler" );
+
     // IQRF CDC interface
-    IChannel *cdc = new IqrfCdcChannel(portNameWinCdc);
+    //IChannel *cdc = new IqrfCdcChannel(portNameWinCdc);
+
+    // IQRF SPI interface
+    IChannel *spi = new IqrfSpiChannel(m_cfg);
 
     // DPA handler
-    dpaHandler = new DpaHandler2(cdc);
+    dpaHandler = new DpaHandler2(spi);
 
     // Register async. messages handler
     dpaHandler->registerAsyncMessageHandler( serviceId, &asynchronousMessageHandler );
 
     // default iqrf communication mode is standard 
     dpaHandler->setRfCommunicationMode( IDpaTransaction2::kStd );
+    
     // Define and set FRC timing
     IDpaTransaction2::TimingParams frcTiming;
     frcTiming.bondedNodes = 2;
@@ -71,29 +93,47 @@ int main( int argc, char** argv ) {
     return 2;
   }
 
-  if ( dpaHandler ) {
-    try {
-      // DPA message
-      DpaMessage dpaRequest;
+  if (dpaHandler)
+  {
+    bool run = true;
+    int counter = 0;
+    while (run)
+    {
+      try
+      {
+        // DPA message
+        DpaMessage dpaRequest;
 
-      // Pulse LEDR at [C]
-      dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x00;
-      dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_LEDR;
-      dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
-      dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
-      // Set request data length      
-      dpaRequest.SetLength( sizeof( TDpaIFaceHeader ));
-      // Send DPA request
-      cout << "Pulse LEDR\r\n";
-      auto dt = dpaHandler->executeDpaTransaction( dpaRequest, 1000 );
-      auto res = dt->get();
-      int err = res->getErrorCode();
-      auto s = res->getErrorString();
-      const uint8_t *buf = res->getResponse().DpaPacket().Buffer;
-      int sz = res->getResponse().GetLength();
-      for ( int i = 0; i < sz; i++ )
-        cout << std::hex << (int)buf[i] << ' ';
+        // Pulse LEDR at [C]
+        dpaRequest.DpaPacket().DpaRequestPacket_t.NADR = 0x01;
+        dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_LEDR;
+        dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_LED_PULSE;
+        dpaRequest.DpaPacket().DpaRequestPacket_t.HWPID = HWPID_DoNotCheck;
+        // Set request data length
+        dpaRequest.SetLength(sizeof(TDpaIFaceHeader));
 
+        // Send DPA request
+        cout << "Pulse LEDR\r\n";
+        auto dt = dpaHandler->executeDpaTransaction(dpaRequest, 1000);
+
+        auto res = dt->get();
+        int err = res->getErrorCode();
+        auto s = res->getErrorString();
+        
+        const uint8_t *buf = res->getResponse().DpaPacket().Buffer;
+        uint8_t rc = res->getResponse().DpaPacket().DpaResponsePacket_t.ResponseCode;
+
+        int sz = res->getResponse().GetLength();
+        for (int i = 0; i < sz; i++) {
+          cout << std::hex << (int)buf[i] << ' ';
+        }
+
+        if( rc != 0 || sz == 0 ) {
+          counter++;
+        } 
+        cout << "Error: " << counter << "\r\n";
+
+      /*
       // Set FRC params 
       dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_FRC;
       dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_FRC_SET_PARAMS;
@@ -113,8 +153,8 @@ int main( int argc, char** argv ) {
       // Send FRC
       dpaRequest.DpaPacket().DpaRequestPacket_t.PNUM = PNUM_FRC;
       dpaRequest.DpaPacket().DpaRequestPacket_t.PCMD = CMD_FRC_SEND;
-      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = 0xc0;
-      // Set request data length      
+      dpaRequest.DpaPacket().DpaRequestPacket_t.DpaMessage.PerFrcSend_Request.FrcCommand = 0xC0;
+      // Set request data length
       dpaRequest.SetLength( sizeof( TDpaIFaceHeader ) + 3);
       cout << "\r\nSend FRC\r\n";
       dt = dpaHandler->executeDpaTransaction( dpaRequest, 10000 );
@@ -125,6 +165,7 @@ int main( int argc, char** argv ) {
       sz = res->getResponse().GetLength();
       for ( int i = 0; i < sz; i++ )
         cout << std::hex << (int)buf[i] << ' ';
+      */
 
       /*
       // Discovery
@@ -143,10 +184,13 @@ int main( int argc, char** argv ) {
         cout << std::hex << (int)buf[i] << ' ';
       */
 
-      this_thread::sleep_for( chrono::seconds( 1 ) );
-    }
-    catch ( std::exception& e ) {
-      CATCH_EXC_TRC_WAR(std::exception, e, "Error in ExecuteDpaTransaction: ");
+        this_thread::sleep_for(chrono::seconds(1));
+      }
+      catch (std::exception &e)
+      {
+        CATCH_EXC_TRC_WAR(std::exception, e, "Error in ExecuteDpaTransaction: ");
+        run = false;
+      }
     }
   }
   else {
