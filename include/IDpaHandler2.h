@@ -37,6 +37,8 @@ public:
   static const int32_t SAFETY_TIMEOUT_MS = 40;
   /// Asynchronous DPA message handler functional type
   typedef std::function<void( const DpaMessage& dpaMessage )> AsyncMessageHandlerFunc;
+  /// Any DPA message handler functional type
+  typedef std::function<void(const DpaMessage& dpaMessage)> AnyMessageHandlerFunc;
   /// 0 > timeout - use default, 0 == timeout - use infinit, 0 < timeout - user value
   virtual std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout,
     IDpaTransactionResult2::ErrorCode defaultError = IDpaTransactionResult2::TRN_OK) = 0;
@@ -51,6 +53,8 @@ public:
   virtual void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) = 0;
   virtual void unregisterAsyncMessageHandler( const std::string& serviceId ) = 0;
   virtual int getDpaQueueLen() const = 0;
+  virtual void registerAnyMessageHandler(const std::string& serviceId, AnyMessageHandlerFunc fun) = 0;
+  virtual void unregisterAnyMessageHandler(const std::string& serviceId) = 0;
 
   virtual ~IDpaHandler2() {}
 };

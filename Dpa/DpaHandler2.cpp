@@ -25,6 +25,7 @@
 #include "IChannel.h"
 #include <exception>
 #include <future>
+#include <map>
 
 /////////////////////////////////////
 // class DpaHandler2::Imp
@@ -96,6 +97,9 @@ public:
       CATCH_EXC_TRC_WAR(std::exception, e, "in processing msg");
       return;
     }
+
+    // process any message handler for special handling before transaction processig
+    processAnyMessage(receivedMessage);
 
     auto messageDirection = receivedMessage.MessageDirection();
     if ( messageDirection == DpaMessage::MessageType::kRequest ) {
@@ -184,6 +188,7 @@ public:
     m_timingParams.frcResponseTime = frcResponseTime;
   }
 
+  ////////////////////
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun )
   {
     //TODO serviceId?
@@ -210,6 +215,32 @@ public:
     m_asyncMessageHandler = nullptr;
   }
 
+  ////////////////////
+  void registerAnyMessageHandler(const std::string& serviceId, AnyMessageHandlerFunc fun)
+  {
+    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
+    auto ret = m_anyMessageHandlerMap.insert(std::make_pair(serviceId, fun));
+    if (!ret.second) {
+      THROW_EXC_TRC_WAR(std::logic_error, "Already registered: " << PAR(serviceId));
+    }
+  }
+
+  void processAnyMessage(const DpaMessage& message) {
+    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
+    for (auto & it : m_anyMessageHandlerMap) {
+      it.second(message);
+    }
+  }
+
+  void unregisterAnyMessageHandler(const std::string& serviceId)
+  {
+    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
+    auto found = m_anyMessageHandlerMap.find(serviceId);
+    if (found != m_anyMessageHandlerMap.end()) {
+      m_anyMessageHandlerMap.erase(found);
+    }
+  }
+
   int getDpaQueueLen() const
   {
     return (int)m_dpaTransactionQueue->size();
@@ -233,6 +264,10 @@ private:
 
   AsyncMessageHandlerFunc m_asyncMessageHandler;
   std::mutex m_asyncMessageMutex;
+
+  std::map<std::string, AnyMessageHandlerFunc> m_anyMessageHandlerMap;
+  std::mutex m_anyMessageMutex;
+
   IChannel* m_iqrfInterface = nullptr;
   int m_defaultTimeout = IDpaTransaction2::DEFAULT_TIMEOUT;
 
@@ -314,3 +349,12 @@ int DpaHandler2::getDpaQueueLen() const
   return m_imp->getDpaQueueLen();
 }
 
+void DpaHandler2::registerAnyMessageHandler(const std::string& serviceId, IDpaHandler2::AsyncMessageHandlerFunc fun)
+{
+  m_imp->registerAnyMessageHandler(serviceId, fun);
+}
+
+void DpaHandler2::unregisterAnyMessageHandler(const std::string& serviceId)
+{
+  m_imp->unregisterAnyMessageHandler(serviceId);
+}
