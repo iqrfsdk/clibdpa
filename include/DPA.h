@@ -4,11 +4,15 @@
 // Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.258 $
-// Date:    $Date: 2019/08/15 14:27:07 $
+// Version: $Revision: 1.281 $
+// Date:    $Date: 2020/04/03 08:53:54 $
 //
 // Revision history:
-//   2019/08/22  Release for DPA 4.10
+//   2020/04/03  Release for DPA 4.14
+//   2020/02/27  Release for DPA 4.13
+//   2020/01/09  Release for DPA 4.12
+//   2019/12/11  Release for DPA 4.11
+//   2019/10/09  Release for DPA 4.10
 //   2019/06/12  Release for DPA 4.03
 //   2019/06/03  Release for DPA 4.02
 //   2019/03/07  Release for DPA 4.01
@@ -32,8 +36,8 @@
 //
 // *********************************************************************
 
-// Online DPA documentation http://www.iqrf.org/DpaTechGuide/
-// IQRF Standards documentation https://www.iqrfalliance.org/techDocs/
+// Online DPA documentation https://doc.iqrf.org/DpaTechGuide/
+// IQRF Standards documentation https://www.iqrfalliance.org/iqrf-interoperability/
 
 #ifndef _DPA_HEADER_
 #define _DPA_HEADER_
@@ -42,7 +46,7 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER			0x0410
+#define	DPA_VERSION_MASTER			0x0414
 
 #ifdef __CC5X__
 // Compiled only at CC5X
@@ -57,7 +61,7 @@
 // Bank for custom variables
 #pragma rambank = UserBank_01
 
-// Main DPA API entry address (also start of the licensed FLASH) 
+// Main DPA API entry address (also start of the licensed FLASH)
 #define	DPA_API_ADDRESS				__LICENSED_FLASH
 
 // Main DPA entry address
@@ -97,7 +101,9 @@ uns8  DpaApiEntry( uns8 par1, uns8 par2, uns8 apiIndex );
 // Define CC5X types
 typedef uint8_t	  uns8;
 typedef uint16_t  uns16;
-typedef int8_t int8;
+
+// Define some types missing at Arduino
+typedef int8_t  int8;
 typedef int16_t int16;
 
 // Fake buffer sizes
@@ -187,7 +193,7 @@ typedef struct
 #define	MAX_STD_TIMESLOT	6
 
 #define	MIN_LP_TIMESLOT		8
-#define	MAX_LP_TIMESLOT		11
+#define	MAX_LP_TIMESLOT		10
 
 #ifdef DPA_LP
 #define	MIN_TIMESLOT		MIN_LP_TIMESLOT	
@@ -273,6 +279,7 @@ typedef struct
 #define	CMD_OS_SLEEP 4
 #define	CMD_OS_BATCH 5
 #define	CMD_OS_SET_SECURITY 6
+#define	CMD_OS_INDICATE 7
 #define	CMD_OS_RESTART 8
 #define	CMD_OS_WRITE_CFG_BYTE 9
 #define	CMD_OS_LOAD_CODE 10
@@ -397,6 +404,7 @@ typedef enum
   FRC_AcknowledgedBroadcastBits = 0x02,
   FRC_PrebondedAlive = 0x03,
   FRC_SupplyVoltage = 0x04,
+  FRC_PrebondedMemoryCompare2B = 0x05,
   // 1 byte
   FRC_Temperature = 0x80,
   FRC_AcknowledgedBroadcastBytes = 0x81,
@@ -405,7 +413,7 @@ typedef enum
   FRC_FrcResponseTime = 0x84,
   FRC_TestRFsignal = 0x85,
   // 4 bytes
-  FRC_PrebondedMemoryReadPlus1 = 0xF8,
+  FRC_PrebondedMemoryRead4BPlus1 = 0xF8,
   FRC_MemoryRead4B = 0xFA
 } TFRCommands;
 
@@ -434,9 +442,9 @@ typedef enum
 #define	PERIPHERAL_EEPROM_START		( (uns8)0x80 )
 #endif
 
-// Length of the readable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view. 
+// Length of the readable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view.
 #define	EEEPROM_READ_LENGTH					0x8000
-// Length of the writable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view. 
+// Length of the writable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view.
 #define	EEEPROM_WRITE_LENGTH				0x4000
 
 // Starting address of the Autoexec DPA storage at external EEPROM
@@ -779,6 +787,12 @@ typedef struct
   uns8  Counter;
 } STRUCTATTR TPerOSTestRfSignal_Response;
 
+// Structure for CMD_OS_INDICATE request
+typedef struct
+{
+  uns8  Control;
+} STRUCTATTR TPerOSIndicate_Request;
+
 // Structure for general memory request
 typedef struct
 {
@@ -1044,6 +1058,9 @@ typedef union
   // Structure for CMD_OS_TEST_RF_SIGNAL request
   TPerOSTestRfSignal_Request PerOSTestRfSignal_Request;
 
+  // Structure for CMD_OS_INDICATE request
+  TPerOSIndicate_Request PerOSIndicate_Request;
+
   // Structure for CMD_OS_TEST_RF_SIGNAL response
   TPerOSTestRfSignal_Response PerOSTestRfSignal_Response;
 
@@ -1102,10 +1119,11 @@ typedef union
 #define	DpaEvent_UserDpaValue			  17
 #define	DpaEvent_FrcResponseTime		  18
 #define	DpaEvent_BondingButton			  19
+#define	DpaEvent_Indicate    			  20
 
-#define	DpaEvent_LAST					  DpaEvent_BondingButton
+#define	DpaEvent_LAST					  DpaEvent_Indicate
 
-// Types of the diagnostic DPA Value that is returned inside DPA response 
+// Types of the diagnostic DPA Value that is returned inside DPA response
 typedef enum
 {
   DpaValueType_RSSI = 0,
@@ -1232,14 +1250,16 @@ typedef struct
 typedef struct
 {
   uns8  Header[3];  // 0x000001
-  uns8  Rand[13];
+  uns8  NADR;
+  uns8  Rand[12];
 } STRUCTATTR TDP2Invite;
 
 // DP2P confirm packet.
 typedef struct
 {
   uns8  Header[3];  // 0x000003
-  uns8  Rand[13];
+  uns8  NADR;
+  uns8  Rand[12];
 } STRUCTATTR TDP2Confirm;
 
 // DP2P response packet.
