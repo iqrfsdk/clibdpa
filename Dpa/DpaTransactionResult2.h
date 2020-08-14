@@ -18,6 +18,7 @@
 #pragma once
 
 #include "IDpaTransactionResult2.h"
+#include <string>
 
 class DpaTransactionResult2 : public IDpaTransactionResult2
 {

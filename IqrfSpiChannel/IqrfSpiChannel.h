@@ -19,6 +19,8 @@
 #include "IChannel.h"
 #include "spi_iqrf.h"
 #include "machines_def.h"
+#include <stdexcept>
+#include <string>
 
 class IqrfSpiChannel : public IChannel
 {

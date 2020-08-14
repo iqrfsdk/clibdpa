@@ -1,7 +1,8 @@
 #pragma once
 
-#include <sstream>
 #include <iomanip>
+#include <string>
+#include <sstream>
 
 /// init default channel
 #ifndef TRC_CHANNEL

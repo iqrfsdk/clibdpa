@@ -19,15 +19,16 @@
 #include "IChannel.h"
 #include "CdcInterface.h"
 #include "CDCImpl.h"
+#include <string>
 
 class IqrfCdcChannel : public IChannel
 {
 public:
   IqrfCdcChannel(const std::string& portIqrf);
   virtual ~IqrfCdcChannel();
-  virtual void sendTo(const std::basic_string<unsigned char>& message) override;
-  virtual void registerReceiveFromHandler(ReceiveFromFunc receiveFromFunc) override;
-  virtual void unregisterReceiveFromHandler() override;
+  void sendTo(const std::basic_string<unsigned char>& message) override;
+  void registerReceiveFromHandler(ReceiveFromFunc receiveFromFunc) override;
+  void unregisterReceiveFromHandler() override;
   State getState() override;
 
 private:

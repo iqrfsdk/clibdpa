@@ -20,6 +20,8 @@
 #include "DpaMessage.h"
 #include "IDpaTransaction2.h"
 #include <functional>
+#include <memory>
+#include <string>
 
 class IDpaHandler2
 {

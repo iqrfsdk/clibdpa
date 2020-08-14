@@ -19,7 +19,9 @@
 
 #include "DpaMessage.h"
 #include <chrono>
+#include <memory>
 #include <sstream>
+#include <string>
 
 class IDpaTransactionResult2
 {

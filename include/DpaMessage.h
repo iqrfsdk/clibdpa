@@ -17,9 +17,11 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <stdexcept>
 
 #ifdef __cplusplus
 extern "C" {

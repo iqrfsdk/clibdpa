@@ -26,6 +26,7 @@
 #include <exception>
 #include <future>
 #include <map>
+#include <utility>
 
 /////////////////////////////////////
 // class DpaHandler2::Imp

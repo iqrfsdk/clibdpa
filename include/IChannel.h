@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <string>
 #include <functional>
+#include <memory>
+#include <string>
 
 class IChannel
 {

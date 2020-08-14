@@ -21,6 +21,9 @@
 #include "IChannel.h"
 #include "DpaTransaction2.h"
 
+#include <memory>
+#include <string>
+
 class DpaHandler2 : public IDpaHandler2 {
 public:
   DpaHandler2( IChannel* iqrfInterface );

@@ -21,6 +21,7 @@
 #include "DpaTransactionResult2.h"
 #include "DpaMessage.h"
 #include <condition_variable>
+#include <memory>
 
 class DpaTransaction2 : public IDpaTransaction2
 {
