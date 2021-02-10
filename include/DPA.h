@@ -4,10 +4,12 @@
 // Copyright (c) IQRF Tech s.r.o.
 //
 // File:    $RCSfile: DPA.h,v $
-// Version: $Revision: 1.281 $
-// Date:    $Date: 2020/04/03 08:53:54 $
+// Version: $Revision: 1.291 $
+// Date:    $Date: 2021/01/27 18:15:35 $
 //
 // Revision history:
+//   2021/01/22  Release for DPA 4.16
+//   2020/09/03  Release for DPA 4.15
 //   2020/04/03  Release for DPA 4.14
 //   2020/02/27  Release for DPA 4.13
 //   2020/01/09  Release for DPA 4.12
@@ -46,16 +48,16 @@
 //############################################################################################
 
 // DPA version
-#define	DPA_VERSION_MASTER			0x0414
+#define	DPA_VERSION_MASTER			0x0416
 
-#ifdef __CC5X__
+#if defined( __CC5X__ ) && !defined( CC5XnotDPA )
 // Compiled only at CC5X
 #if __CC5X__ < 3703
 #error Insufficient CC5X compiler version, V3.7C is minimum
 #endif
 
-#if IQRFOS < 403
-#error IQRF OS 4.03+ is required
+#if IQRFOS < 404
+#error IQRF OS 4.04+ is required
 #endif
 
 // Bank for custom variables
@@ -87,11 +89,26 @@ uns8  DpaApiEntry( uns8 par1, uns8 par2, uns8 apiIndex );
 #define	DPA_API_LOCAL_REQUEST				4
 #define	DPA_API_SET_PERIPHERAL_ERROR		5
 #define	DPA_API_SET_RF_DEFAULTS				6
+#define DPA_API_LOCAL_FRC                   7
+#define DPA_API_CRC8                        8
+#define DPA_API_AGGREGATE_FRC               9
 
 // Used buffer size symbols
 #define	sizeofBufferRF						sizeof( bufferRF )
 #define	sizeofBufferAUX						sizeof( bufferAUX )
 #define	sizeofBufferCOM						sizeof( bufferCOM )
+#define sizeofBufferINFO                    sizeof( bufferINFO )
+
+// Converts conventional address to the linear one at PIC16F1938
+// Note: This is workaround of CC5X preprocessor bug "No '#endif' detected"
+#define error_ #error Address cannot be linearized
+#define LINEARIZE_ADDRESS( a ) \
+#if ( ((uns16)(a)) - ( ((uns16)(a)) / 0x80 ) * 0x80 ) >= 0x20 && ( ((uns16)(a)) - ( ((uns16)(a)) / 0x80 ) * 0x80 ) <= 0x6F && ( ((uns16)(a)) / 0x80 ) <= 12 \
+( ( ( ((uns16)(a)) / 0x80 ) * 0x50 ) + ( ((uns16)(a)) - 0x20 - ( ((uns16)(a)) / 0x80 ) * 0x80 ) + 0x2000 ) \
+#else \
+errorX \
+#endif
+#undef error_
 
 #define	STRUCTATTR
 
@@ -107,9 +124,10 @@ typedef int8_t  int8;
 typedef int16_t int16;
 
 // Fake buffer sizes
-#define	sizeofBufferRF  64
-#define	sizeofBufferAUX 64
-#define	sizeofBufferCOM 64
+#define	sizeofBufferRF    64
+#define	sizeofBufferAUX   64
+#define	sizeofBufferCOM   64
+#define sizeofBufferINFO  64
 
 // Disables alignment of members of structures
 #if defined WIN32 || defined _WIN32 || defined _WIN64
@@ -129,8 +147,8 @@ typedef int16_t int16;
 #define	CFGIND_CHECKSUM			0x00
 // Embedded peripherals
 #define	CFGIND_DPA_PERIPHERALS	0x01
-// DPA configuration flags
-#define	CFGIND_DPA_FLAGS		0x05
+// DPA configuration flags #0
+#define CFGIND_DPA_FLAGS0       0x05
 // Main RF channel, used by the subordinate network
 #define	CFGIND_CHANNEL_2ND_A	0x06
 // Second RF channel, used by the subordinate network
@@ -145,6 +163,8 @@ typedef int16_t int16;
 #define	CFGIND_DPA_UART_IFACE_SPEED 0x0B
 // Alternate DSM channel
 #define	CFGIND_ALTERNATE_DSM_CHANNEL 0x0C
+// DPA configuration flags #1
+#define CFGIND_DPA_FLAGS1       0x0D
 // Main RF channel
 #define	CFGIND_CHANNEL_A		0x11
 // Second RF channel
@@ -195,17 +215,6 @@ typedef struct
 #define	MIN_LP_TIMESLOT		8
 #define	MAX_LP_TIMESLOT		10
 
-#ifdef DPA_LP
-#define	MIN_TIMESLOT		MIN_LP_TIMESLOT	
-#define	MAX_TIMESLOT		MAX_LP_TIMESLOT	
-#else
-#define	MIN_TIMESLOT		MIN_STD_TIMESLOT	
-#define	MAX_TIMESLOT		MAX_STD_TIMESLOT
-#endif
-
-// Long diagnostics slot time
-#define	LONG_DIAG_TIMESLOT	20 
-
 // Maximum number of DPA PData bytes ( minus 8 = 6B foursome + 8b error code + 8b DpaValue )
 #define DPA_MAX_DATA_LENGTH			( sizeofBufferCOM - sizeof( TDpaIFaceHeader ) - 2 * sizeof( uns8 ) )
 
@@ -247,27 +256,18 @@ typedef struct
 #define	CMD_COORDINATOR_CLEAR_ALL_BONDS 3
 #define	CMD_COORDINATOR_BOND_NODE 4
 #define	CMD_COORDINATOR_REMOVE_BOND 5
-#define	CMD_COORDINATOR_REBOND_NODE 6
 #define	CMD_COORDINATOR_DISCOVERY 7
 #define	CMD_COORDINATOR_SET_DPAPARAMS 8
 #define	CMD_COORDINATOR_SET_HOPS 9
-#define	CMD_COORDINATOR_DISCOVERY_DATA 10 // (obsolete)
 #define	CMD_COORDINATOR_BACKUP 11
 #define	CMD_COORDINATOR_RESTORE 12
 #define	CMD_COORDINATOR_AUTHORIZE_BOND 13
 #define	CMD_COORDINATOR_BRIDGE 14
-#define	CMD_COORDINATOR_READ_REMOTELY_BONDED_MID 15
-#define	CMD_COORDINATOR_CLEAR_REMOTELY_BONDED_MID 16
-#define	CMD_COORDINATOR_ENABLE_REMOTE_BONDING 17
 #define	CMD_COORDINATOR_SMART_CONNECT 18
 #define	CMD_COORDINATOR_SET_MID 19
 
 #define	CMD_NODE_READ 0
 #define	CMD_NODE_REMOVE_BOND 1
-#define	CMD_NODE_READ_REMOTELY_BONDED_MID 2
-#define	CMD_NODE_CLEAR_REMOTELY_BONDED_MID 3
-#define	CMD_NODE_ENABLE_REMOTE_BONDING 4
-#define	CMD_NODE_REMOVE_BOND_ADDRESS 5
 #define	CMD_NODE_BACKUP 6
 #define	CMD_NODE_RESTORE 7
 #define	CMD_NODE_VALIDATE_BONDS 8
@@ -300,11 +300,8 @@ typedef struct
 
 #define	CMD_LED_SET_OFF 0
 #define	CMD_LED_SET_ON 1
-#define	CMD_LED_GET 2
 #define	CMD_LED_PULSE 3
 #define	CMD_LED_FLASHING 4
-
-#define	CMD_SPI_WRITE_READ 0
 
 #define	CMD_IO_DIRECTION  0
 #define	CMD_IO_SET	1
@@ -400,7 +397,6 @@ typedef enum
 {
   // 2 bits
   FRC_Ping = 0x00,
-  FRC_UART_SPI_data = 0x01,
   FRC_AcknowledgedBroadcastBits = 0x02,
   FRC_PrebondedAlive = 0x03,
   FRC_SupplyVoltage = 0x04,
@@ -442,20 +438,18 @@ typedef enum
 #define	PERIPHERAL_EEPROM_START		( (uns8)0x80 )
 #endif
 
+// Length of the internal EEPROM peripheral array
+#define PERIPHERAL_EEPROM_LENGTH            ( (uns8)( 0xC0 - PERIPHERAL_EEPROM_START ) )
+
 // Length of the readable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view.
 #define	EEEPROM_READ_LENGTH					0x8000
 // Length of the writable area of serial EEEPROM from the EEEPROM DPA peripheral write point of view.
 #define	EEEPROM_WRITE_LENGTH				0x4000
 
-// Starting address of the Autoexec DPA storage at external EEPROM
-#define	AUTOEXEC_EEEPROM_ADDR				0x0000
-// Length of the autoexec memory block
-#define	AUTOEXEC_LENGTH						sizeofBufferAUX
-
 // Starting address of the IO Setup DPA storage at external EEPROM
-#define	IOSETUP_EEEPROM_ADDR				( AUTOEXEC_EEEPROM_ADDR + AUTOEXEC_LENGTH )
+#define IOSETUP_EEEPROM_ADDR                ( 0x0000 + sizeofBufferAUX )
 // Length of the IO setup memory block
-#define	IOSETUP_LENGTH						sizeofBufferAUX
+#define IOSETUP_LENGTH                      sizeofBufferAUX
 
 // ---------------------------------------------------------
 
@@ -523,17 +517,11 @@ typedef struct
   uns8	BondAddr;
 } STRUCTATTR TPerCoordinatorRemoveBond_Request;
 
-// Structure for CMD_COORDINATOR_REBOND_NODE
+// Structure returned by CMD_COORDINATOR_REMOVE_BOND
 typedef struct
 {
-  uns8	BondAddr;
-} STRUCTATTR TPerCoordinatorRebondNode_Request;
-
-// Structure returned by CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
-typedef struct
-{
-  uns8	DevNr;
-} STRUCTATTR TPerCoordinatorRemoveRebondBond_Response;
+  uns8  DevNr;
+} STRUCTATTR TPerCoordinatorRemoveBond_Response;
 
 // Structure for CMD_COORDINATOR_DISCOVERY
 typedef struct
@@ -560,18 +548,6 @@ typedef struct
   uns8	RequestHops;
   uns8	ResponseHops;
 } STRUCTATTR TPerCoordinatorSetHops_Request_Response;
-
-// Structure for CMD_COORDINATOR_DISCOVERY_DATA (obsolete)
-typedef struct
-{
-  uns16	Address;
-} STRUCTATTR TPerCoordinatorDiscoveryData_Request;
-
-// Structure returned by CMD_COORDINATOR_DISCOVERY_DATA (obsolete)
-typedef struct
-{
-  uns8	DiscoveryData[48];
-} STRUCTATTR TPerCoordinatorDiscoveryData_Response;
 
 // Structure for CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
 typedef struct
@@ -621,27 +597,6 @@ typedef struct
   uns8	subPData[DPA_MAX_DATA_LENGTH - sizeof( TDpaIFaceHeader ) - 2 * sizeof( uns8 )];
 } STRUCTATTR TPerCoordinatorBridge_Response;
 
-// Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
-typedef struct
-{
-  uns8	BondingMask;
-  uns8	Control;
-  uns8	UserData[4];
-} STRUCTATTR TPerCoordinatorNodeEnableRemoteBonding_Request;
-
-// Structure for TPerCoordinatorNodeReadRemotelyBondedMID_Response
-typedef struct
-{
-  uns8	MID[4];
-  uns8	UserData[4];
-} STRUCTATTR TPrebondedNode;
-
-// Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
-typedef struct
-{
-  TPrebondedNode  PrebondedNodes[DPA_MAX_DATA_LENGTH / sizeof( TPrebondedNode )];
-} STRUCTATTR TPerCoordinatorNodeReadRemotelyBondedMID_Response;
-
 // Structure for CMD_COORDINATOR_SMART_CONNECT
 typedef struct
 {
@@ -649,10 +604,10 @@ typedef struct
   uns8  BondingTestRetries;
   uns8  IBK[16];
   uns8  MID[4];
-  uns8  reserved0[2];
+  uns8  reserved0;
   uns8  VirtualDeviceAddress;
-  uns8  reserved1[9];
-  uns8	UserData[4];
+  uns8  UserData[4];
+  uns8  reserved1[10];
 } STRUCTATTR TPerCoordinatorSmartConnect_Request;
 
 // Structure for CMD_COORDINATOR_SET_MID
@@ -881,12 +836,12 @@ typedef struct
   uns8  BaudRate;
 } STRUCTATTR TPerUartOpen_Request;
 
-// Structure for CMD_UART_[CLEAR_]WRITE_READ and CMD_SPI_WRITE_READ
+// Structure for CMD_UART_[CLEAR_]WRITE_READ
 typedef struct
 {
   uns8  ReadTimeout;
-  uns8	WrittenData[DPA_MAX_DATA_LENGTH - sizeof( uns8 )];
-} STRUCTATTR TPerUartSpiWriteRead_Request;
+  uns8  WrittenData[DPA_MAX_DATA_LENGTH - sizeof(uns8)];
+} STRUCTATTR TPerUartWriteRead_Request;
 
 // Structure for CMD_FRC_SEND
 typedef struct
@@ -913,7 +868,7 @@ typedef struct
 // Structure for request and response of CMD_FRC_SET_PARAMS
 typedef struct
 {
-  uns8	FRCresponseTime;
+  uns8	FrcParams;
 } STRUCTATTR TPerFrcSetParams_RequestResponse;
 
 // Interface and CMD_COORDINATOR_BRIDGE confirmation structure
@@ -968,11 +923,8 @@ typedef union
   // Structure for CMD_COORDINATOR_REMOVE_BOND
   TPerCoordinatorRemoveBond_Request PerCoordinatorRemoveBond_Request;
 
-  // Structure for CMD_COORDINATOR_REBOND_NODE
-  TPerCoordinatorRebondNode_Request PerCoordinatorRebondNode_Request;
-
-  // Structure returned by CMD_COORDINATOR_REMOVE_BOND or CMD_COORDINATOR_REBOND_NODE
-  TPerCoordinatorRemoveRebondBond_Response PerCoordinatorRemoveRebondBond_Response;
+  // Structure returned by CMD_COORDINATOR_REMOVE_BOND
+  TPerCoordinatorRemoveBond_Response PerCoordinatorRemoveBond_Response;
 
   // Structure for CMD_COORDINATOR_DISCOVERY
   TPerCoordinatorDiscovery_Request PerCoordinatorDiscovery_Request;
@@ -985,12 +937,6 @@ typedef union
 
   // Structure for and also returned by CMD_COORDINATOR_SET_HOPS
   TPerCoordinatorSetHops_Request_Response PerCoordinatorSetHops_Request_Response;
-
-  // Structure for CMD_COORDINATOR_DISCOVERY_DATA (obsolete)
-  TPerCoordinatorDiscoveryData_Request PerCoordinatorDiscoveryData_Request;
-
-  // Structure returned by CMD_COORDINATOR_DISCOVERY_DATA (obsolete)
-  TPerCoordinatorDiscoveryData_Response PerCoordinatorDiscoveryData_Response;
 
   // Structure for CMD_COORDINATOR_BACKUP and CMD_NODE_BACKUP
   TPerCoordinatorNodeBackup_Request PerCoordinatorNodeBackup_Request;
@@ -1012,12 +958,6 @@ typedef union
 
   // Structure returned by CMD_COORDINATOR_BRIDGE
   TPerCoordinatorBridge_Response PerCoordinatorBridge_Response;
-
-  // Structure for CMD_COORDINATOR_ENABLE_REMOTE_BONDING and CMD_NODE_ENABLE_REMOTE_BONDING
-  TPerCoordinatorNodeEnableRemoteBonding_Request PerCoordinatorNodeEnableRemoteBonding_Request;
-
-  // Structure returned by CMD_COORDINATOR_READ_REMOTELY_BONDED_MID and CMD_NODE_READ_REMOTELY_BONDED_MID
-  TPerCoordinatorNodeReadRemotelyBondedMID_Response PerCoordinatorNodeReadRemotelyBondedMID_Response;
 
   // Structure for CMD_COORDINATOR_SMART_CONNECT
   TPerCoordinatorSmartConnect_Request PerCoordinatorSmartConnect_Request;
@@ -1078,9 +1018,9 @@ typedef union
 
   // Structure for CMD_UART_OPEN
   TPerUartOpen_Request PerUartOpen_Request;
-
-  // Structure for CMD_UART_[CLEAR_]WRITE_READ and CMD_SPI_WRITE_READ
-  TPerUartSpiWriteRead_Request PerUartSpiWriteRead_Request;
+  
+  // Structure for CMD_UART_[CLEAR_]WRITE_READ
+  TPerUartWriteRead_Request PerUartWriteRead_Request;
 
   // Structure for CMD_FRC_SEND
   TPerFrcSend_Request PerFrcSend_Request;
@@ -1115,13 +1055,13 @@ typedef union
 #define	DpaEvent_ReceiveDpaRequest		  13
 #define	DpaEvent_BeforeSendingDpaResponse 14
 #define	DpaEvent_PeerToPeer				  15
-#define	DpaEvent_AuthorizePreBonding	  16
 #define	DpaEvent_UserDpaValue			  17
 #define	DpaEvent_FrcResponseTime		  18
 #define	DpaEvent_BondingButton			  19
 #define	DpaEvent_Indicate    			  20
+#define DpaEvent_VerifyLocalFrc           21
 
-#define	DpaEvent_LAST					  DpaEvent_Indicate
+#define DpaEvent_LAST                     DpaEvent_VerifyLocalFrc
 
 // Types of the diagnostic DPA Value that is returned inside DPA response
 typedef enum
@@ -1204,6 +1144,9 @@ typedef enum
 // DPA message at bufferRF
 TDpaMessage DpaRfMessage @bufferRF;
 
+// Note: Works only, because _DpaMessage.Request.PData is at the same location as bufferRF!
+#define _FSR_DPA    _FSR_RF
+
 // Actual allocation of the RAM Peripheral memory block @ UserBank_02
 bank12 uns8  PeripheralRam[PERIPHERAL_RAM_LENGTH] @ 0x620;
 
@@ -1228,11 +1171,6 @@ bit encryptByAccessPassword @ usedBank0[0x23].7;
 
 // DP2P response time-slot time in 10 ms
 #define DP2P_TIMESLOT   11
-
-// Traffic indication active: from the store in case of DPA request
-bit IsDpaTrafficIndication			  @_DpaParams.2;
-// Long diagnostic time slot request: from the store in case of DPA request
-bit IsDpaLongTimeslot				  @_DpaParams.3;
 
 // DP2P request packet. Fills out the whole bufferRF.
 typedef struct
