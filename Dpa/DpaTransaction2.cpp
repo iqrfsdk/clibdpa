@@ -113,9 +113,15 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   // calculate requiredTimeout for special cases
   if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS )
   {
-    if ( requiredTimeout > defaultTimeout )
+    if (requiredTimeout > defaultTimeout)
     {
-      m_expectedDurationMs = requiredTimeout;
+      if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
+        (message.PeripheralCommand() == CMD_FRC_SEND || message.PeripheralCommand() == CMD_FRC_SEND_SELECTIVE)) {
+        //TODO FRC timeout
+      }
+      else {
+        m_expectedDurationMs = requiredTimeout;
+      }
     }
 
     // peripheral FRC and FRC command
