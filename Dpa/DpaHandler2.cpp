@@ -101,6 +101,8 @@ public:
 
     // process any message handler for special handling before transaction processig
     processAnyMessage(receivedMessage);
+    processInfoMessage(receivedMessage, m_reqBuffer);
+    m_reqBuffer.clear();
 
     auto messageDirection = receivedMessage.MessageDirection();
     if ( messageDirection == DpaMessage::MessageType::kRequest ) {
@@ -127,6 +129,7 @@ public:
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout, 
     IDpaTransactionResult2::ErrorCode defaultError)
   {
+    m_reqBuffer = std::vector<uns8>(request.DpaPacket().Buffer, request.DpaPacket().Buffer + request.kMaxDpaMessageSize);
     if ( request.GetLength() <= 0 ) {
       //TODO gets stuck on DpaTransaction2::get() if processed here
       TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
@@ -242,6 +245,20 @@ public:
     }
   }
 
+  void registerInfoMessageHandler(InfoMessageHandlerFunc fun) {
+    m_infoFunc = fun;
+  }
+
+  void processInfoMessage(DpaMessage &message, const std::vector<uns8>& reqBuffer) {
+    if (m_infoFunc != nullptr) {
+      m_infoFunc(message, reqBuffer);
+    }
+  }
+
+  void unregisterInfoMessageHandler() {
+    m_infoFunc = nullptr;
+  }
+
   int getDpaQueueLen() const
   {
     return (int)m_dpaTransactionQueue->size();
@@ -274,6 +291,9 @@ private:
 
   std::shared_ptr<DpaTransaction2> m_pendingTransaction;
   TaskQueue<std::shared_ptr<DpaTransaction2>>* m_dpaTransactionQueue = nullptr;
+  std::vector<uns8> m_reqBuffer;
+
+  InfoMessageHandlerFunc m_infoFunc;
 };
 
 /////////////////////////////////////
@@ -358,4 +378,12 @@ void DpaHandler2::registerAnyMessageHandler(const std::string& serviceId, IDpaHa
 void DpaHandler2::unregisterAnyMessageHandler(const std::string& serviceId)
 {
   m_imp->unregisterAnyMessageHandler(serviceId);
+}
+
+void DpaHandler2::registerInfoMessageHandler(IDpaHandler2::InfoMessageHandlerFunc fun) {
+  m_imp->registerInfoMessageHandler(fun);
+}
+
+void DpaHandler2::unregisterInfoMessageHandler() {
+  m_imp->unregisterInfoMessageHandler();
 }

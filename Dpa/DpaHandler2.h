@@ -43,6 +43,8 @@ public:
   int getDpaQueueLen() const override;
   void registerAnyMessageHandler(const std::string& serviceId, AnyMessageHandlerFunc fun) override;
   void unregisterAnyMessageHandler(const std::string& serviceId) override;
+  void registerInfoMessageHandler(InfoMessageHandlerFunc fun) override;
+  void unregisterInfoMessageHandler() override;
 private:
   class Imp;
   Imp *m_imp = nullptr;
