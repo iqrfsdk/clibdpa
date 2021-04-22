@@ -227,9 +227,9 @@ public:
   }
 
   void executeInfoMessageHandler() {
-    std::lock_guard<std::mutex> lck(m_reqMutex);
+    std::lock_guard<std::mutex> lckReq(m_reqMutex);
     {
-      std::lock_guard<std::mutex> lck(m_infoMessageMutex);
+      std::lock_guard<std::mutex> lckInfo(m_infoMessageMutex);
       {
         if (m_topologyAltered && m_infoMessageHandler != nullptr) {
           m_infoMessageHandler();
