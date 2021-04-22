@@ -27,6 +27,7 @@
 #include <future>
 #include <map>
 #include <utility>
+#include <cstring>
 
 /////////////////////////////////////
 // class DpaHandler2::Imp
@@ -99,10 +100,9 @@ public:
       return;
     }
 
-    // process any message handler for special handling before transaction processig
-    processAnyMessage(receivedMessage);
-    processInfoMessage(receivedMessage, m_reqBuffer);
-    m_reqBuffer.clear();
+    if (receivedMessage.DpaPacket().DpaRequestPacket_t.PNUM == 2 && receivedMessage.DpaPacket().DpaRequestPacket_t.PCMD == 133) {
+      TRC_INFORMATION("haha");
+    }
 
     auto messageDirection = receivedMessage.MessageDirection();
     if ( messageDirection == DpaMessage::MessageType::kRequest ) {
@@ -119,6 +119,7 @@ public:
     else {
       try {
         m_pendingTransaction->processReceivedMessage( message );
+        executeInfoMessageHandler();
       }
       catch ( std::logic_error& le ) {
         CATCH_EXC_TRC_WAR(std::logic_error, le, "Process received message error..." );
@@ -129,7 +130,6 @@ public:
   std::shared_ptr<IDpaTransaction2> executeDpaTransaction( const DpaMessage& request, int32_t timeout, 
     IDpaTransactionResult2::ErrorCode defaultError)
   {
-    m_reqBuffer = std::vector<uns8>(request.DpaPacket().Buffer, request.DpaPacket().Buffer + request.kMaxDpaMessageSize);
     if ( request.GetLength() <= 0 ) {
       //TODO gets stuck on DpaTransaction2::get() if processed here
       TRC_WARNING( "Empty request => nothing to sent and transaction aborted" );
@@ -220,53 +220,95 @@ public:
   }
 
   ////////////////////
-  void registerAnyMessageHandler(const std::string& serviceId, AnyMessageHandlerFunc fun)
+  void registerInfoMessageHandler(InfoMessageHandlerFunc fun)
   {
-    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
-    auto ret = m_anyMessageHandlerMap.insert(std::make_pair(serviceId, fun));
-    if (!ret.second) {
-      THROW_EXC_TRC_WAR(std::logic_error, "Already registered: " << PAR(serviceId));
-    }
+    std::lock_guard<std::mutex> lck(m_infoMessageMutex);
+    m_infoMessageHandler = fun;
   }
 
-  void processAnyMessage(const DpaMessage& message) {
-    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
-    for (auto & it : m_anyMessageHandlerMap) {
-      it.second(message);
+  void executeInfoMessageHandler() {
+    m_reqMutex.lock();
+    bool execute = m_topologyAltered;
+    m_reqMutex.unlock();
+    m_infoMessageMutex.lock();
+    if (execute && m_infoMessageHandler != nullptr) {
+      m_infoMessageHandler();
     }
+    m_infoMessageMutex.unlock();
   }
 
-  void unregisterAnyMessageHandler(const std::string& serviceId)
+  void unregisterInfoMessageHandler()
   {
-    std::lock_guard<std::mutex> lck(m_anyMessageMutex);
-    auto found = m_anyMessageHandlerMap.find(serviceId);
-    if (found != m_anyMessageHandlerMap.end()) {
-      m_anyMessageHandlerMap.erase(found);
-    }
-  }
-
-  void registerInfoMessageHandler(InfoMessageHandlerFunc fun) {
-    m_infoFunc = fun;
-  }
-
-  void processInfoMessage(DpaMessage &message, const std::vector<uns8>& reqBuffer) {
-    if (m_infoFunc != nullptr) {
-      m_infoFunc(message, reqBuffer);
-    }
-  }
-
-  void unregisterInfoMessageHandler() {
-    m_infoFunc = nullptr;
+    std::lock_guard<std::mutex> lck(m_infoMessageMutex);
+    m_infoMessageHandler = nullptr;
   }
 
   int getDpaQueueLen() const
   {
     return (int)m_dpaTransactionQueue->size();
   }
+
+  void analyzeRequest(const DpaMessage& request) {
+    std::lock_guard<std::mutex> lck(m_reqMutex);
+    if (request.NodeAddress() != 0) {
+      return;
+    }
+    TDpaPeripheralType per = request.PeripheralType();
+    int cmd;
+    if (per == 0) {
+      cmd = request.PeripheralCommand();
+      if (cmd == CMD_COORDINATOR_CLEAR_ALL_BONDS
+        || cmd == CMD_COORDINATOR_BOND_NODE
+        || cmd == CMD_COORDINATOR_REMOVE_BOND
+        || cmd == CMD_COORDINATOR_DISCOVERY
+        || cmd == CMD_COORDINATOR_RESTORE
+        || cmd == CMD_COORDINATOR_SMART_CONNECT
+        || cmd == CMD_COORDINATOR_SET_MID) {
+        m_topologyAltered = true;
+      }
+    } else if (per == 2) {
+      cmd = request.PeripheralCommand();
+      if (cmd == CMD_OS_BATCH) {
+        cmd = analyzeBatchPacket(request.DpaPacket().DpaRequestPacket_t.DpaMessage.Request.PData);
+        if (cmd != -1) {
+          m_topologyAltered = true;
+        }
+      }
+    }
+  }
+
+  int analyzeBatchPacket(const uns8* pData) const {
+    int cmd = -1;
+    uint8_t idx = 0;
+    uint8_t bytes = pData[idx];
+    while (bytes != 0) {
+      if (pData[idx + 1] != 0) {
+        return -1;
+      }
+      uint8_t pcmd = pData[idx + 2];
+      if (pcmd == CMD_COORDINATOR_CLEAR_ALL_BONDS
+          || pcmd == CMD_COORDINATOR_BOND_NODE
+          || pcmd == CMD_COORDINATOR_REMOVE_BOND
+          || pcmd == CMD_COORDINATOR_DISCOVERY
+          || pcmd == CMD_COORDINATOR_RESTORE
+          || pcmd == CMD_COORDINATOR_SMART_CONNECT
+          || pcmd == CMD_COORDINATOR_SET_MID) {
+        cmd = pcmd;
+        break;
+      }
+      idx += bytes;
+      bytes = pData[idx];
+    }
+    return cmd;
+  }
   
 private:
   void sendRequest( const DpaMessage& request )
   {
+    if (request.DpaPacket().DpaRequestPacket_t.PNUM == 2 && request.DpaPacket().DpaRequestPacket_t.PCMD == 5) {
+      TRC_INFORMATION("HAHA");
+    }
+    analyzeRequest(request);
     TRC_INFORMATION( "<<<<<<<<<<<<<<<<<<" << std::endl <<
              "Sent to DPA interface: " << std::endl << MEM_HEX( request.DpaPacketData(), request.GetLength() ) );
     try {
@@ -283,17 +325,17 @@ private:
   AsyncMessageHandlerFunc m_asyncMessageHandler;
   std::mutex m_asyncMessageMutex;
 
-  std::map<std::string, AnyMessageHandlerFunc> m_anyMessageHandlerMap;
-  std::mutex m_anyMessageMutex;
+  InfoMessageHandlerFunc m_infoMessageHandler;
+  std::mutex m_infoMessageMutex;
 
   IChannel* m_iqrfInterface = nullptr;
   int m_defaultTimeout = IDpaTransaction2::DEFAULT_TIMEOUT;
 
   std::shared_ptr<DpaTransaction2> m_pendingTransaction;
   TaskQueue<std::shared_ptr<DpaTransaction2>>* m_dpaTransactionQueue = nullptr;
-  std::vector<uns8> m_reqBuffer;
 
-  InfoMessageHandlerFunc m_infoFunc;
+  std::mutex m_reqMutex;
+  bool m_topologyAltered = false;
 };
 
 /////////////////////////////////////
@@ -370,20 +412,12 @@ int DpaHandler2::getDpaQueueLen() const
   return m_imp->getDpaQueueLen();
 }
 
-void DpaHandler2::registerAnyMessageHandler(const std::string& serviceId, IDpaHandler2::AsyncMessageHandlerFunc fun)
+void DpaHandler2::registerInfoMessageHandler(IDpaHandler2::InfoMessageHandlerFunc fun)
 {
-  m_imp->registerAnyMessageHandler(serviceId, fun);
-}
-
-void DpaHandler2::unregisterAnyMessageHandler(const std::string& serviceId)
-{
-  m_imp->unregisterAnyMessageHandler(serviceId);
-}
-
-void DpaHandler2::registerInfoMessageHandler(IDpaHandler2::InfoMessageHandlerFunc fun) {
   m_imp->registerInfoMessageHandler(fun);
 }
 
-void DpaHandler2::unregisterInfoMessageHandler() {
+void DpaHandler2::unregisterInfoMessageHandler()
+{
   m_imp->unregisterInfoMessageHandler();
 }

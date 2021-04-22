@@ -41,8 +41,6 @@ public:
   void registerAsyncMessageHandler( const std::string& serviceId, AsyncMessageHandlerFunc fun ) override;
   void unregisterAsyncMessageHandler( const std::string& serviceId ) override;
   int getDpaQueueLen() const override;
-  void registerAnyMessageHandler(const std::string& serviceId, AnyMessageHandlerFunc fun) override;
-  void unregisterAnyMessageHandler(const std::string& serviceId) override;
   void registerInfoMessageHandler(InfoMessageHandlerFunc fun) override;
   void unregisterInfoMessageHandler() override;
 private:
