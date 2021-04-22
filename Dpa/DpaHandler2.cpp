@@ -227,14 +227,16 @@ public:
   }
 
   void executeInfoMessageHandler() {
-    m_reqMutex.lock();
-    bool execute = m_topologyAltered;
-    m_reqMutex.unlock();
-    m_infoMessageMutex.lock();
-    if (execute && m_infoMessageHandler != nullptr) {
-      m_infoMessageHandler();
+    std::lock_guard<std::mutex> lck(m_reqMutex);
+    {
+      std::lock_guard<std::mutex> lck(m_infoMessageMutex);
+      {
+        if (m_topologyAltered && m_infoMessageHandler != nullptr) {
+          m_infoMessageHandler();
+          m_topologyAltered = false;
+        }
+      }
     }
-    m_infoMessageMutex.unlock();
   }
 
   void unregisterInfoMessageHandler()
