@@ -75,7 +75,8 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
       message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
       message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ||
       message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND ||
-      message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC
+      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND ||
+      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND_SELECTIVE
       ) ) {
       // Yes, set default (infinite) timeout for Discovery or SmartConnect
       TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery or SmartConnect or Authorize or FRC message" );
@@ -90,7 +91,8 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
       message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
       message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
       message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND &&
-      message.DpaPacket().DpaRequestPacket_t.PNUM != PNUM_FRC
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND &&
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND_SELECTIVE
       ) ) {
       // force setting minimal timing as only Discovery can have infinite timeout
       TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
@@ -141,7 +143,7 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
     }
   }
   
-  m_userTimeoutMs = requiredTimeout; // checked and corrected timeout 
+  m_userTimeoutMs = requiredTimeout; // checked and corrected timeout
   TRC_FUNCTION_LEAVE( "Using: " << PAR( m_userTimeoutMs ) );
 }
 
