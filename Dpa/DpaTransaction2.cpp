@@ -71,13 +71,18 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   // check and correct timeout here before blocking:
   if ( requiredTimeout < 0 ) {
     // Discovery or SmartConnect or Authorize or FRC command ?
-    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && (
-      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
-      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ||
-      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND ||
-      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND ||
-      message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND_SELECTIVE
-      ) ) {
+    if ((message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && (
+          (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR && (
+            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
+            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ||
+            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND)
+          ) ||
+          (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC && (
+            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND ||
+            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND_SELECTIVE)
+          )
+        )
+    ) {
       // Yes, set default (infinite) timeout for Discovery or SmartConnect
       TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery or SmartConnect or Authorize or FRC message" );
       m_infinitTimeout = true;
@@ -87,13 +92,17 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   }
   else if ( requiredTimeout == INFINITE_TIMEOUT ) {
     // it is allowed just for Coordinator Discovery, SmartConnect, Authorize and FRC
-    if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS || (
-      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
-      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
-      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND &&
-      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND &&
-      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND_SELECTIVE
-      ) ) {
+    if ((message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS || (
+          message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
+          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
+          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
+          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND
+        ) || (
+          message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
+          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND &&
+          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND_SELECTIVE
+        )
+    ) {
       // force setting minimal timing as only Discovery can have infinite timeout
       TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
       requiredTimeout = defaultTimeout;
