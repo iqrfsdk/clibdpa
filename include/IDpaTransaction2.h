@@ -60,10 +60,12 @@ public:
   static const int32_t SAFETY_TIMEOUT_MS = 40;
   /// A special DISCOVERY timeout
   static const int32_t BOND_TIMEOUT_MS = 11000;
+  /// FRC maximum timeout
+  static const uint32_t FRC_TIMEOUT_MS = 90000;
 
   virtual ~IDpaTransaction2() {}
   /// wait for result
   virtual std::unique_ptr<IDpaTransactionResult2> get() = 0;
-  /// abort the transaction immediately 
+  /// abort the transaction immediately
   virtual void abort() = 0;
 };

@@ -41,7 +41,7 @@ using namespace std;
 //
 // When user invokes m_dpa->executeDpaTransaction() this class is constructed and stored by m_dpa to the queue of transactions.
 // If there is no pending transaction the first one from the queue is execute() by DpaHandler queue worker thread.
-// If the function is not invoked in time required by user, the transaction timer expires and 
+// If the function is not invoked in time required by user, the transaction timer expires and
 // this situation is reported via transaction result error code (coordinator busy or queue full)
 //
 // execute() gets to point waiting for confirmation or response from coordinator. These messages are handled by processReceivedMessage().
@@ -69,52 +69,39 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   int32_t requiredTimeout = userTimeout;
 
   // check and correct timeout here before blocking:
-  if ( requiredTimeout < 0 ) {
-    // Discovery or SmartConnect or Authorize or FRC command ?
-    if ((message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS && (
-          (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR && (
-            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
-            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT ||
-            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND)
-          ) ||
-          (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC && (
-            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND ||
-            message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND_SELECTIVE)
-          )
-        )
-    ) {
-      // Yes, set default (infinite) timeout for Discovery or SmartConnect
-      TRC_WARNING( PAR( requiredTimeout ) << " Default (infinite) timeout forced for Discovery or SmartConnect or Authorize or FRC message" );
-      m_infinitTimeout = true;
+  if (requiredTimeout < 0) {
+    // coordinator device
+    if ((message.NodeAddress() & BROADCAST_ADDRESS) == COORDINATOR_ADDRESS) {
+      // coordinator peripheral
+      if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR) {
+        // authorize bond, discovery or smartconnect
+        if (message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_AUTHORIZE_BOND ||
+          message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_DISCOVERY ||
+          message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_COORDINATOR_SMART_CONNECT) {
+          // Set infinite timeout for Authorize bond, Discovery and SmartConnect
+          TRC_WARNING(PAR(requiredTimeout) << " Default (infinite) timeout forced for Authorize, Discovery and SmartConnect.");
+          m_infinitTimeout = true;
+        }
+      }
     }
     // default timeout
     requiredTimeout = defaultTimeout;
-  }
-  else if ( requiredTimeout == INFINITE_TIMEOUT ) {
-    // it is allowed just for Coordinator Discovery, SmartConnect, Authorize and FRC
-    if ((message.NodeAddress() & BROADCAST_ADDRESS ) != COORDINATOR_ADDRESS || (
-          message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
-          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
-          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
-          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND
-        ) || (
-          message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
-          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND &&
-          message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_FRC_SEND_SELECTIVE
-        )
-    ) {
-      // force setting minimal timing as only Discovery can have infinite timeout
-      TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
+  } else if (requiredTimeout == INFINITE_TIMEOUT) {
+    if ((message.NodeAddress() & BROADCAST_ADDRESS) != COORDINATOR_ADDRESS ||
+      (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_DISCOVERY &&
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_SMART_CONNECT &&
+      message.DpaPacket().DpaRequestPacket_t.PCMD != CMD_COORDINATOR_AUTHORIZE_BOND)) {
+      // Force default timeout
+      TRC_WARNING("User: " << PAR(requiredTimeout) << " forced to: " << PAR(defaultTimeout));
       requiredTimeout = defaultTimeout;
-    }
-    else {
-      TRC_WARNING( PAR( requiredTimeout ) << " infinite timeout allowed for Discovery or SmartConnect or Authorize or FRC message" );
+    } else {
+      TRC_WARNING(PAR(requiredTimeout) << " infinite timeout allowed for Discovery or SmartConnect or Authorize or FRC message");
       requiredTimeout = defaultTimeout;
       m_infinitTimeout = true;
     }
-  }
-  else if ( requiredTimeout < defaultTimeout ) {
-    TRC_WARNING( "User: " << PAR( requiredTimeout ) << " forced to: " << PAR( defaultTimeout ) );
+  } else if (requiredTimeout < defaultTimeout) {
+    TRC_WARNING("User: " << PAR(requiredTimeout) << " forced to: " << PAR(defaultTimeout));
     requiredTimeout = defaultTimeout;
   }
 
@@ -122,43 +109,37 @@ DpaTransaction2::DpaTransaction2( const DpaMessage& request,
   m_expectedDurationMs = m_defaultTimeout;
 
   // calculate requiredTimeout for special cases
-  if ( ( message.NodeAddress() & BROADCAST_ADDRESS ) == COORDINATOR_ADDRESS )
-  {
-    if ( requiredTimeout > defaultTimeout )
-    {
+  if ((message.NodeAddress() & BROADCAST_ADDRESS) == COORDINATOR_ADDRESS) {
+    if (requiredTimeout > defaultTimeout) {
       m_expectedDurationMs = requiredTimeout;
     }
-
-    // peripheral FRC and FRC command
-    //if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC &&
-    //  ( message.PeripheralCommand() == CMD_FRC_SEND || message.PeripheralCommand() == CMD_FRC_SEND_SELECTIVE ) )
-    //{
-    //  // user timeout is not applied, timeout forced to FRC 
-    //  requiredTimeout = getFrcTimeout();
-    //  m_expectedDurationMs = requiredTimeout;
-    //  TRC_WARNING( "User: " << PAR( userTimeout ) << " forced to FRC: " << PAR( requiredTimeout ) );
-    //}
-
-    //bonding special timeout 
-    if ( message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR &&
-      ( message.PeripheralCommand() == CMD_COORDINATOR_BOND_NODE ) )
-    {
-      // user timeout is not applied, forced to BOND_TIMEOUT_MS
-      if ( userTimeout < 0 ) {
-        requiredTimeout = BOND_TIMEOUT_MS;
-        m_expectedDurationMs = requiredTimeout;
-        TRC_INFORMATION( "Used timeout: " << PAR( BOND_TIMEOUT_MS ) );
+    // local bonding timeout fixup
+    if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_COORDINATOR) {
+      if (message.PeripheralCommand() == CMD_COORDINATOR_BOND_NODE) {
+        // user timeout is not applied, forced to BOND_TIMEOUT_MS
+        if (userTimeout < 0) {
+          requiredTimeout = BOND_TIMEOUT_MS;
+          m_expectedDurationMs = requiredTimeout;
+          TRC_INFORMATION("Using default BOND timeout (ms): " << std::to_string(BOND_TIMEOUT_MS));
+        }
+      }
+    }
+    // FRC infinite timeout fixup
+    if (message.DpaPacket().DpaRequestPacket_t.PNUM == PNUM_FRC) {
+      if (message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND || message.DpaPacket().DpaRequestPacket_t.PCMD == CMD_FRC_SEND_SELECTIVE) {
+        if (userTimeout < 0) {
+          requiredTimeout = FRC_TIMEOUT_MS;
+          m_expectedDurationMs = requiredTimeout;
+          TRC_INFORMATION("Using default FRC timeout (ms): " << std::to_string(FRC_TIMEOUT_MS));
+        }
       }
     }
   }
-  
   m_userTimeoutMs = requiredTimeout; // checked and corrected timeout
-  TRC_FUNCTION_LEAVE( "Using: " << PAR( m_userTimeoutMs ) );
+  TRC_FUNCTION_LEAVE("Using: " << PAR(m_userTimeoutMs));
 }
 
-DpaTransaction2::~DpaTransaction2()
-{
-}
+DpaTransaction2::~DpaTransaction2() {}
 
 void DpaTransaction2::abort() {
   std::unique_lock<std::mutex> lck( m_conditionVariableMutex );
@@ -183,7 +164,7 @@ std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
       if ( !m_infinitTimeout ) {
         TRC_WARNING( "Transaction timeout - transaction was not started in time." );
         m_dpaTransactionResultPtr->setErrorCode( IDpaTransactionResult2::TRN_ERROR_IFACE_BUSY );
-        // return result and move ownership 
+        // return result and move ownership
         return std::move( m_dpaTransactionResultPtr );
       }
       else {
@@ -199,7 +180,7 @@ std::unique_ptr<IDpaTransactionResult2> DpaTransaction2::get()
   // wait_for() unlock lck when blocking and lock it again when get out, waiting continue if not finished (predicate == false)
   while ( !m_conditionVariable.wait_for( lck, std::chrono::milliseconds( m_userTimeoutMs ), [&] { return m_finish; } ) );
 
-  // return result and move ownership 
+  // return result and move ownership
   TRC_DEBUG( "Finished: " << PAR( m_transactionId ) << PAR( m_state ) );
   return std::move( m_dpaTransactionResultPtr );
 }
@@ -215,7 +196,7 @@ void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
 {
   // lock this function except blocking in wait_for()
   std::unique_lock<std::mutex> lck( m_conditionVariableMutex );
-  
+
   m_defaultError = defaultError;
 
   const DpaMessage& message = m_dpaTransactionResultPtr->getRequest();
@@ -242,13 +223,13 @@ void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
     }
   }
   else {
-    // transaction is not handled 
+    // transaction is not handled
     m_state = kDefaultError;
     // init expected duration - we have final error state - just finish transaction
     m_expectedDurationMs = 0;
   }
 
-  // 1st notification to get() - we started transaction 
+  // 1st notification to get() - we started transaction
   m_conditionVariable.notify_one();
 
   int errorCode = DpaTransactionResult2::TRN_ERROR_IFACE;
@@ -260,7 +241,7 @@ void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
     finish = true; // end this cycle
     expired = false;
 
-    // wait on conditon 
+    // wait on conditon
     if ( m_expectedDurationMs > 0 ) {
       // wait_for() unlock lck when blocking and lock it again when get out, processReceivedMessage() is able to do its job as it can lock now
       if ( std::cv_status::timeout == m_conditionVariable.wait_for( lck, std::chrono::milliseconds( m_expectedDurationMs ) ) ) {
@@ -338,7 +319,7 @@ void DpaTransaction2::execute(IDpaTransactionResult2::ErrorCode defaultError)
   // signalize final state
   m_finish = true;
 
-  // 2st notification to get() 
+  // 2st notification to get()
   m_conditionVariable.notify_one();
 }
 
@@ -424,7 +405,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
   else {
     // if there was a request to coordinator then after receiving response it is allowed to send another
     if ( m_state == kSentCoordinator ) {
-      // done, next request gets ready 
+      // done, next request gets ready
       m_state = kProcessed;
     }
     else {
@@ -451,7 +432,7 @@ void DpaTransaction2::processReceivedMessage( const DpaMessage& receivedMessage 
       }
       // infinite timeout
       else {
-        // done, next request gets ready 
+        // done, next request gets ready
         m_state = kProcessed; // TODO If the refresh timeout is necessary would be here as well?
       }
     }
@@ -476,7 +457,7 @@ int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timesl
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
 
-  // estimation from confirmation 
+  // estimation from confirmation
   if ( responseDataLength == -1 ) {
     if ( timeslotReq == 20 )
       responseTimeSlotLengthMs = 200;
@@ -484,7 +465,7 @@ int32_t DpaTransaction2::EstimateStdTimeout( uint8_t hopsRequest, uint8_t timesl
       // worst case
       responseTimeSlotLengthMs = 60;
   }
-  // correction of the estimation from response 
+  // correction of the estimation from response
   else {
     TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
     if ( m_currentTimingParams.osVersion == "4.03D" ) {
@@ -522,7 +503,7 @@ int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslo
 
   auto estimatedTimeoutMs = ( hopsRequest + 1 ) * timeslotReq * 10;
 
-  // estimation from confirmation 
+  // estimation from confirmation
   if ( responseDataLength == -1 ) {
     if ( timeslotReq == 20 ) {
       responseTimeSlotLengthMs = 200;
@@ -532,7 +513,7 @@ int32_t DpaTransaction2::EstimateLpTimeout( uint8_t hopsRequest, uint8_t timeslo
       responseTimeSlotLengthMs = 110;
     }
   }
-  // correction of the estimation from response 
+  // correction of the estimation from response
   else {
     TRC_DEBUG( "PData length of the received response: " << PAR( (int)responseDataLength ) );
     if ( m_currentTimingParams.osVersion == "4.03D" ) {
